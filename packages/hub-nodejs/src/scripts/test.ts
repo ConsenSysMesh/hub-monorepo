@@ -2,6 +2,7 @@ import {
   FarcasterNetwork,
   getInsecureHubRpcClient,
   makeCastAdd,
+  makeTagAdd,
   NobleEd25519Signer,
 } from "@farcaster/hub-nodejs";
 import { hexToBytes } from "@noble/hashes/utils";
@@ -53,13 +54,28 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
     dataOptions,
     ed25519Signer,
   );
-  // castResults.push(cast);
 
   const cast = await client.submitMessage(castAdd._unsafeUnwrap());
 
+  console.log(JSON.stringify(cast));
+
+  const tagAdd = await makeTagAdd({
+      value: 'testTag',
+      targetCastId: {
+        fid: cast.fid,
+        hash: cast.hash,
+      },
+    },
+  dataOptions,
+  ed25519Signer);
+
+  const tag = await client.submitMessage(await tagAdd._unsafeUnwrap());
+
+  console.log('TAG!!!!', tag);
+
   const y = await client.getCastsByFid({ fid: FID });
 
-  console.log(JSON.stringify(y, null, 2));
+  // console.log(JSON.stringify(y, null, 2));
 
   client.close();
 })();

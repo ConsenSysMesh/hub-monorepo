@@ -137,6 +137,59 @@ describe("makeReactionRemove", () => {
   });
 });
 
+describe("makeTagAddData", () => {
+  test("succeeds", async () => {
+    const data = await builders.makeTagAddData(
+      { value: 'tagValue', targetCastId: { fid, hash: Factories.MessageHash.build() } },
+      { fid, network },
+    );
+    expect(data.isOk()).toBeTruthy();
+    const isValid = await validations.validateMessageData(data._unsafeUnwrap());
+    expect(isValid.isOk()).toBeTruthy();
+  });
+});
+
+describe("makeTagRemoveData", () => {
+  test("succeeds", async () => {
+    const data = await builders.makeTagRemoveData(
+      { value: 'tagValue', targetCastId: { fid, hash: Factories.MessageHash.build() } },
+      { fid, network },
+    );
+    expect(data.isOk()).toBeTruthy();
+    const isValid = await validations.validateMessageData(data._unsafeUnwrap());
+    expect(isValid.isOk()).toBeTruthy();
+  });
+});
+
+describe("makeTagAdd", () => {
+  test("succeeds", async () => {
+    const message = await builders.makeTagAdd(
+      protobufs.TagBody.create({
+        value: 'tagValue',
+        targetCastId: { fid, hash: Factories.MessageHash.build() },
+      }),
+      { fid, network },
+      ed25519Signer,
+    );
+    expect(message.isOk()).toBeTruthy();
+    const isValid = await validations.validateMessage(message._unsafeUnwrap());
+    expect(isValid.isOk()).toBeTruthy();
+  });
+});
+
+describe("makeTagRemove", () => {
+  test("succeeds", async () => {
+    const message = await builders.makeTagRemove(
+      { value: 'tagValue', targetCastId: { fid, hash: Factories.MessageHash.build() } },
+      { fid, network },
+      ed25519Signer,
+    );
+    expect(message.isOk()).toBeTruthy();
+    const isValid = await validations.validateMessage(message._unsafeUnwrap());
+    expect(isValid.isOk()).toBeTruthy();
+  });
+});
+
 describe("makeVerificationAddEthAddressData", () => {
   const blockHash = Factories.BlockHash.build();
   let ethSignature: Uint8Array;
@@ -198,7 +251,7 @@ describe("makeVerificationAddEthAddress", () => {
         address: ethSignerKey,
         blockHash: blockHash,
         claimSignature: ethSignature,
-        protocol: Protocol.ETHEREUM,
+        protocol: protobufs.Protocol.ETHEREUM,
       },
       { fid, network },
       ed25519Signer,
