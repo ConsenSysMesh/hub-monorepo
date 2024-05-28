@@ -26,6 +26,7 @@ type MessageBodyOptions = Pick<
   | "linkBody"
   | "usernameProofBody"
   | "frameActionBody"
+  | "tagBody"
 >;
 
 /** Generic Methods */

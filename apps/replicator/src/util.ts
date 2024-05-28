@@ -256,6 +256,9 @@ export function convertProtobufMessageBodyToJson(message: Message): MessageBodyJ
       throw new AssertionError("Unexpected FRAME_ACTION message type");
     case MessageType.NONE:
       throw new AssertionError("Message has no type");
+    case MessageType.TAG_ADD:
+    case MessageType.TAG_REMOVE:
+      // VIC-TODO
     default:
       // If we're getting a type error on the line below, it means we've missed a case above.
       // Did we add a new message type?

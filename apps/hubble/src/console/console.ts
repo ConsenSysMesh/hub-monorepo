@@ -20,7 +20,7 @@ import { WarpcastTestCommand } from "./warpcastTestCommand.js";
 import { SyncId } from "../network/sync/syncId.js";
 import { TrackHubDelayCommand } from "./trackHubDelayCommand.js";
 
-export const DEFAULT_RPC_CONSOLE = "127.0.0.1:2283";
+export const DEFAULT_RPC_CONSOLE = "localhost:2283";
 
 export interface ConsoleCommandInterface {
   commandName(): string;
