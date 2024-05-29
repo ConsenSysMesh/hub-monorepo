@@ -101,6 +101,10 @@ export enum UserPostfix {
   UsernameProofMessage = 7,
 
   // Add new message types here
+
+  /* Tag */
+  TagMessage = 8,
+
   // NOTE: If you add a new message type, make sure that it is only used to store Message protobufs.
   // If you need to store an index, use one of the UserPostfix values below (>86).
 
@@ -136,9 +140,6 @@ export enum UserPostfix {
 
   /* Link Compact State set */
   LinkCompactStateMessage = 100,
-
-  /* Tag */
-  TagMessage = 101,
 }
 
 export enum OnChainEventPostfix {
