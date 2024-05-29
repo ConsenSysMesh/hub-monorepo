@@ -74,7 +74,8 @@ pub enum RootPrefix {
     /* Used to index fname username proofs by fid */
     FNameUserNameProofByFid = 27,
 
-    // VIC-TODO: add tags by target id index
+    /* Used to index tags by target  */
+    TagsByTarget = 28,
 }
 
 /** Copied from the JS code */
@@ -91,6 +92,10 @@ pub enum UserPostfix {
     UsernameProofMessage = 7,
 
     // Add new message types here
+
+    /* Tag message */
+    TagMessage = 8,
+
     // NOTE: If you add a new message type, make sure that it is only used to store Message protobufs.
     // If you need to store an index, use one of the UserPostfix values below (>86).
     /** Index records (must be 86-255) */
@@ -124,9 +129,6 @@ pub enum UserPostfix {
 
     /* Link Compact State set */
     LinkCompactStateMessage = 100,
-
-    /* Tag message */
-    TagMessage = 101,
 }
 
 impl UserPostfix {
