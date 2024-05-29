@@ -21,7 +21,7 @@ import { UserPostfix } from "../db/types.js";
 import { ResultAsync } from "neverthrow";
 import RocksDB from "storage/db/rocksdb.js";
 import { RustStoreBase } from "./rustStoreBase.js";
-import { messageDecode } from "../../storage/db/message.js";
+import { messageDecode } from "../db/message.js";
 
 class TagStore extends RustStoreBase<TagAddMessage, TagRemoveMessage> {
   constructor(db: RocksDB, eventHandler: StoreEventHandler, options: StorePruneOptions = {}) {

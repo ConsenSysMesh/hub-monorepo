@@ -303,6 +303,17 @@ export const rsCreateReactionStore = (
   return store as RustDynStore;
 };
 
+/** Create a tag Store */
+export const rsCreateTagStore = (
+  db: RustDb,
+  eventHandler: RustStoreEventHandler,
+  pruneSizeLimit: number,
+): RustDynStore => {
+  const store = lib.createTagStore(db, eventHandler, pruneSizeLimit);
+
+  return store as RustDynStore;
+};
+
 /** Create a cast Store */
 export const rsCreateCastStore = (
   db: RustDb,
@@ -506,10 +517,10 @@ export const rsGetTagAddsByFid = async (
 export const rsGetTagRemovesByFid = async (
   store: RustDynStore,
   fid: number,
-  type: number,
+  value: string,
   pageOptions: PageOptions,
 ): Promise<RustMessagesPage> => {
-  return await lib.getTagRemovesByFid.call(store, fid, type, pageOptions);
+  return await lib.getTagRemovesByFid.call(store, fid, value, pageOptions);
 };
 
 export const rsGetTagsByTarget = async (
