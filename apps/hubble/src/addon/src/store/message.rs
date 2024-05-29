@@ -73,6 +73,8 @@ pub enum RootPrefix {
 
     /* Used to index fname username proofs by fid */
     FNameUserNameProofByFid = 27,
+
+    // VIC-TODO: add tags by target id index
 }
 
 /** Copied from the JS code */
@@ -122,6 +124,9 @@ pub enum UserPostfix {
 
     /* Link Compact State set */
     LinkCompactStateMessage = 100,
+
+    /* Tag message */
+    TagMessage = 101,
 }
 
 impl UserPostfix {
@@ -181,6 +186,10 @@ pub fn type_to_set_postfix(message_type: MessageType) -> UserPostfix {
 
     if message_type == MessageType::UsernameProof {
         return UserPostfix::UsernameProofMessage;
+    }
+
+    if message_type == MessageType::TagAdd || message_type == MessageType::TagRemove {
+        return UserPostfix::TagMessage;
     }
 
     panic!("invalid type");

@@ -472,6 +472,57 @@ export const rsGetReactionsByTarget = async (
   return await lib.getReactionsByTarget.call(store, targetCastIdBytes, targetUrl, type, pageOptions);
 };
 
+/** Tags **/
+
+export const rsGetTagAdd = async (
+  store: RustDynStore,
+  fid: number,
+  value: string,
+  targetCastIdBytes: Buffer,
+  targetUrl: string,
+): Promise<Buffer> => {
+  return await lib.getTagAdd.call(store, fid, value, targetCastIdBytes, targetUrl);
+};
+
+export const rsGetTagRemove = async (
+  store: RustDynStore,
+  fid: number,
+  value: number,
+  targetCastIdBytes: Buffer,
+  targetUrl: string,
+): Promise<Buffer> => {
+  return await lib.getTagRemove.call(store, fid, value, targetCastIdBytes, targetUrl);
+};
+
+export const rsGetTagAddsByFid = async (
+  store: RustDynStore,
+  fid: number,
+  value: string,
+  pageOptions: PageOptions,
+): Promise<RustMessagesPage> => {
+  return await lib.getTagAddsByFid.call(store, fid, value, pageOptions);
+};
+
+export const rsGetTagRemovesByFid = async (
+  store: RustDynStore,
+  fid: number,
+  type: number,
+  pageOptions: PageOptions,
+): Promise<RustMessagesPage> => {
+  return await lib.getTagRemovesByFid.call(store, fid, type, pageOptions);
+};
+
+export const rsGetTagsByTarget = async (
+  store: RustDynStore,
+  targetCastIdBytes: Buffer,
+  targetUrl: string,
+  value: string,
+  pageOptions: PageOptions,
+): Promise<RustMessagesPage> => {
+  return await lib.getTagsByTarget.call(store, targetCastIdBytes, targetUrl, value, pageOptions);
+};
+
+
 /** UserData Store */
 export const rsCreateUserDataStore = (
   db: RustDb,

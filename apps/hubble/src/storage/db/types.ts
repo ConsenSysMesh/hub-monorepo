@@ -136,6 +136,9 @@ export enum UserPostfix {
 
   /* Link Compact State set */
   LinkCompactStateMessage = 100,
+
+  /* Tag */
+  TagMessage = 101,
 }
 
 export enum OnChainEventPostfix {
@@ -160,4 +163,5 @@ export type UserMessagePostfix =
   | UserPostfix.ReactionMessage
   | UserPostfix.UserDataMessage
   | UserPostfix.UsernameProofMessage
+  | UserPostfix.TagMessage
   | UserPostfix.LinkCompactStateMessage;

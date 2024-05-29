@@ -235,7 +235,7 @@ export const makeTagAdd = async (
   body: protobufs.TagBody,
   dataOptions: MessageDataOptions,
   signer: Signer,
-): HubAsyncResult<protobufs.ReactionAddMessage> => {
+): HubAsyncResult<protobufs.TagAddMessage> => {
   const data = await makeTagAddData(body, dataOptions);
   if (data.isErr()) {
     return err(data.error);
@@ -247,7 +247,7 @@ export const makeTagRemove = async (
   body: protobufs.TagBody,
   dataOptions: MessageDataOptions,
   signer: Signer,
-): HubAsyncResult<protobufs.ReactionRemoveMessage> => {
+): HubAsyncResult<protobufs.TagRemoveMessage> => {
   const data = await makeTagRemoveData(body, dataOptions);
   if (data.isErr()) {
     return err(data.error);

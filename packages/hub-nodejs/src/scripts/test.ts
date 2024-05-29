@@ -34,9 +34,6 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
   // If your client does not use SSL.
   const client = getInsecureHubRpcClient(HUB_URL);
 
-  const f = await client.getFids({});
-  console.log(f);
-
   /**
    * Example 1: A cast with no mentions
    *
@@ -57,21 +54,18 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
 
   const cast = await client.submitMessage(castAdd._unsafeUnwrap());
 
-  console.log(JSON.stringify(cast));
+  console.log(JSON.stringify(cast, null, 2));
 
   const tagAdd = await makeTagAdd({
       value: 'testTag',
-      targetCastId: {
-        fid: cast.fid,
-        hash: cast.hash,
-      },
+      targetUrl: 'test',
     },
   dataOptions,
   ed25519Signer);
 
-  const tag = await client.submitMessage(await tagAdd._unsafeUnwrap());
+  const tag = await client.submitMessage(tagAdd._unsafeUnwrap());
 
-  console.log('TAG!!!!', tag);
+  console.log('TAG!!!!', JSON.stringify(tag, null, 2));
 
   const y = await client.getCastsByFid({ fid: FID });
 

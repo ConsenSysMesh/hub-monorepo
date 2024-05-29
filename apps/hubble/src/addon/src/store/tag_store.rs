@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{
     db::{RocksDB, RocksDbTransactionBatch},
-    protos::{self, reaction_body::Target, Message, MessageType, ReactionBody, ReactionType},
+    protos::{self, tag_body::Target, Message, MessageType, TagBody, JsString},
 };
 use crate::{protos::message_data, THREAD_POOL};
 use neon::{
@@ -19,34 +19,34 @@ use neon::{
 use prost::Message as _;
 use std::{borrow::Borrow, convert::TryInto, sync::Arc};
 
-pub struct ReactionStoreDef {
+pub struct TagStoreDef {
     prune_size_limit: u32,
 }
 
-impl StoreDef for ReactionStoreDef {
+impl StoreDef for TagStoreDef {
     fn postfix(&self) -> u8 {
-        UserPostfix::ReactionMessage.as_u8()
+        UserPostfix::TagMessage.as_u8()
     }
 
     fn add_message_type(&self) -> u8 {
-        MessageType::ReactionAdd.into_u8()
+        MessageType::TagAdd.into_u8()
     }
 
     fn remove_message_type(&self) -> u8 {
-        MessageType::ReactionRemove as u8
+        MessageType::TagRemove as u8
     }
 
     fn is_add_type(&self, message: &protos::Message) -> bool {
         message.signature_scheme == protos::SignatureScheme::Ed25519 as i32
             && message.data.is_some()
-            && message.data.as_ref().unwrap().r#type == MessageType::ReactionAdd as i32
+            && message.data.as_ref().unwrap().r#type == MessageType::TagAdd as i32
             && message.data.as_ref().unwrap().body.is_some()
     }
 
     fn is_remove_type(&self, message: &protos::Message) -> bool {
         message.signature_scheme == protos::SignatureScheme::Ed25519 as i32
             && message.data.is_some()
-            && message.data.as_ref().unwrap().r#type == MessageType::ReactionRemove as i32
+            && message.data.as_ref().unwrap().r#type == MessageType::TagRemove as i32
             && message.data.as_ref().unwrap().body.is_some()
     }
 
@@ -97,7 +97,7 @@ impl StoreDef for ReactionStoreDef {
         _db: &RocksDB,
         _message: &protos::Message,
     ) -> Result<(), HubError> {
-        // For reactions, there will be no conflicts
+        // For tags, there will be no conflicts
         Ok(())
     }
 
@@ -106,50 +106,50 @@ impl StoreDef for ReactionStoreDef {
         _db: &RocksDB,
         _message: &Message,
     ) -> Result<(), HubError> {
-        // For reactions, there will be no conflicts
+        // For tags, there will be no conflicts
         Ok(())
     }
 
     fn make_add_key(&self, message: &protos::Message) -> Result<Vec<u8>, HubError> {
-        let reaction_body = match message.data.as_ref().unwrap().body.as_ref().unwrap() {
-            message_data::Body::ReactionBody(reaction_body) => reaction_body,
+        let tag_body = match message.data.as_ref().unwrap().body.as_ref().unwrap() {
+            message_data::Body::TagBody(tag_body) => tag_body,
             _ => {
                 return Err(HubError {
                     code: "bad_request.validation_failure".to_string(),
-                    message: "Invalid reaction body".to_string(),
+                    message: "Invalid tag body".to_string(),
                 })
             }
         };
 
-        Self::make_reaction_adds_key(
+        Self::make_tag_adds_key(
             message.data.as_ref().unwrap().fid as u32,
-            reaction_body.r#type,
-            reaction_body.target.as_ref(),
+            tag_body.r#type,
+            tag_body.target.as_ref(),
         )
     }
 
     fn make_remove_key(&self, message: &protos::Message) -> Result<Vec<u8>, HubError> {
-        let reaction_body = match message.data.as_ref().unwrap().body.as_ref().unwrap() {
-            message_data::Body::ReactionBody(reaction_body) => reaction_body,
+        let tag_body = match message.data.as_ref().unwrap().body.as_ref().unwrap() {
+            message_data::Body::TagBody(tag_body) => tag_body,
             _ => {
                 return Err(HubError {
                     code: "bad_request.validation_failure".to_string(),
-                    message: "Invalid reaction body".to_string(),
+                    message: "Invalid tag body".to_string(),
                 })
             }
         };
 
-        Self::make_reaction_removes_key(
+        Self::make_tag_removes_key(
             message.data.as_ref().unwrap().fid as u32,
-            reaction_body.r#type,
-            reaction_body.target.as_ref(),
+            tag_body.r#type,
+            tag_body.target.as_ref(),
         )
     }
 
     fn make_compact_state_add_key(&self, _message: &Message) -> Result<Vec<u8>, HubError> {
         Err(HubError {
             code: "bad_request.invalid_param".to_string(),
-            message: "Reaction Store doesn't support compact state".to_string(),
+            message: "Tag Store doesn't support compact state".to_string(),
         })
     }
 
@@ -158,42 +158,42 @@ impl StoreDef for ReactionStoreDef {
     }
 }
 
-impl ReactionStoreDef {
+impl TagStoreDef {
     fn secondary_index_key(
         &self,
         ts_hash: &[u8; TS_HASH_LENGTH],
         message: &protos::Message,
     ) -> Result<(Vec<u8>, u8), HubError> {
         // Make sure at least one of targetCastId or targetUrl is set
-        let reaction_body = match message.data.as_ref().unwrap().body.as_ref().unwrap() {
-            message_data::Body::ReactionBody(reaction_body) => reaction_body,
+        let tag_body = match message.data.as_ref().unwrap().body.as_ref().unwrap() {
+            message_data::Body::TagBody(tag_body) => tag_body,
             _ => Err(HubError {
                 code: "bad_request.validation_failure".to_string(),
-                message: "Invalid reaction body".to_string(),
+                message: "Invalid tag body".to_string(),
             })?,
         };
-        let target = reaction_body.target.as_ref().ok_or(HubError {
+        let target = tag_body.target.as_ref().ok_or(HubError {
             code: "bad_request.validation_failure".to_string(),
-            message: "Invalid reaction body".to_string(),
+            message: "Invalid tag body".to_string(),
         })?;
 
-        let by_target_key = ReactionStoreDef::make_reactions_by_target_key(
+        let by_target_key = TagStoreDef::make_tags_by_target_key(
             target,
             message.data.as_ref().unwrap().fid as u32,
             Some(ts_hash),
         );
 
-        Ok((by_target_key, reaction_body.r#type as u8))
+        Ok((by_target_key, tag_body.r#type as u8))
     }
 
-    pub fn make_reactions_by_target_key(
+    pub fn make_tags_by_target_key(
         target: &Target,
         fid: u32,
         ts_hash: Option<&[u8; TS_HASH_LENGTH]>,
     ) -> Vec<u8> {
         let mut key = Vec::with_capacity(1 + 28 + 24 + 4);
 
-        key.push(RootPrefix::ReactionsByTarget as u8); // ReactionsByTarget prefix, 1 byte
+        key.push(RootPrefix::TagsByTarget as u8); // TagsByTarget prefix, 1 byte
         key.extend_from_slice(&Self::make_target_key(target));
         if ts_hash.is_some() && ts_hash.unwrap().len() == TS_HASH_LENGTH {
             key.extend_from_slice(ts_hash.unwrap());
@@ -212,9 +212,9 @@ impl ReactionStoreDef {
         }
     }
 
-    pub fn make_reaction_adds_key(
+    pub fn make_tag_adds_key(
         fid: u32,
-        r#type: i32,
+        value: String,
         target: Option<&Target>,
     ) -> Result<Vec<u8>, HubError> {
         if target.is_some() && r#type == 0 {
@@ -226,7 +226,7 @@ impl ReactionStoreDef {
         let mut key = Vec::with_capacity(33 + 1 + 1 + 28);
 
         key.extend_from_slice(&make_user_key(fid));
-        key.push(UserPostfix::ReactionAdds as u8); // ReactionAdds postfix, 1 byte
+        key.push(UserPostfix::TagAdds as u8); // tagAdds postfix, 1 byte
         if r#type > 0 {
             key.push(r#type as u8); // type, 1 byte
         }
@@ -238,9 +238,9 @@ impl ReactionStoreDef {
         Ok(key)
     }
 
-    pub fn make_reaction_removes_key(
+    pub fn make_tag_removes_key(
         fid: u32,
-        r#type: i32,
+        value: String,
         target: Option<&Target>,
     ) -> Result<Vec<u8>, HubError> {
         if target.is_some() && r#type == 0 {
@@ -252,7 +252,7 @@ impl ReactionStoreDef {
         let mut key = Vec::with_capacity(33 + 1 + 1 + 28);
 
         key.extend_from_slice(&make_user_key(fid));
-        key.push(UserPostfix::ReactionRemoves as u8); // ReactionRemoves postfix, 1 byte
+        key.push(UserPostfix::TagsRemoves as u8); // TagsRemoves postfix, 1 byte
         if r#type > 0 {
             key.push(r#type as u8); // type, 1 byte
         }
@@ -265,9 +265,9 @@ impl ReactionStoreDef {
     }
 }
 
-pub struct ReactionStore {}
+pub struct TagsStore {}
 
-impl ReactionStore {
+impl TagsStore {
     pub fn new(
         db: Arc<RocksDB>,
         store_event_handler: Arc<StoreEventHandler>,
@@ -276,22 +276,22 @@ impl ReactionStore {
         Store::new_with_store_def(
             db,
             store_event_handler,
-            Box::new(ReactionStoreDef { prune_size_limit }),
+            Box::new(TagsStoreDef { prune_size_limit }),
         )
     }
 
-    pub fn get_reaction_add(
+    pub fn get_tag_add(
         store: &Store,
         fid: u32,
-        r#type: i32,
+        value: String,
         target: Option<Target>,
     ) -> Result<Option<protos::Message>, HubError> {
         let partial_message = protos::Message {
             data: Some(protos::MessageData {
                 fid: fid as u64,
-                r#type: MessageType::ReactionAdd.into(),
-                body: Some(protos::message_data::Body::ReactionBody(ReactionBody {
-                    r#type,
+                r#type: MessageType::TagsAdd.into(),
+                body: Some(protos::message_data::Body::TagsBody(TagBody {
+                    value: value.clone(),
                     target: target.clone(),
                 })),
                 ..Default::default()
@@ -302,13 +302,13 @@ impl ReactionStore {
         store.get_add(&partial_message)
     }
 
-    pub fn js_get_reaction_add(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    pub fn js_get_tag_add(mut cx: FunctionContext) -> JsResult<JsPromise> {
         let channel = cx.channel();
 
         let store = get_store(&mut cx)?;
 
         let fid = cx.argument::<JsNumber>(0).unwrap().value(&mut cx) as u32;
-        let reaction_type = cx.argument::<JsNumber>(1).unwrap().value(&mut cx) as i32;
+        let tag_value = cx.argument::<JsString>(1).map(|s| s.value(&mut cx));
 
         let target_cast_id_buffer = cx.argument::<JsBuffer>(2)?;
         let target_cast_id_bytes = target_cast_id_buffer.as_slice(&cx);
@@ -334,11 +334,11 @@ impl ReactionStore {
             Some(Target::TargetUrl(target_url))
         };
 
-        let result = match Self::get_reaction_add(&store, fid, reaction_type, target) {
+        let result = match Self::get_tag_add(&store, fid, tag_value, target) {
             Ok(Some(message)) => message.encode_to_vec(),
             Ok(None) => cx.throw_error(format!(
                 "{}/{} for {}",
-                "not_found", "reactionAddMessage not found", fid
+                "not_found", "tagAddMessage not found", fid
             ))?,
             Err(e) => return hub_error_to_js_throw(&mut cx, e),
         };
@@ -353,18 +353,18 @@ impl ReactionStore {
         Ok(promise)
     }
 
-    pub fn get_reaction_remove(
+    pub fn get_tag_remove(
         store: &Store,
         fid: u32,
-        r#type: i32,
+        value: String,
         target: Option<Target>,
     ) -> Result<Option<protos::Message>, HubError> {
         let partial_message = protos::Message {
             data: Some(protos::MessageData {
                 fid: fid as u64,
-                r#type: MessageType::ReactionRemove.into(),
-                body: Some(protos::message_data::Body::ReactionBody(ReactionBody {
-                    r#type,
+                r#type: MessageType::TagRemove.into(),
+                body: Some(protos::message_data::Body::TagBody(TagBody {
+                    value: value.clone(),
                     target: target.clone(),
                 })),
                 ..Default::default()
@@ -373,16 +373,16 @@ impl ReactionStore {
         };
 
         let r = store.get_remove(&partial_message);
-        // println!("got reaction remove: {:?}", r);
+        // println!("got tag remove: {:?}", r);
 
         r
     }
 
-    pub fn js_get_reaction_remove(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    pub fn js_get_tag_remove(mut cx: FunctionContext) -> JsResult<JsPromise> {
         let store = get_store(&mut cx)?;
 
         let fid = cx.argument::<JsNumber>(0).unwrap().value(&mut cx) as u32;
-        let reaction_type = cx.argument::<JsNumber>(1).unwrap().value(&mut cx) as i32;
+        let tag_value = cx.argument::<JsString>(1).map(|s| s.value(&mut cx));
 
         let target_cast_id_buffer = cx.argument::<JsBuffer>(2)?;
         let target_cast_id_bytes = target_cast_id_buffer.as_slice(&cx);
@@ -408,11 +408,11 @@ impl ReactionStore {
             Some(Target::TargetUrl(target_url))
         };
 
-        let result = match ReactionStore::get_reaction_remove(&store, fid, reaction_type, target) {
+        let result = match TagStore::get_tag_remove(&store, fid, tag_value, target) {
             Ok(Some(message)) => message.encode_to_vec(),
             Ok(None) => cx.throw_error(format!(
                 "{}/{} for {}",
-                "not_found", "reactionRemoveMessage not found", fid
+                "not_found", "tagRemoveMessage not found", fid
             ))?,
             Err(e) => return hub_error_to_js_throw(&mut cx, e),
         };
@@ -428,19 +428,19 @@ impl ReactionStore {
         Ok(promise)
     }
 
-    pub fn get_reaction_adds_by_fid(
+    pub fn get_tag_adds_by_fid(
         store: &Store,
         fid: u32,
-        reaction_type: i32,
+        tag_value: String,
         page_options: &PageOptions,
     ) -> Result<MessagesPage, HubError> {
         store.get_adds_by_fid(
             fid,
             page_options,
             Some(|message: &Message| {
-                if let Some(reaction_body) = &message.data.as_ref().unwrap().body {
-                    if let protos::message_data::Body::ReactionBody(reaction_body) = reaction_body {
-                        if reaction_type == 0 || reaction_body.r#type == reaction_type {
+                if let Some(tag_body) = &message.data.as_ref().unwrap().body {
+                    if let protos::message_data::Body::TagBody(tag_body) = tag_body {
+                        if tag_body.value == tag_value {
                             return true;
                         }
                     }
@@ -451,7 +451,7 @@ impl ReactionStore {
         )
     }
 
-    pub fn create_reaction_store(mut cx: FunctionContext) -> JsResult<JsBox<Arc<Store>>> {
+    pub fn create_tag_store(mut cx: FunctionContext) -> JsResult<JsBox<Arc<Store>>> {
         let db_js_box = cx.argument::<JsBox<Arc<RocksDB>>>(0)?;
         let db = (**db_js_box.borrow()).clone();
 
@@ -464,18 +464,18 @@ impl ReactionStore {
             .argument::<JsNumber>(2)
             .map(|n| n.value(&mut cx) as u32)?;
 
-        Ok(cx.boxed(Arc::new(ReactionStore::new(
+        Ok(cx.boxed(Arc::new(TagStore::new(
             db,
             store_event_handler,
             prune_size_limit,
         ))))
     }
 
-    pub fn js_get_reaction_adds_by_fid(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    pub fn js_get_tag_adds_by_fid(mut cx: FunctionContext) -> JsResult<JsPromise> {
         let store = get_store(&mut cx)?;
 
         let fid = cx.argument::<JsNumber>(0).unwrap().value(&mut cx) as u32;
-        let reaction_type = cx.argument::<JsNumber>(1).unwrap().value(&mut cx) as i32;
+        let tag_value = cx.argument::<JsString>(1).map(|s| s.value(&mut cx));
 
         let page_options = get_page_options(&mut cx, 2)?;
         let channel = cx.channel();
@@ -483,7 +483,7 @@ impl ReactionStore {
 
         THREAD_POOL.lock().unwrap().execute(move || {
             let messages =
-                ReactionStore::get_reaction_adds_by_fid(&store, fid, reaction_type, &page_options);
+                TagStore::get_tag_adds_by_fid(&store, fid, tag_value, &page_options);
 
             deferred_settle_messages(deferred, &channel, messages);
         });
@@ -491,19 +491,19 @@ impl ReactionStore {
         Ok(promise)
     }
 
-    pub fn get_reaction_removes_by_fid(
+    pub fn get_tag_removes_by_fid(
         store: &Store,
         fid: u32,
-        reaction_type: i32,
+        tag_value: String,
         page_options: &PageOptions,
     ) -> Result<MessagesPage, HubError> {
         store.get_removes_by_fid(
             fid,
             page_options,
             Some(|message: &Message| {
-                if let Some(reaction_body) = &message.data.as_ref().unwrap().body {
-                    if let protos::message_data::Body::ReactionBody(reaction_body) = reaction_body {
-                        if reaction_type == 0 || reaction_body.r#type == reaction_type {
+                if let Some(tag_body) = &message.data.as_ref().unwrap().body {
+                    if let protos::message_data::Body::TagBody(tag_body) = tag_body {
+                        if tag_body.value == tag_value {
                             return true;
                         }
                     }
@@ -514,21 +514,21 @@ impl ReactionStore {
         )
     }
 
-    pub fn js_get_reaction_removes_by_fid(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    pub fn js_get_tag_removes_by_fid(mut cx: FunctionContext) -> JsResult<JsPromise> {
         let store = get_store(&mut cx)?;
 
         let fid = cx.argument::<JsNumber>(0).unwrap().value(&mut cx) as u32;
-        let reaction_type = cx.argument::<JsNumber>(1).unwrap().value(&mut cx) as i32;
+        let tag_value = cx.argument::<JsString>(1).map(|s| s.value(&mut cx));
 
         let page_options = get_page_options(&mut cx, 2)?;
         let channel = cx.channel();
         let (deferred, promise) = cx.promise();
 
         THREAD_POOL.lock().unwrap().execute(move || {
-            let messages = ReactionStore::get_reaction_removes_by_fid(
+            let messages = TagStore::get_reaction_removes_by_fid(
                 &store,
                 fid,
-                reaction_type,
+                tag_value,
                 &page_options,
             );
 
@@ -538,13 +538,13 @@ impl ReactionStore {
         Ok(promise)
     }
 
-    pub fn get_reactions_by_target(
+    pub fn get_tags_by_target(
         store: &Store,
         target: &Target,
-        reaction_type: i32,
+        tag_value: String,
         page_options: &PageOptions,
     ) -> Result<MessagesPage, HubError> {
-        let prefix = ReactionStoreDef::make_reactions_by_target_key(target, 0, None);
+        let prefix = TagStoreDef::make_tags_by_target_key(target, 0, None);
 
         let mut message_keys = vec![];
         let mut last_key = vec![];
@@ -552,8 +552,7 @@ impl ReactionStore {
         store
             .db()
             .for_each_iterator_by_prefix(&prefix, page_options, |key, value| {
-                if reaction_type == ReactionType::None as i32
-                    || (value.len() == 1 && value[0] == reaction_type as u8)
+                if tag_value == value // VIC-TODO: allow optional match?
                 {
                     let ts_hash_offset = prefix.len();
                     let fid_offset = ts_hash_offset + TS_HASH_LENGTH;
@@ -593,7 +592,7 @@ impl ReactionStore {
         })
     }
 
-    pub fn js_get_reactions_by_target(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    pub fn js_get_tags_by_target(mut cx: FunctionContext) -> JsResult<JsPromise> {
         let store = get_store(&mut cx)?;
 
         let target_cast_id_buffer = cx.argument::<JsBuffer>(0)?;
@@ -620,9 +619,7 @@ impl ReactionStore {
             Target::TargetUrl(target_url)
         };
 
-        let reaction_type = cx
-            .argument::<JsNumber>(2)
-            .map(|n| n.value(&mut cx) as i32)?;
+        let tag_value = cx.argument::<JsNumber>(2).map(|s| s.value(&mut cx));
 
         let page_options = get_page_options(&mut cx, 3)?;
 
@@ -633,7 +630,7 @@ impl ReactionStore {
             let messages = ReactionStore::get_reactions_by_target(
                 &store,
                 &target,
-                reaction_type,
+                tag_value,
                 &page_options,
             );
 

@@ -354,6 +354,12 @@ export const validateMessageData = async <T extends protobufs.MessageData>(
     bodyResult = validateUsernameProofBody(data.usernameProofBody, data);
   } else if (validType.value === protobufs.MessageType.FRAME_ACTION && !!data.frameActionBody) {
     bodyResult = validateFrameActionBody(data.frameActionBody);
+  } else if (
+    (validType.value === protobufs.MessageType.TAG_ADD ||
+      validType.value === protobufs.MessageType.TAG_REMOVE) &&
+    !!data.tagBody
+  ) {
+    bodyResult = validateTagBody(data.tagBody);
   } else {
     return err(new HubError("bad_request.invalid_param", "bodyType is invalid"));
   }
@@ -690,6 +696,24 @@ export const validateLinkBody = (body: protobufs.LinkBody): HubResult<protobufs.
 
 export const validateReactionBody = (body: protobufs.ReactionBody): HubResult<protobufs.ReactionBody> => {
   const validatedType = validateReactionType(body.type);
+  if (validatedType.isErr()) {
+    return err(validatedType.error);
+  }
+
+  if (body.targetCastId !== undefined && body.targetUrl !== undefined) {
+    return err(new HubError("bad_request.validation_failure", "cannot use both targetUrl and targetCastId"));
+  }
+
+  const target = body.targetCastId ?? body.targetUrl;
+  if (target === undefined) {
+    return err(new HubError("bad_request.validation_failure", "target is missing"));
+  }
+
+  return validateTarget(target).map(() => body);
+};
+
+export const validateTagBody = (body: protobufs.TagBody): HubResult<protobufs.TagBody> => {
+  const validatedType = ok(body.value); // VIC-TODO: proper string validation
   if (validatedType.isErr()) {
     return err(validatedType.error);
   }
