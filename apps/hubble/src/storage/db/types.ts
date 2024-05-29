@@ -78,6 +78,9 @@ export enum RootPrefix {
 
   /* Used to index fname username proofs by fid */
   FNameUserNameProofByFid = 27,
+
+  /* Used to index reactions by target */
+  TagsByTarget = 28,
 }
 
 /**
