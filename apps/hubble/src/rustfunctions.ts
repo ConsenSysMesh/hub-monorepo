@@ -487,7 +487,7 @@ export const rsGetTagAdd = async (
 export const rsGetTagRemove = async (
   store: RustDynStore,
   fid: number,
-  value: number,
+  value: string,
   targetCastIdBytes: Buffer,
   targetUrl: string,
 ): Promise<Buffer> => {
