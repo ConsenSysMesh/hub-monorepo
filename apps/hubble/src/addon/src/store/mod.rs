@@ -21,4 +21,4 @@ mod user_data_store;
 mod username_proof_store;
 mod utils;
 mod verification_store;
-mod taf_store;
+mod tag_store;
