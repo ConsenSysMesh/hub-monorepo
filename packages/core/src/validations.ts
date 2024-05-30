@@ -629,6 +629,16 @@ export const validateReactionType = (type: number): HubResult<protobufs.Reaction
   return ok(type);
 };
 
+// VIC-TODO: determine reasonable max tag value size (probably > 8)
+export const validateTagValueType = (type: string): HubResult<string> => {
+  const typeBuffer = Buffer.from(type);
+  if (type.length === 0 || typeBuffer.length > 8) {
+    return err(new HubError("bad_request.validation_failure", "value must be between 1-8 bytes"));
+  }
+
+  return ok(type);
+};
+
 export const validateTarget = (
   target: protobufs.CastId | string | number,
 ): HubResult<protobufs.CastId | string | number> => {
@@ -713,7 +723,7 @@ export const validateReactionBody = (body: protobufs.ReactionBody): HubResult<pr
 };
 
 export const validateTagBody = (body: protobufs.TagBody): HubResult<protobufs.TagBody> => {
-  const validatedType = ok(body.value); // VIC-TODO: proper string validation
+  const validatedType = validateTagValueType(body.type);
   if (validatedType.isErr()) {
     return err(validatedType.error);
   }
