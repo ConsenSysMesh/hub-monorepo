@@ -145,7 +145,7 @@ message ReactionBody {
 
 /** Adds or removes a Tag from a Cast */
 message TagBody {
-  string value = 1; // Tag value
+  string type = 1; // Tag value
   oneof target {
     CastId target_cast_id = 2; // CastId of the Cast to react to
     string target_url = 3; // URL to react to

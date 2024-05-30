@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{
     db::{RocksDB, RocksDbTransactionBatch},
-    protos::{self, tag_body::Target, Message, MessageType, TagBody, JsString},
+    protos::{self, tag_body::Target, Message, MessageType, TagBody},
 };
 use crate::{protos::message_data, THREAD_POOL};
 use neon::{
@@ -123,7 +123,7 @@ impl StoreDef for TagStoreDef {
 
         Self::make_tag_adds_key(
             message.data.as_ref().unwrap().fid as u32,
-            tag_body.r#type,
+            tag_body.r#type.clone(),
             tag_body.target.as_ref(),
         )
     }
@@ -141,7 +141,7 @@ impl StoreDef for TagStoreDef {
 
         Self::make_tag_removes_key(
             message.data.as_ref().unwrap().fid as u32,
-            tag_body.r#type,
+            tag_body.r#type.clone(),
             tag_body.target.as_ref(),
         )
     }
@@ -159,6 +159,7 @@ impl StoreDef for TagStoreDef {
 }
 
 impl TagStoreDef {
+    // VIC-TODO: convert from u8 as part of key to hash of type
     fn secondary_index_key(
         &self,
         ts_hash: &[u8; TS_HASH_LENGTH],
@@ -183,7 +184,9 @@ impl TagStoreDef {
             Some(ts_hash),
         );
 
-        Ok((by_target_key, tag_body.r#type as u8))
+        // VIC-TODO: blake3_20 hash here?
+        // Ok((by_target_key, tag_body.r#type as u8))
+        Ok((by_target_key, 0 as u8))
     }
 
     pub fn make_tags_by_target_key(
@@ -212,12 +215,13 @@ impl TagStoreDef {
         }
     }
 
+    // VIC-TODO: fix the key here
     pub fn make_tag_adds_key(
         fid: u32,
-        value: String,
+        r#type: String,
         target: Option<&Target>,
     ) -> Result<Vec<u8>, HubError> {
-        if target.is_some() && r#type == 0 {
+        if target.is_some() && r#type.is_empty() {
             return Err(HubError {
                 code: "bad_request.validation_failure".to_string(),
                 message: "targetId provided without type".to_string(),
@@ -227,9 +231,13 @@ impl TagStoreDef {
 
         key.extend_from_slice(&make_user_key(fid));
         key.push(UserPostfix::TagAdds as u8); // tagAdds postfix, 1 byte
-        if r#type > 0 {
-            key.push(r#type as u8); // type, 1 byte
-        }
+
+        // VIC-TODO: current key uses one byte for the like type
+        // explore using a hash of the tag type instead
+        // if r#type > 0 {
+        //     key.push(r#type as u8); // type, 1 byte
+        // }
+        
         if target.is_some() {
             // target, 28 bytes
             key.extend_from_slice(&Self::make_target_key(target.unwrap()));
@@ -238,12 +246,13 @@ impl TagStoreDef {
         Ok(key)
     }
 
+    // VIC-TODO: fix the key here
     pub fn make_tag_removes_key(
         fid: u32,
-        value: String,
+        r#type: String,
         target: Option<&Target>,
     ) -> Result<Vec<u8>, HubError> {
-        if target.is_some() && r#type == 0 {
+        if target.is_some() && r#type.is_empty() {
             return Err(HubError {
                 code: "bad_request.validation_failure".to_string(),
                 message: "targetId provided without type".to_string(),
@@ -252,10 +261,14 @@ impl TagStoreDef {
         let mut key = Vec::with_capacity(33 + 1 + 1 + 28);
 
         key.extend_from_slice(&make_user_key(fid));
-        key.push(UserPostfix::TagsRemoves as u8); // TagsRemoves postfix, 1 byte
-        if r#type > 0 {
-            key.push(r#type as u8); // type, 1 byte
-        }
+        key.push(UserPostfix::TagRemoves as u8); // TagRemoves postfix, 1 byte
+        
+        // VIC-TODO: current key uses one byte for the like type
+        // explore using a hash of the tag type instead
+        // if r#type > 0 {
+        //     key.push(r#type as u8); // type, 1 byte
+        // }
+
         if target.is_some() {
             key.extend_from_slice(&Self::make_target_key(target.unwrap()));
             // target, 28 bytes
@@ -265,9 +278,9 @@ impl TagStoreDef {
     }
 }
 
-pub struct TagsStore {}
+pub struct TagStore {}
 
-impl TagsStore {
+impl TagStore {
     pub fn new(
         db: Arc<RocksDB>,
         store_event_handler: Arc<StoreEventHandler>,
@@ -276,22 +289,22 @@ impl TagsStore {
         Store::new_with_store_def(
             db,
             store_event_handler,
-            Box::new(TagsStoreDef { prune_size_limit }),
+            Box::new(TagStoreDef { prune_size_limit }),
         )
     }
 
     pub fn get_tag_add(
         store: &Store,
         fid: u32,
-        value: String,
+        r#type: String,
         target: Option<Target>,
     ) -> Result<Option<protos::Message>, HubError> {
         let partial_message = protos::Message {
             data: Some(protos::MessageData {
                 fid: fid as u64,
-                r#type: MessageType::TagsAdd.into(),
-                body: Some(protos::message_data::Body::TagsBody(TagBody {
-                    value: value.clone(),
+                r#type: MessageType::TagAdd.into(),
+                body: Some(protos::message_data::Body::TagBody(TagBody {
+                    r#type: r#type.clone(),
                     target: target.clone(),
                 })),
                 ..Default::default()
@@ -308,7 +321,7 @@ impl TagsStore {
         let store = get_store(&mut cx)?;
 
         let fid = cx.argument::<JsNumber>(0).unwrap().value(&mut cx) as u32;
-        let tag_value = cx.argument::<JsString>(1).map(|s| s.value(&mut cx));
+        let r#type = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
 
         let target_cast_id_buffer = cx.argument::<JsBuffer>(2)?;
         let target_cast_id_bytes = target_cast_id_buffer.as_slice(&cx);
@@ -334,7 +347,7 @@ impl TagsStore {
             Some(Target::TargetUrl(target_url))
         };
 
-        let result = match Self::get_tag_add(&store, fid, tag_value, target) {
+        let result = match Self::get_tag_add(&store, fid, r#type, target) {
             Ok(Some(message)) => message.encode_to_vec(),
             Ok(None) => cx.throw_error(format!(
                 "{}/{} for {}",
@@ -356,7 +369,7 @@ impl TagsStore {
     pub fn get_tag_remove(
         store: &Store,
         fid: u32,
-        value: String,
+        r#type: String,
         target: Option<Target>,
     ) -> Result<Option<protos::Message>, HubError> {
         let partial_message = protos::Message {
@@ -364,7 +377,7 @@ impl TagsStore {
                 fid: fid as u64,
                 r#type: MessageType::TagRemove.into(),
                 body: Some(protos::message_data::Body::TagBody(TagBody {
-                    value: value.clone(),
+                    r#type: r#type.clone(),
                     target: target.clone(),
                 })),
                 ..Default::default()
@@ -382,7 +395,7 @@ impl TagsStore {
         let store = get_store(&mut cx)?;
 
         let fid = cx.argument::<JsNumber>(0).unwrap().value(&mut cx) as u32;
-        let tag_value = cx.argument::<JsString>(1).map(|s| s.value(&mut cx));
+        let r#type = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
 
         let target_cast_id_buffer = cx.argument::<JsBuffer>(2)?;
         let target_cast_id_bytes = target_cast_id_buffer.as_slice(&cx);
@@ -408,7 +421,7 @@ impl TagsStore {
             Some(Target::TargetUrl(target_url))
         };
 
-        let result = match TagStore::get_tag_remove(&store, fid, tag_value, target) {
+        let result = match TagStore::get_tag_remove(&store, fid, r#type, target) {
             Ok(Some(message)) => message.encode_to_vec(),
             Ok(None) => cx.throw_error(format!(
                 "{}/{} for {}",
@@ -431,7 +444,7 @@ impl TagsStore {
     pub fn get_tag_adds_by_fid(
         store: &Store,
         fid: u32,
-        tag_value: String,
+        r#type: String,
         page_options: &PageOptions,
     ) -> Result<MessagesPage, HubError> {
         store.get_adds_by_fid(
@@ -440,7 +453,7 @@ impl TagsStore {
             Some(|message: &Message| {
                 if let Some(tag_body) = &message.data.as_ref().unwrap().body {
                     if let protos::message_data::Body::TagBody(tag_body) = tag_body {
-                        if tag_body.value == tag_value {
+                        if tag_body.r#type == r#type {
                             return true;
                         }
                     }
@@ -475,7 +488,7 @@ impl TagsStore {
         let store = get_store(&mut cx)?;
 
         let fid = cx.argument::<JsNumber>(0).unwrap().value(&mut cx) as u32;
-        let tag_value = cx.argument::<JsString>(1).map(|s| s.value(&mut cx));
+        let r#type = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
 
         let page_options = get_page_options(&mut cx, 2)?;
         let channel = cx.channel();
@@ -483,7 +496,7 @@ impl TagsStore {
 
         THREAD_POOL.lock().unwrap().execute(move || {
             let messages =
-                TagStore::get_tag_adds_by_fid(&store, fid, tag_value, &page_options);
+                TagStore::get_tag_adds_by_fid(&store, fid, r#type, &page_options);
 
             deferred_settle_messages(deferred, &channel, messages);
         });
@@ -494,7 +507,7 @@ impl TagsStore {
     pub fn get_tag_removes_by_fid(
         store: &Store,
         fid: u32,
-        tag_value: String,
+        r#type: String,
         page_options: &PageOptions,
     ) -> Result<MessagesPage, HubError> {
         store.get_removes_by_fid(
@@ -503,7 +516,7 @@ impl TagsStore {
             Some(|message: &Message| {
                 if let Some(tag_body) = &message.data.as_ref().unwrap().body {
                     if let protos::message_data::Body::TagBody(tag_body) = tag_body {
-                        if tag_body.value == tag_value {
+                        if tag_body.r#type == r#type {
                             return true;
                         }
                     }
@@ -518,17 +531,17 @@ impl TagsStore {
         let store = get_store(&mut cx)?;
 
         let fid = cx.argument::<JsNumber>(0).unwrap().value(&mut cx) as u32;
-        let tag_value = cx.argument::<JsString>(1).map(|s| s.value(&mut cx));
+        let r#type = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
 
         let page_options = get_page_options(&mut cx, 2)?;
         let channel = cx.channel();
         let (deferred, promise) = cx.promise();
 
         THREAD_POOL.lock().unwrap().execute(move || {
-            let messages = TagStore::get_reaction_removes_by_fid(
+            let messages = TagStore::get_tag_removes_by_fid(
                 &store,
                 fid,
-                tag_value,
+                r#type,
                 &page_options,
             );
 
@@ -541,7 +554,7 @@ impl TagsStore {
     pub fn get_tags_by_target(
         store: &Store,
         target: &Target,
-        tag_value: String,
+        r#type: String,
         page_options: &PageOptions,
     ) -> Result<MessagesPage, HubError> {
         let prefix = TagStoreDef::make_tags_by_target_key(target, 0, None);
@@ -552,7 +565,7 @@ impl TagsStore {
         store
             .db()
             .for_each_iterator_by_prefix(&prefix, page_options, |key, value| {
-                if tag_value == value // VIC-TODO: allow optional match?
+                if r#type.is_empty() || value.eq(r#type.as_bytes())
                 {
                     let ts_hash_offset = prefix.len();
                     let fid_offset = ts_hash_offset + TS_HASH_LENGTH;
@@ -619,7 +632,7 @@ impl TagsStore {
             Target::TargetUrl(target_url)
         };
 
-        let tag_value = cx.argument::<JsNumber>(2).map(|s| s.value(&mut cx));
+        let r#type = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
 
         let page_options = get_page_options(&mut cx, 3)?;
 
@@ -627,10 +640,10 @@ impl TagsStore {
         let (deferred, promise) = cx.promise();
 
         THREAD_POOL.lock().unwrap().execute(move || {
-            let messages = ReactionStore::get_reactions_by_target(
+            let messages = TagStore::get_tags_by_target(
                 &store,
                 &target,
-                tag_value,
+                r#type,
                 &page_options,
             );
 

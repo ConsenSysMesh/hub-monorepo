@@ -143,6 +143,10 @@ export enum UserPostfix {
 
   /* Link Compact State set */
   LinkCompactStateMessage = 100,
+
+  /** TagStore add and remove sets */
+  TagAdds = 101,
+  TagRemoves = 102,
 }
 
 export enum OnChainEventPostfix {
