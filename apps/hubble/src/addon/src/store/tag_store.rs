@@ -64,8 +64,10 @@ impl StoreDef for TagStoreDef {
         ts_hash: &[u8; TS_HASH_LENGTH],
         message: &Message,
     ) -> Result<(), HubError> {
+        // 
         let (by_target_key, rtype) = self.secondary_index_key(ts_hash, message)?;
 
+        // this is saving the key,value pair
         txn.put(by_target_key, vec![rtype]);
 
         Ok(())

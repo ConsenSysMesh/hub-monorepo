@@ -11,10 +11,9 @@ import { hexToBytes } from "@noble/hashes/utils";
  * Populate the following constants with your own values
  */
 
-// Signer private key registered with the Hub (see hello-world example)
-const SIGNER = "0xf7baa925cbadc673ae3eb6fa33fe61f4134acfb003ce33e6df6d19fe3ef34684";
+const SIGNER = "0x64676016b9b8453326a78e989b8afd54844f31b8be63cfd364bd7975449a5047";
 // Fid owned by the custody address
-const FID = 586432; // <REQUIRED>
+const FID = 628598; // <REQUIRED>
 
 // Testnet Configuration
 const HUB_URL = "localhost:2283"; // URL + Port of the Hub
@@ -54,7 +53,7 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
 
   const cast = await client.submitMessage(castAdd._unsafeUnwrap());
 
-  // console.log(JSON.stringify(cast, null, 2));
+  console.log(JSON.stringify(cast, null, 2));
 
   const tagAdd = await makeTagAdd({
       type: 'testTag',
@@ -69,7 +68,7 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
 
   const y = await client.getCastsByFid({ fid: FID });
 
-  // console.log(JSON.stringify(y, null, 2));
+  console.log(JSON.stringify(y, null, 2));
 
   client.close();
 })();
