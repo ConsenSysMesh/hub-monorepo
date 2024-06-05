@@ -19,6 +19,8 @@ import {
   Metadata,
   ReactionAddMessage,
   ReactionRemoveMessage,
+  TagAddMessage,
+  TagRemoveMessage,
   Server as GrpcServer,
   ServerCredentials,
   ServiceError,
@@ -851,6 +853,83 @@ export default class Server {
         });
         reactionsResult?.match(
           (page: MessagesPage<ReactionAddMessage>) => {
+            callback(null, messagesPageToResponse(page));
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getTag: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getTag", req: call.request }, `RPC call from ${peer}`);
+
+        const request = call.request;
+
+        const reactionResult = await this.engine?.getTag(
+          request.fid,
+          request.value,
+          request.targetCastId ?? request.targetUrl ?? "",
+        );
+        reactionResult?.match(
+          (tag: TagAddMessage) => {
+            callback(null, tag);
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getTagByFid: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getTagsByFid", req: call.request }, `RPC call from ${peer}`);
+
+        const { fid, value, pageSize, pageToken, reverse } = call.request;
+        const reactionsResult = await this.engine?.getTagsByFid(fid, value, {
+          pageSize,
+          pageToken,
+          reverse,
+        });
+        reactionsResult?.match(
+          (page: MessagesPage<TagAddMessage>) => {
+            callback(null, messagesPageToResponse(page));
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getTagsByCast: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getTagsByCast", req: call.request }, `RPC call from ${peer}`);
+
+        const { targetCastId, value, pageSize, pageToken, reverse } = call.request;
+        const reactionsResult = await this.engine?.getTagsByTarget(targetCastId ?? CastId.create(), value, {
+          pageSize,
+          pageToken,
+          reverse,
+        });
+        reactionsResult?.match(
+          (page: MessagesPage<TagAddMessage>) => {
+            callback(null, messagesPageToResponse(page));
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getTagsByTarget: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getTagsByTarget", req: call.request }, `RPC call from ${peer}`);
+
+        const { targetCastId, targetUrl, value, pageSize, pageToken, reverse } = call.request;
+        const reactionsResult = await this.engine?.getTagsByTarget(targetCastId ?? targetUrl ?? "", value, {
+          pageSize,
+          pageToken,
+          reverse,
+        });
+        reactionsResult?.match(
+          (page: MessagesPage<TagAddMessage>) => {
             callback(null, messagesPageToResponse(page));
           },
           (err: HubError) => {

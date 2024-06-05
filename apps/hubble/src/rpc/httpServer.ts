@@ -400,6 +400,90 @@ export class HttpAPIServer {
       },
     );
 
+    //=================Tags=================
+    // @doc-tag: /tagById?fid=...&target_fid=...&target_hash=...&value=...
+    this.app.get<{
+      Querystring: { value: string; fid: string; target_fid: string; target_hash: string };
+    }>("/v1/tagById", (request, reply) => {
+      const { fid, target_fid, target_hash } = request.query;
+
+      const call = getCallObject(
+        "getTag",
+        {
+          fid: parseInt(fid),
+          targetCastId: { fid: parseInt(target_fid), hash: hexStringToBytes(target_hash).unwrapOr([]) },
+          value: request.query.value,
+        },
+        request,
+      );
+
+      this.grpcImpl.getTag(call, handleResponse(reply, Message));
+    });
+
+    // @doc-tag: /tagsByFid?fid=...&value=...
+    this.app.get<{ Querystring: { value: string; fid: string } & QueryPageParams }>(
+      "/v1/tagsByFid",
+      (request, reply) => {
+        const { fid } = request.query;
+        const pageOptions = getPageOptions(request.query);
+
+        const call = getCallObject(
+          "getTagsByFid",
+          {
+            fid: parseInt(fid),
+            value: request.query.value,
+            ...pageOptions,
+          },
+          request,
+        );
+
+        this.grpcImpl.getTagsByFid(call, handleResponse(reply, MessagesResponse));
+      },
+    );
+
+    // @doc-tag: /reactionsByCast?target_fid=...&target_hash=...&reaction_type=...
+    this.app.get<{
+      Querystring: { target_fid: string; target_hash: string; value: string } & QueryPageParams;
+    }>("/v1/tagsByCast", (request, reply) => {
+      const { target_fid, target_hash } = request.query;
+      const pageOptions = getPageOptions(request.query);
+
+      const call = getCallObject(
+        "getTagsByCast",
+        {
+          targetCastId: { fid: parseInt(target_fid), hash: hexStringToBytes(target_hash).unwrapOr([]) },
+          value: request.query.value,
+          ...pageOptions,
+        },
+        request,
+      );
+
+      this.grpcImpl.getTagsByCast(call, handleResponse(reply, MessagesResponse));
+    });
+
+    // @doc-tag: /valueByTarget?url=...&reaction_type=...
+    this.app.get<{ Querystring: { url: string; value: string } & QueryPageParams }>(
+      "/v1/tagsByTarget",
+      (request, reply) => {
+        const { url } = request.query;
+        const pageOptions = getPageOptions(request.query);
+
+        const decodedUrl = decodeURIComponent(url);
+        const call = getCallObject(
+          "getTagsByTarget",
+          {
+            targetUrl: decodedUrl,
+            value: request.query.value,
+            ...pageOptions,
+          },
+          request,
+        );
+
+        this.grpcImpl.getTagssByTarget(call, handleResponse(reply, MessagesResponse));
+      },
+    );
+
+
     //=================Links=================
     // @doc-tag: /linkById?fid=...&target_fid=...&link_type=...
     this.app.get<{ Querystring: { link_type: string; fid: string; target_fid: string } }>(

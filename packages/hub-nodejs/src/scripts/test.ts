@@ -68,7 +68,7 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
 
   const y = await client.getCastsByFid({ fid: FID });
 
-  console.log(JSON.stringify(y, null, 2));
+  console.log(`Found ${y._unsafeUnwrap().messages.length} casts.`);
 
   client.close();
 })();

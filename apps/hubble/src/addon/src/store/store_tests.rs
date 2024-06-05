@@ -62,13 +62,21 @@ mod tests {
             let ts_hash_offset = 1;
             let fid_offset: usize = ts_hash_offset; // + TS_HASH_LENGTH;
 
-            let fid = u32::from_be_bytes(key[fid_offset..fid_offset + 4].try_into().unwrap());
+            let fid = u32::from_be_bytes(key[1..1 + 4].try_into().unwrap());
 
-            let post_fix: u8 = u8::from_be_bytes(key[fid_offset + 4..fid_offset + 5].try_into().unwrap());
+            let post_fix: u8 = u8::from_be_bytes(key[1 + 4..1 + 5].try_into().unwrap());
 
-            let ts_hash: [u8; 24] = (key[fid_offset + 5..fid_offset + 5 + TS_HASH_LENGTH].try_into().unwrap());
+            let ts_hash: [u8; 4] = (key[1 + 5..1 + 5 + 4].try_into().unwrap());
 
-            println!("prefix: {:?}, fid: {}, post_fix: {:?}, ts_hash: {:?}", &[RootPrefix::User as u8], fid, post_fix, pretty_print_hash(ts_hash.to_vec()));
+            if post_fix == 101 {
+                println!("Tag by fid: {}", fid);
+                println!("key: {:x?}, {}", key, key.len());
+                println!("value: {:x?}", value);
+                println!("last: {:x?}", pretty_print_hash(ts_hash.to_vec()));
+            }
+
+            // let ts_hash: [u8; 24] = (key[fid_offset + 5..fid_offset + 5 + TS_HASH_LENGTH].try_into().unwrap());
+            // println!("prefix: {:?}, fid: {}, post_fix: {:?}", &[RootPrefix::User as u8], fid, post_fix); //, pretty_print_hash(ts_hash.to_vec()));
 
             // let ts_hash = key[ts_hash_offset..ts_hash_offset + TS_HASH_LENGTH]
             //     .try_into()
