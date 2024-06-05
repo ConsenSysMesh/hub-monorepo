@@ -147,6 +147,8 @@ export interface HubService {
   /** @http-api: none */
   getAllReactionMessagesByFid(request: DeepPartial<FidRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse>;
   /** @http-api: none */
+  getAllTagMessagesByFid(request: DeepPartial<FidRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse>;
+  /** @http-api: none */
   getAllVerificationMessagesByFid(
     request: DeepPartial<FidRequest>,
     metadata?: grpc.Metadata,
@@ -215,6 +217,7 @@ export class HubServiceClientImpl implements HubService {
     this.getLinksByTarget = this.getLinksByTarget.bind(this);
     this.getAllCastMessagesByFid = this.getAllCastMessagesByFid.bind(this);
     this.getAllReactionMessagesByFid = this.getAllReactionMessagesByFid.bind(this);
+    this.getAllTagMessagesByFid = this.getAllTagMessagesByFid.bind(this);
     this.getAllVerificationMessagesByFid = this.getAllVerificationMessagesByFid.bind(this);
     this.getAllUserDataMessagesByFid = this.getAllUserDataMessagesByFid.bind(this);
     this.getAllLinkMessagesByFid = this.getAllLinkMessagesByFid.bind(this);
@@ -377,6 +380,10 @@ export class HubServiceClientImpl implements HubService {
 
   getAllReactionMessagesByFid(request: DeepPartial<FidRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse> {
     return this.rpc.unary(HubServiceGetAllReactionMessagesByFidDesc, FidRequest.fromPartial(request), metadata);
+  }
+
+  getAllTagMessagesByFid(request: DeepPartial<FidRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse> {
+    return this.rpc.unary(HubServiceGetAllTagMessagesByFidDesc, FidRequest.fromPartial(request), metadata);
   }
 
   getAllVerificationMessagesByFid(
@@ -1192,6 +1199,29 @@ export const HubServiceGetAllCastMessagesByFidDesc: UnaryMethodDefinitionish = {
 
 export const HubServiceGetAllReactionMessagesByFidDesc: UnaryMethodDefinitionish = {
   methodName: "GetAllReactionMessagesByFid",
+  service: HubServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return FidRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = MessagesResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const HubServiceGetAllTagMessagesByFidDesc: UnaryMethodDefinitionish = {
+  methodName: "GetAllTagMessagesByFid",
   service: HubServiceDesc,
   requestStream: false,
   responseStream: false,

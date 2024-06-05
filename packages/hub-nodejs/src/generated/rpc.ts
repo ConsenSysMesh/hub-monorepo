@@ -419,6 +419,16 @@ export const HubServiceService = {
     responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
   },
   /** @http-api: none */
+  getAllTagMessagesByFid: {
+    path: "/HubService/GetAllTagMessagesByFid",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: FidRequest) => Buffer.from(FidRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => FidRequest.decode(value),
+    responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
+  },
+  /** @http-api: none */
   getAllVerificationMessagesByFid: {
     path: "/HubService/GetAllVerificationMessagesByFid",
     requestStream: false,
@@ -609,6 +619,8 @@ export interface HubServiceServer extends UntypedServiceImplementation {
   getAllCastMessagesByFid: handleUnaryCall<FidRequest, MessagesResponse>;
   /** @http-api: none */
   getAllReactionMessagesByFid: handleUnaryCall<FidRequest, MessagesResponse>;
+  /** @http-api: none */
+  getAllTagMessagesByFid: handleUnaryCall<FidRequest, MessagesResponse>;
   /** @http-api: none */
   getAllVerificationMessagesByFid: handleUnaryCall<FidRequest, MessagesResponse>;
   /** @http-api: none */
@@ -1165,6 +1177,22 @@ export interface HubServiceClient extends Client {
     callback: (error: ServiceError | null, response: MessagesResponse) => void,
   ): ClientUnaryCall;
   getAllReactionMessagesByFid(
+    request: FidRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  /** @http-api: none */
+  getAllTagMessagesByFid(
+    request: FidRequest,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getAllTagMessagesByFid(
+    request: FidRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getAllTagMessagesByFid(
     request: FidRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,

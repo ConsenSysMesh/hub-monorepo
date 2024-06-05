@@ -764,7 +764,7 @@ class Engine extends TypedEmitter<EngineEvents> {
 
   async getTagsByFid(
     fid: number,
-    value: string,
+    value?: string,
     pageOptions: PageOptions = {},
   ): HubAsyncResult<MessagesPage<TagAddMessage>> {
     const validatedFid = validations.validateFid(fid);
@@ -780,7 +780,7 @@ class Engine extends TypedEmitter<EngineEvents> {
 
   async getTagsByTarget(
     target: CastId | string,
-    value: string,
+    value?: string,
     pageOptions: PageOptions = {},
   ): HubAsyncResult<MessagesPage<TagAddMessage>> {
     if (typeof target !== "string") {

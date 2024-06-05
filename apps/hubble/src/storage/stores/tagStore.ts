@@ -73,8 +73,8 @@ class TagStore extends RustStoreBase<TagAddMessage, TagRemoveMessage> {
 
   async getTagAddsByFid(
     fid: number,
-    value: string,
-    pageOptions?: PageOptions,
+    value?: string,
+    pageOptions: PageOptions = {},
   ): Promise<MessagesPage<TagAddMessage>> {
     const messages_page = await rsGetTagAddsByFid(this._rustStore, fid, value, pageOptions ?? {});
 
@@ -88,7 +88,7 @@ class TagStore extends RustStoreBase<TagAddMessage, TagRemoveMessage> {
 
   async getTagRemovesByFid(
     fid: number,
-    value: string,
+    value?: string,
     pageOptions?: PageOptions,
   ): Promise<MessagesPage<TagRemoveMessage>> {
     const message_page = await rsGetTagRemovesByFid(this._rustStore, fid, value, pageOptions ?? {});
@@ -110,7 +110,7 @@ class TagStore extends RustStoreBase<TagAddMessage, TagRemoveMessage> {
 
   async getTagsByTarget(
     target: CastId | string,
-    value: string,
+    value?: string,
     pageOptions: PageOptions = {},
   ): Promise<MessagesPage<TagAddMessage>> {
     let targetCastId = Buffer.from([]);

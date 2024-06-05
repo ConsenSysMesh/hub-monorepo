@@ -93,6 +93,8 @@ service HubService {
   // @http-api: none
   rpc GetAllReactionMessagesByFid(FidRequest) returns (MessagesResponse);
   // @http-api: none
+  rpc GetAllTagMessagesByFid(FidRequest) returns (MessagesResponse);
+  // @http-api: none
   rpc GetAllVerificationMessagesByFid(FidRequest) returns (MessagesResponse);
   // @http-api: none
   rpc GetAllUserDataMessagesByFid(FidRequest) returns (MessagesResponse);
