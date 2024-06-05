@@ -479,7 +479,7 @@ export class HttpAPIServer {
           request,
         );
 
-        this.grpcImpl.getTagssByTarget(call, handleResponse(reply, MessagesResponse));
+        this.grpcImpl.getTagsByTarget(call, handleResponse(reply, MessagesResponse));
       },
     );
 

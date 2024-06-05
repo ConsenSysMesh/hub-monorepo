@@ -1242,6 +1242,25 @@ export default class Server {
           },
         );
       },
+      getAllTagMessagesByFid: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getAllTagMessagesByFid", req: call.request }, `RPC call from ${peer}`);
+
+        const { fid, pageSize, pageToken, reverse } = call.request;
+        const result = await this.engine?.getAllTagMessagesByFid(fid, {
+          pageSize,
+          pageToken,
+          reverse,
+        });
+        result?.match(
+          (page: MessagesPage<TagAddMessage | TagRemoveMessage>) => {
+            callback(null, messagesPageToResponse(page));
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
       getAllVerificationMessagesByFid: async (call, callback) => {
         const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
         log.debug({ method: "getAllVerificationMessagesByFid", req: call.request }, `RPC call from ${peer}`);
