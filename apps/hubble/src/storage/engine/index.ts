@@ -279,7 +279,7 @@ class Engine extends TypedEmitter<EngineEvents> {
     const mergeResults: Map<number, HubResult<number>> = new Map();
     const validatedMessages: IndexedMessage[] = [];
 
-    messages.forEach(m => console.log('VIC -- About to merge', m));
+    messages.forEach(m => console.log('VIC -- About to merge', m, JSON.stringify(m.data, null, 2)));
 
     // Validate all messages first
     await Promise.all(
