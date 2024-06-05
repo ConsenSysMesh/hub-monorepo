@@ -53,22 +53,32 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
 
   const cast = await client.submitMessage(castAdd._unsafeUnwrap());
 
-  console.log(JSON.stringify(cast, null, 2));
+  console.log(cast._unsafeUnwrap().hash);
 
   const tagAdd = await makeTagAdd({
       type: 'testTag',
-      targetUrl: 'test',
+      targetCastId: {
+        fid: FID,
+        hash: cast._unsafeUnwrap().hash,
+      }
     },
   dataOptions,
   ed25519Signer);
 
   const tag = await client.submitMessage(tagAdd._unsafeUnwrap());
+  console.log(tag._unsafeUnwrap().data?.tagBody);
 
-  console.log(JSON.stringify(tag, null, 2));
+  const y = await client.getTagsByFid({ fid: FID, value: "testTag" });
 
-  const y = await client.getCastsByFid({ fid: FID });
+  if (y.isOk()) {
+    console.log(y._unsafeUnwrap());
+  } else if (y.isErr()) {
+    console.log('ERROR', y.error);
+  }
 
-  console.log(`Found ${y._unsafeUnwrap().messages.length} casts.`);
+  // const y = await client.getTagsByFid({ fid: FID, value: 'testTag' });
+  // console.log(`Found ${y._unsafeUnwrap().messages.length} tags.`);
+  // console.log(JSON.stringify(y._unsafeUnwrap(), null, 2));
 
   client.close();
 })();

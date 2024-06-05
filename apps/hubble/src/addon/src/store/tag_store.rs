@@ -64,7 +64,7 @@ impl StoreDef for TagStoreDef {
         ts_hash: &[u8; TS_HASH_LENGTH],
         message: &Message,
     ) -> Result<(), HubError> {
-        // 
+        //
         let (by_target_key, rtype) = self.secondary_index_key(ts_hash, message)?;
 
         // this is saving the key,value pair
@@ -239,7 +239,7 @@ impl TagStoreDef {
         // if r#type > 0 {
         //     key.push(r#type as u8); // type, 1 byte
         // }
-        
+
         if target.is_some() {
             // target, 28 bytes
             key.extend_from_slice(&Self::make_target_key(target.unwrap()));
@@ -264,7 +264,7 @@ impl TagStoreDef {
 
         key.extend_from_slice(&make_user_key(fid));
         key.push(UserPostfix::TagRemoves as u8); // TagRemoves postfix, 1 byte
-        
+
         // VIC-TODO: current key uses one byte for the like type
         // explore using a hash of the tag type instead
         // if r#type > 0 {
