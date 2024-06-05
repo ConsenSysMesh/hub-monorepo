@@ -880,17 +880,17 @@ export default class Server {
           },
         );
       },
-      getTagByFid: async (call, callback) => {
+      getTagsByFid: async (call, callback) => {
         const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
         log.debug({ method: "getTagsByFid", req: call.request }, `RPC call from ${peer}`);
 
         const { fid, value, pageSize, pageToken, reverse } = call.request;
-        const reactionsResult = await this.engine?.getTagsByFid(fid, value, {
+        const tagsResult = await this.engine?.getTagsByFid(fid, value, {
           pageSize,
           pageToken,
           reverse,
         });
-        reactionsResult?.match(
+        tagsResult?.match(
           (page: MessagesPage<TagAddMessage>) => {
             callback(null, messagesPageToResponse(page));
           },
