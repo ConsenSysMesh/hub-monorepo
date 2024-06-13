@@ -184,7 +184,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         TagStore::js_get_tag_removes_by_fid,
     )?;
     cx.export_function(
-        "getTagByTarget",
+        "getTagsByTarget",
         TagStore::js_get_tags_by_target,
     )?;
 
