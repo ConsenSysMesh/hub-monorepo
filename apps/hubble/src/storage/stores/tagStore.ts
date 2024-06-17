@@ -126,7 +126,7 @@ class TagStore extends RustStoreBase<TagAddMessage, TagRemoveMessage> {
       this._rustStore,
       targetCastId,
       targetUrl,
-      value,
+      value ?? "",
       pageOptions,
     );
 

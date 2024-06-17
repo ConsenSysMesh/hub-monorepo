@@ -527,7 +527,7 @@ export const rsGetTagsByTarget = async (
   store: RustDynStore,
   targetCastIdBytes: Buffer,
   targetUrl: string,
-  value?: string,
+  value: string,
   pageOptions: PageOptions = {},
 ): Promise<RustMessagesPage> => {
   return await lib.getTagsByTarget.call(store, targetCastIdBytes, targetUrl, value, pageOptions);
