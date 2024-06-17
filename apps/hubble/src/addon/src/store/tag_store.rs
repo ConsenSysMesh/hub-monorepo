@@ -455,7 +455,7 @@ impl TagStore {
             Some(|message: &Message| {
                 if let Some(tag_body) = &message.data.as_ref().unwrap().body {
                     if let protos::message_data::Body::TagBody(tag_body) = tag_body {
-                        if tag_body.r#type == r#type {
+                        if r#type == "" || tag_body.r#type == r#type {
                             return true;
                         }
                     }

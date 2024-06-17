@@ -508,7 +508,7 @@ export const rsGetTagRemove = async (
 export const rsGetTagAddsByFid = async (
   store: RustDynStore,
   fid: number,
-  value?: string,
+  value: string,
   pageOptions: PageOptions = {},
 ): Promise<RustMessagesPage> => {
   return await lib.getTagAddsByFid.call(store, fid, value, pageOptions);
