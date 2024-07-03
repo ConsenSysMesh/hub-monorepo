@@ -41,6 +41,8 @@ message MessageData {
     LinkCompactStateBody link_compact_state_body = 17;
 
     TagBody tag_body = 18;
+    ObjectBody object_body = 19;
+
   } // Properties specific to the MessageType
 }
 
@@ -143,13 +145,30 @@ message ReactionBody {
   }
 }
 
+/* Generic reference to an H1/H2 object */
+message ObjectKey {
+  FarcasterNetwork network = 1;
+  string key = 2; // TODO: figure out the type
+}
+
 /** Adds or removes a Tag from a Cast */
 message TagBody {
-  string type = 1; // Tag value
+  string name = 1; // Tag value
+  optional content = 2;
+
   oneof target {
-    CastId target_cast_id = 2; // CastId of the Cast to react to
-    string target_url = 3; // URL to react to
+    ObjectKey target_object = 3; // ref to an object on either H1 or H2
+    uint64 fid = 4;
+    uint64 cid = 5;
   }
+}
+
+/* Generic object at H2 */
+message ObjectBody {
+  string type = 1;
+  optional string displayName = 2;
+  optional string avatar = 3;
+	optional string description = 4;
 }
 
 /** Type of Reaction */
