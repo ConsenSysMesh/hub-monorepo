@@ -154,7 +154,7 @@ message ObjectKey {
 /** Adds or removes a Tag from a Cast */
 message TagBody {
   string name = 1; // Tag value
-  optional content = 2;
+  optional string content = 2;
 
   oneof target {
     ObjectKey target_object = 3; // ref to an object on either H1 or H2
