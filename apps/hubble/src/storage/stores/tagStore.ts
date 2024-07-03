@@ -76,7 +76,12 @@ class TagStore extends RustStoreBase<TagAddMessage, TagRemoveMessage> {
     value?: string,
     pageOptions: PageOptions = {},
   ): Promise<MessagesPage<TagAddMessage>> {
-    const messages_page = await rsGetTagAddsByFid(this._rustStore, fid, value, pageOptions ?? {});
+    const messages_page = await rsGetTagAddsByFid(
+      this._rustStore,
+      fid,
+      value ?? "",
+      pageOptions ?? {},
+    );
 
     const messages =
       messages_page.messageBytes?.map((message_bytes) => {
@@ -91,7 +96,7 @@ class TagStore extends RustStoreBase<TagAddMessage, TagRemoveMessage> {
     value?: string,
     pageOptions?: PageOptions,
   ): Promise<MessagesPage<TagRemoveMessage>> {
-    const message_page = await rsGetTagRemovesByFid(this._rustStore, fid, value, pageOptions ?? {});
+    const message_page = await rsGetTagRemovesByFid(this._rustStore, fid, value ?? "", pageOptions ?? {});
 
     const messages =
       message_page.messageBytes?.map((message_bytes) => {
@@ -126,7 +131,7 @@ class TagStore extends RustStoreBase<TagAddMessage, TagRemoveMessage> {
       this._rustStore,
       targetCastId,
       targetUrl,
-      value,
+      value ?? "",
       pageOptions,
     );
 

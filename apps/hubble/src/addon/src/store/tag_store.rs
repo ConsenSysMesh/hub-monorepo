@@ -68,7 +68,7 @@ impl StoreDef for TagStoreDef {
         let (by_target_key, rtype) = self.secondary_index_key(ts_hash, message)?;
 
         // this is saving the key,value pair
-        txn.put(by_target_key, vec![rtype]);
+        txn.put(by_target_key, rtype);
 
         Ok(())
     }
@@ -166,7 +166,7 @@ impl TagStoreDef {
         &self,
         ts_hash: &[u8; TS_HASH_LENGTH],
         message: &protos::Message,
-    ) -> Result<(Vec<u8>, u8), HubError> {
+    ) -> Result<(Vec<u8>, Vec<u8>), HubError> {
         // Make sure at least one of targetCastId or targetUrl is set
         let tag_body = match message.data.as_ref().unwrap().body.as_ref().unwrap() {
             message_data::Body::TagBody(tag_body) => tag_body,
@@ -188,7 +188,7 @@ impl TagStoreDef {
 
         // VIC-TODO: blake3_20 hash here?
         // Ok((by_target_key, tag_body.r#type as u8))
-        Ok((by_target_key, 0 as u8))
+        Ok((by_target_key, tag_body.r#type.as_bytes().to_vec()))
     }
 
     pub fn make_tags_by_target_key(
@@ -455,7 +455,7 @@ impl TagStore {
             Some(|message: &Message| {
                 if let Some(tag_body) = &message.data.as_ref().unwrap().body {
                     if let protos::message_data::Body::TagBody(tag_body) = tag_body {
-                        if tag_body.r#type == r#type {
+                        if r#type == "" || tag_body.r#type == r#type {
                             return true;
                         }
                     }
@@ -634,7 +634,14 @@ impl TagStore {
             Target::TargetUrl(target_url)
         };
 
-        let r#type = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
+        // let r#type = match cx.argument_opt(2) {
+        //     Some(arg) => match arg.downcast::<JsString, _>(&mut cx) {
+        //         Ok(js_string) => js_string.value(&mut cx),
+        //         Err(_) => "".to_string(),  // Handle the case where the argument is not a JsString
+        //     },
+        //     None => "".to_string(),  // Default to an empty string if the argument is not provided
+        // };
+        let r#type = cx.argument::<JsString>(2).map(|s| s.value(&mut cx))?;
 
         let page_options = get_page_options(&mut cx, 3)?;
 
