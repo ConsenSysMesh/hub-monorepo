@@ -433,6 +433,7 @@ export interface MessageData {
   /** Compaction messages */
   linkCompactStateBody?: LinkCompactStateBody | undefined;
   tagBody?: TagBody | undefined;
+  objectBody?: ObjectBody | undefined;
 }
 
 /** Adds metadata about a user */
@@ -496,16 +497,36 @@ export interface ReactionBody {
   targetUrl?: string | undefined;
 }
 
+/** Generic reference to an H1/H2 object */
+export interface ObjectKey {
+  network: FarcasterNetwork;
+  /** TODO: figure out the type */
+  key: string;
+}
+
+export interface ObjectRef {
+  /** ref to an object on either H1 or H2 */
+  objectKey?:
+    | ObjectKey
+    | undefined;
+  /** Add CID later */
+  fid?: number | undefined;
+}
+
 /** Adds or removes a Tag from a Cast */
 export interface TagBody {
   /** Tag value */
+  name: string;
+  content?: string | undefined;
+  target: ObjectRef | undefined;
+}
+
+/** Generic object at H2 */
+export interface ObjectBody {
   type: string;
-  /** CastId of the Cast to react to */
-  targetCastId?:
-    | CastId
-    | undefined;
-  /** URL to react to */
-  targetUrl?: string | undefined;
+  displayName?: string | undefined;
+  avatar?: string | undefined;
+  description?: string | undefined;
 }
 
 /** Adds a Verification of ownership of an Address based on Protocol */
@@ -738,6 +759,7 @@ function createBaseMessageData(): MessageData {
     frameActionBody: undefined,
     linkCompactStateBody: undefined,
     tagBody: undefined,
+    objectBody: undefined,
   };
 }
 
@@ -787,6 +809,9 @@ export const MessageData = {
     }
     if (message.tagBody !== undefined) {
       TagBody.encode(message.tagBody, writer.uint32(146).fork()).ldelim();
+    }
+    if (message.objectBody !== undefined) {
+      ObjectBody.encode(message.objectBody, writer.uint32(154).fork()).ldelim();
     }
     return writer;
   },
@@ -903,6 +928,13 @@ export const MessageData = {
 
           message.tagBody = TagBody.decode(reader, reader.uint32());
           continue;
+        case 19:
+          if (tag != 154) {
+            break;
+          }
+
+          message.objectBody = ObjectBody.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -935,6 +967,7 @@ export const MessageData = {
         ? LinkCompactStateBody.fromJSON(object.linkCompactStateBody)
         : undefined,
       tagBody: isSet(object.tagBody) ? TagBody.fromJSON(object.tagBody) : undefined,
+      objectBody: isSet(object.objectBody) ? ObjectBody.fromJSON(object.objectBody) : undefined,
     };
   },
 
@@ -968,6 +1001,8 @@ export const MessageData = {
       ? LinkCompactStateBody.toJSON(message.linkCompactStateBody)
       : undefined);
     message.tagBody !== undefined && (obj.tagBody = message.tagBody ? TagBody.toJSON(message.tagBody) : undefined);
+    message.objectBody !== undefined &&
+      (obj.objectBody = message.objectBody ? ObjectBody.toJSON(message.objectBody) : undefined);
     return obj;
   },
 
@@ -1015,6 +1050,9 @@ export const MessageData = {
       : undefined;
     message.tagBody = (object.tagBody !== undefined && object.tagBody !== null)
       ? TagBody.fromPartial(object.tagBody)
+      : undefined;
+    message.objectBody = (object.objectBody !== undefined && object.objectBody !== null)
+      ? ObjectBody.fromPartial(object.objectBody)
       : undefined;
     return message;
   },
@@ -1569,20 +1607,165 @@ export const ReactionBody = {
   },
 };
 
+function createBaseObjectKey(): ObjectKey {
+  return { network: 0, key: "" };
+}
+
+export const ObjectKey = {
+  encode(message: ObjectKey, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.network !== 0) {
+      writer.uint32(8).int32(message.network);
+    }
+    if (message.key !== "") {
+      writer.uint32(18).string(message.key);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ObjectKey {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObjectKey();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 8) {
+            break;
+          }
+
+          message.network = reader.int32() as any;
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.key = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ObjectKey {
+    return {
+      network: isSet(object.network) ? farcasterNetworkFromJSON(object.network) : 0,
+      key: isSet(object.key) ? String(object.key) : "",
+    };
+  },
+
+  toJSON(message: ObjectKey): unknown {
+    const obj: any = {};
+    message.network !== undefined && (obj.network = farcasterNetworkToJSON(message.network));
+    message.key !== undefined && (obj.key = message.key);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ObjectKey>, I>>(base?: I): ObjectKey {
+    return ObjectKey.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ObjectKey>, I>>(object: I): ObjectKey {
+    const message = createBaseObjectKey();
+    message.network = object.network ?? 0;
+    message.key = object.key ?? "";
+    return message;
+  },
+};
+
+function createBaseObjectRef(): ObjectRef {
+  return { objectKey: undefined, fid: undefined };
+}
+
+export const ObjectRef = {
+  encode(message: ObjectRef, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.objectKey !== undefined) {
+      ObjectKey.encode(message.objectKey, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.fid !== undefined) {
+      writer.uint32(16).uint64(message.fid);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ObjectRef {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObjectRef();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.objectKey = ObjectKey.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag != 16) {
+            break;
+          }
+
+          message.fid = longToNumber(reader.uint64() as Long);
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ObjectRef {
+    return {
+      objectKey: isSet(object.objectKey) ? ObjectKey.fromJSON(object.objectKey) : undefined,
+      fid: isSet(object.fid) ? Number(object.fid) : undefined,
+    };
+  },
+
+  toJSON(message: ObjectRef): unknown {
+    const obj: any = {};
+    message.objectKey !== undefined &&
+      (obj.objectKey = message.objectKey ? ObjectKey.toJSON(message.objectKey) : undefined);
+    message.fid !== undefined && (obj.fid = Math.round(message.fid));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ObjectRef>, I>>(base?: I): ObjectRef {
+    return ObjectRef.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ObjectRef>, I>>(object: I): ObjectRef {
+    const message = createBaseObjectRef();
+    message.objectKey = (object.objectKey !== undefined && object.objectKey !== null)
+      ? ObjectKey.fromPartial(object.objectKey)
+      : undefined;
+    message.fid = object.fid ?? undefined;
+    return message;
+  },
+};
+
 function createBaseTagBody(): TagBody {
-  return { type: "", targetCastId: undefined, targetUrl: undefined };
+  return { name: "", content: undefined, target: undefined };
 }
 
 export const TagBody = {
   encode(message: TagBody, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.type !== "") {
-      writer.uint32(10).string(message.type);
+    if (message.name !== "") {
+      writer.uint32(10).string(message.name);
     }
-    if (message.targetCastId !== undefined) {
-      CastId.encode(message.targetCastId, writer.uint32(18).fork()).ldelim();
+    if (message.content !== undefined) {
+      writer.uint32(18).string(message.content);
     }
-    if (message.targetUrl !== undefined) {
-      writer.uint32(26).string(message.targetUrl);
+    if (message.target !== undefined) {
+      ObjectRef.encode(message.target, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -1599,21 +1782,21 @@ export const TagBody = {
             break;
           }
 
-          message.type = reader.string();
+          message.name = reader.string();
           continue;
         case 2:
           if (tag != 18) {
             break;
           }
 
-          message.targetCastId = CastId.decode(reader, reader.uint32());
+          message.content = reader.string();
           continue;
         case 3:
           if (tag != 26) {
             break;
           }
 
-          message.targetUrl = reader.string();
+          message.target = ObjectRef.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -1626,18 +1809,17 @@ export const TagBody = {
 
   fromJSON(object: any): TagBody {
     return {
-      type: isSet(object.type) ? String(object.type) : "",
-      targetCastId: isSet(object.targetCastId) ? CastId.fromJSON(object.targetCastId) : undefined,
-      targetUrl: isSet(object.targetUrl) ? String(object.targetUrl) : undefined,
+      name: isSet(object.name) ? String(object.name) : "",
+      content: isSet(object.content) ? String(object.content) : undefined,
+      target: isSet(object.target) ? ObjectRef.fromJSON(object.target) : undefined,
     };
   },
 
   toJSON(message: TagBody): unknown {
     const obj: any = {};
-    message.type !== undefined && (obj.type = message.type);
-    message.targetCastId !== undefined &&
-      (obj.targetCastId = message.targetCastId ? CastId.toJSON(message.targetCastId) : undefined);
-    message.targetUrl !== undefined && (obj.targetUrl = message.targetUrl);
+    message.name !== undefined && (obj.name = message.name);
+    message.content !== undefined && (obj.content = message.content);
+    message.target !== undefined && (obj.target = message.target ? ObjectRef.toJSON(message.target) : undefined);
     return obj;
   },
 
@@ -1647,11 +1829,108 @@ export const TagBody = {
 
   fromPartial<I extends Exact<DeepPartial<TagBody>, I>>(object: I): TagBody {
     const message = createBaseTagBody();
-    message.type = object.type ?? "";
-    message.targetCastId = (object.targetCastId !== undefined && object.targetCastId !== null)
-      ? CastId.fromPartial(object.targetCastId)
+    message.name = object.name ?? "";
+    message.content = object.content ?? undefined;
+    message.target = (object.target !== undefined && object.target !== null)
+      ? ObjectRef.fromPartial(object.target)
       : undefined;
-    message.targetUrl = object.targetUrl ?? undefined;
+    return message;
+  },
+};
+
+function createBaseObjectBody(): ObjectBody {
+  return { type: "", displayName: undefined, avatar: undefined, description: undefined };
+}
+
+export const ObjectBody = {
+  encode(message: ObjectBody, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== "") {
+      writer.uint32(10).string(message.type);
+    }
+    if (message.displayName !== undefined) {
+      writer.uint32(18).string(message.displayName);
+    }
+    if (message.avatar !== undefined) {
+      writer.uint32(26).string(message.avatar);
+    }
+    if (message.description !== undefined) {
+      writer.uint32(34).string(message.description);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ObjectBody {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObjectBody();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.type = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.displayName = reader.string();
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.avatar = reader.string();
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ObjectBody {
+    return {
+      type: isSet(object.type) ? String(object.type) : "",
+      displayName: isSet(object.displayName) ? String(object.displayName) : undefined,
+      avatar: isSet(object.avatar) ? String(object.avatar) : undefined,
+      description: isSet(object.description) ? String(object.description) : undefined,
+    };
+  },
+
+  toJSON(message: ObjectBody): unknown {
+    const obj: any = {};
+    message.type !== undefined && (obj.type = message.type);
+    message.displayName !== undefined && (obj.displayName = message.displayName);
+    message.avatar !== undefined && (obj.avatar = message.avatar);
+    message.description !== undefined && (obj.description = message.description);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ObjectBody>, I>>(base?: I): ObjectBody {
+    return ObjectBody.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ObjectBody>, I>>(object: I): ObjectBody {
+    const message = createBaseObjectBody();
+    message.type = object.type ?? "";
+    message.displayName = object.displayName ?? undefined;
+    message.avatar = object.avatar ?? undefined;
+    message.description = object.description ?? undefined;
     return message;
   },
 };

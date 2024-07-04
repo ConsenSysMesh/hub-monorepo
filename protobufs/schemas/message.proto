@@ -151,16 +151,18 @@ message ObjectKey {
   string key = 2; // TODO: figure out the type
 }
 
+message ObjectRef {
+  oneof ref {
+    ObjectKey object_key = 1; // ref to an object on either H1 or H2
+    uint64 fid = 2; // Add CID later
+  }
+}
+
 /** Adds or removes a Tag from a Cast */
 message TagBody {
   string name = 1; // Tag value
   optional string content = 2;
-
-  oneof target {
-    ObjectKey target_object = 3; // ref to an object on either H1 or H2
-    uint64 fid = 4;
-    uint64 cid = 5;
-  }
+  ObjectRef target = 3;
 }
 
 /* Generic object at H2 */

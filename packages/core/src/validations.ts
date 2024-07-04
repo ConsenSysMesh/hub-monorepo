@@ -629,14 +629,19 @@ export const validateReactionType = (type: number): HubResult<protobufs.Reaction
   return ok(type);
 };
 
-// VIC-TODO: determine reasonable max tag value size (probably > 8)
-export const validateTagValueType = (type: string): HubResult<string> => {
-  const typeBuffer = Buffer.from(type);
-  if (type.length === 0 || typeBuffer.length > 8) {
-    return err(new HubError("bad_request.validation_failure", "value must be between 1-8 bytes"));
+// JERRY-TODO: determine reasonable max tag name/content size
+export const validateTagNameAndContent = (name: string, content?: string): HubResult<Boolean> => {
+  const nameBuffer = Buffer.from(name);
+  const contentBuffer = Buffer.from(name);
+  if (nameBuffer.length === 0 || nameBuffer.length > 8) {
+    return err(new HubError("bad_request.validation_failure", "tag name must be between 1-8 bytes"));
+  }
+  
+  if (contentBuffer.length > 100) {
+    return err(new HubError("bad_request.validation_failure", "tag content must be less than 100 bytes"));
   }
 
-  return ok(type);
+  return ok(true);
 };
 
 export const validateTarget = (
@@ -648,6 +653,29 @@ export const validateTarget = (
     return validateFid(target);
   } else {
     return validateCastId(target);
+  }
+};
+
+export const validateObjectKey = (objectKey: protobufs.ObjectKey): HubResult<protobufs.ObjectKey> => {
+  const validatedNetwork = validateNetwork(objectKey.network);
+  if (validatedNetwork.isErr()) {
+    return err(new HubError("bad_request.validation_failure", "invalid network"));
+  }
+  // Does this need further validation?
+  if (!objectKey.key) {
+    return err(new HubError("bad_request.validation_failure", "missing object key"));
+  }
+  return ok(objectKey);
+}
+
+export const validateObjectRef = (
+  target: protobufs.ObjectKey | number
+): HubResult<protobufs.ObjectKey | number> => {
+  if (typeof target === "number") {
+    // JERRY-TODO: What to do about CIDs
+    return validateFid(target);
+  } else {
+    return validateObjectKey(target);
   }
 };
 
@@ -723,21 +751,22 @@ export const validateReactionBody = (body: protobufs.ReactionBody): HubResult<pr
 };
 
 export const validateTagBody = (body: protobufs.TagBody): HubResult<protobufs.TagBody> => {
-  const validatedType = validateTagValueType(body.type);
+  const validatedType = validateTagNameAndContent(body.name, body.content);
   if (validatedType.isErr()) {
     return err(validatedType.error);
   }
 
-  if (body.targetCastId !== undefined && body.targetUrl !== undefined) {
-    return err(new HubError("bad_request.validation_failure", "cannot use both targetUrl and targetCastId"));
-  }
-
-  const target = body.targetCastId ?? body.targetUrl;
+  const target = body.target;
   if (target === undefined) {
     return err(new HubError("bad_request.validation_failure", "target is missing"));
   }
 
-  return validateTarget(target).map(() => body);
+  const targetObj = target.objectKey || target.fid;
+  if (targetObj === undefined) {
+    return err(new HubError("bad_request.validation_failure", "target is missing"));
+  }
+
+  return validateObjectRef(targetObj).map(() => body);
 };
 
 export const validateVerificationAddAddressBody = async (
