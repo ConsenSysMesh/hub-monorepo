@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{
     db::{RocksDB, RocksDbTransactionBatch},
-    protos::{self, tag_body::Target, Message, MessageType, TagBody},
+    protos::{self, object_ref::Ref, Message, MessageType, TagBody, ObjectKey},
 };
 use crate::{protos::message_data, THREAD_POOL};
 use neon::{
@@ -125,8 +125,8 @@ impl StoreDef for TagStoreDef {
 
         Self::make_tag_adds_key(
             message.data.as_ref().unwrap().fid as u32,
-            tag_body.r#type.clone(),
-            tag_body.target.as_ref(),
+            tag_body.name.clone(),
+            tag_body.target.as_ref().unwrap().r#ref.as_ref(),
         )
     }
 
@@ -143,8 +143,8 @@ impl StoreDef for TagStoreDef {
 
         Self::make_tag_removes_key(
             message.data.as_ref().unwrap().fid as u32,
-            tag_body.r#type.clone(),
-            tag_body.target.as_ref(),
+            tag_body.name.clone(),
+            tag_body.target.as_ref().unwrap().r#ref.as_ref(),
         )
     }
 
@@ -175,7 +175,7 @@ impl TagStoreDef {
                 message: "Invalid tag body".to_string(),
             })?,
         };
-        let target = tag_body.target.as_ref().ok_or(HubError {
+        let target = tag_body.target.as_ref().unwrap().r#ref.as_ref().ok_or(HubError {
             code: "bad_request.validation_failure".to_string(),
             message: "Invalid tag body".to_string(),
         })?;
@@ -188,18 +188,18 @@ impl TagStoreDef {
 
         // VIC-TODO: blake3_20 hash here?
         // Ok((by_target_key, tag_body.r#type as u8))
-        Ok((by_target_key, tag_body.r#type.as_bytes().to_vec()))
+        Ok((by_target_key, tag_body.name.as_bytes().to_vec()))
     }
 
     pub fn make_tags_by_target_key(
-        target: &Target,
+        target: &Ref,
         fid: u32,
         ts_hash: Option<&[u8; TS_HASH_LENGTH]>,
     ) -> Vec<u8> {
         let mut key = Vec::with_capacity(1 + 28 + 24 + 4);
 
         key.push(RootPrefix::TagsByTarget as u8); // TagsByTarget prefix, 1 byte
-        key.extend_from_slice(&Self::make_target_key(target));
+        key.extend_from_slice(&Self::make_ref_key(target));
         if ts_hash.is_some() && ts_hash.unwrap().len() == TS_HASH_LENGTH {
             key.extend_from_slice(ts_hash.unwrap());
         }
@@ -210,23 +210,33 @@ impl TagStoreDef {
         key
     }
 
-    pub fn make_target_key(target: &Target) -> Vec<u8> {
-        match target {
-            Target::TargetUrl(url) => url.as_bytes().to_vec(),
-            Target::TargetCastId(cast_id) => make_cast_id_key(cast_id),
+    // TODO: Figure out what the object key key is
+    pub fn make_object_key_key(object_key: &ObjectKey) -> Vec<u8> {
+        // What is the max length for a key? (for now its 24) (it should be 30? based on primary key length)
+        let mut key = Vec::with_capacity(4 + 24);
+        key.extend_from_slice(&object_key.network.to_be_bytes().to_vec());
+        key.extend_from_slice(&object_key.key.as_bytes().to_vec());
+    
+        key
+    }
+
+    pub fn make_ref_key(object_ref: &Ref) -> Vec<u8> {
+        match object_ref {
+            Ref::ObjectKey(obj_key) => Self::make_object_key_key(obj_key), 
+            Ref::Fid(fid) => make_fid_key(*fid as u32),
         }
     }
 
     // VIC-TODO: fix the key here
     pub fn make_tag_adds_key(
         fid: u32,
-        r#type: String,
-        target: Option<&Target>,
+        name: String,
+        target: Option<&Ref>,
     ) -> Result<Vec<u8>, HubError> {
-        if target.is_some() && r#type.is_empty() {
+        if target.is_some() && name.is_empty() {
             return Err(HubError {
                 code: "bad_request.validation_failure".to_string(),
-                message: "targetId provided without type".to_string(),
+                message: "targetId provided without name".to_string(),
             });
         }
         let mut key = Vec::with_capacity(33 + 1 + 1 + 28);
@@ -242,7 +252,7 @@ impl TagStoreDef {
 
         if target.is_some() {
             // target, 28 bytes
-            key.extend_from_slice(&Self::make_target_key(target.unwrap()));
+            key.extend_from_slice(&Self::make_ref_key(target.unwrap()));
         }
 
         Ok(key)
@@ -252,7 +262,7 @@ impl TagStoreDef {
     pub fn make_tag_removes_key(
         fid: u32,
         r#type: String,
-        target: Option<&Target>,
+        target: Option<&Ref>,
     ) -> Result<Vec<u8>, HubError> {
         if target.is_some() && r#type.is_empty() {
             return Err(HubError {
@@ -272,7 +282,7 @@ impl TagStoreDef {
         // }
 
         if target.is_some() {
-            key.extend_from_slice(&Self::make_target_key(target.unwrap()));
+            key.extend_from_slice(&Self::make_ref_key(target.unwrap()));
             // target, 28 bytes
         }
 
@@ -295,158 +305,160 @@ impl TagStore {
         )
     }
 
-    pub fn get_tag_add(
-        store: &Store,
-        fid: u32,
-        r#type: String,
-        target: Option<Target>,
-    ) -> Result<Option<protos::Message>, HubError> {
-        let partial_message = protos::Message {
-            data: Some(protos::MessageData {
-                fid: fid as u64,
-                r#type: MessageType::TagAdd.into(),
-                body: Some(protos::message_data::Body::TagBody(TagBody {
-                    r#type: r#type.clone(),
-                    target: target.clone(),
-                })),
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
+    // pub fn get_tag_add(
+    //     store: &Store,
+    //     fid: u32,
+    //     name: String,
+    //     target: Option<Ref>,
+    // ) -> Result<Option<protos::Message>, HubError> {
+    //     let partial_message = protos::Message {
+    //         data: Some(protos::MessageData {
+    //             fid: fid as u64,
+    //             r#type: MessageType::TagAdd.into(),
+    //             body: Some(protos::message_data::Body::TagBody(TagBody {
+    //                 name: name.clone(),
+    //                 content: None,
+    //                 target: target.clone(),
+    //             })),
+    //             ..Default::default()
+    //         }),
+    //         ..Default::default()
+    //     };
 
-        store.get_add(&partial_message)
-    }
+    //     store.get_add(&partial_message)
+    // }
 
-    pub fn js_get_tag_add(mut cx: FunctionContext) -> JsResult<JsPromise> {
-        let channel = cx.channel();
+    // pub fn js_get_tag_add(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    //     let channel = cx.channel();
 
-        let store = get_store(&mut cx)?;
+    //     let store = get_store(&mut cx)?;
 
-        let fid = cx.argument::<JsNumber>(0).unwrap().value(&mut cx) as u32;
-        let r#type = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
+    //     let fid = cx.argument::<JsNumber>(0).unwrap().value(&mut cx) as u32;
+    //     let r#type = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
 
-        let target_cast_id_buffer = cx.argument::<JsBuffer>(2)?;
-        let target_cast_id_bytes = target_cast_id_buffer.as_slice(&cx);
-        let target_cast_id = if target_cast_id_bytes.len() > 0 {
-            match protos::CastId::decode(target_cast_id_bytes) {
-                Ok(cast_id) => Some(cast_id),
-                Err(e) => return cx.throw_error(e.to_string()),
-            }
-        } else {
-            None
-        };
+    //     let target_cast_id_buffer = cx.argument::<JsBuffer>(2)?;
+    //     let target_cast_id_bytes = target_cast_id_buffer.as_slice(&cx);
+    //     let target_cast_id = if target_cast_id_bytes.len() > 0 {
+    //         match protos::CastId::decode(target_cast_id_bytes) {
+    //             Ok(cast_id) => Some(cast_id),
+    //             Err(e) => return cx.throw_error(e.to_string()),
+    //         }
+    //     } else {
+    //         None
+    //     };
 
-        let target_url = cx.argument::<JsString>(3).map(|s| s.value(&mut cx))?;
+    //     let target_url = cx.argument::<JsString>(3).map(|s| s.value(&mut cx))?;
 
-        // We need at least one of target_cast_id or target_url
-        if target_cast_id.is_none() && target_url.is_empty() {
-            return cx.throw_error("target_cast_id or target_url is required");
-        }
+    //     // We need at least one of target_cast_id or target_url
+    //     if target_cast_id.is_none() && target_url.is_empty() {
+    //         return cx.throw_error("target_cast_id or target_url is required");
+    //     }
 
-        let target = if target_cast_id.is_some() {
-            Some(Target::TargetCastId(target_cast_id.unwrap()))
-        } else {
-            Some(Target::TargetUrl(target_url))
-        };
+    //     let target = if target_cast_id.is_some() {
+    //         Some(Target::TargetCastId(target_cast_id.unwrap()))
+    //     } else {
+    //         Some(Target::TargetUrl(target_url))
+    //     };
 
-        let result = match Self::get_tag_add(&store, fid, r#type, target) {
-            Ok(Some(message)) => message.encode_to_vec(),
-            Ok(None) => cx.throw_error(format!(
-                "{}/{} for {}",
-                "not_found", "tagAddMessage not found", fid
-            ))?,
-            Err(e) => return hub_error_to_js_throw(&mut cx, e),
-        };
+    //     let result = match Self::get_tag_add(&store, fid, r#type, target) {
+    //         Ok(Some(message)) => message.encode_to_vec(),
+    //         Ok(None) => cx.throw_error(format!(
+    //             "{}/{} for {}",
+    //             "not_found", "tagAddMessage not found", fid
+    //         ))?,
+    //         Err(e) => return hub_error_to_js_throw(&mut cx, e),
+    //     };
 
-        let (deferred, promise) = cx.promise();
-        deferred.settle_with(&channel, move |mut cx| {
-            let mut js_buffer = cx.buffer(result.len())?;
-            js_buffer.as_mut_slice(&mut cx).copy_from_slice(&result);
-            Ok(js_buffer)
-        });
+    //     let (deferred, promise) = cx.promise();
+    //     deferred.settle_with(&channel, move |mut cx| {
+    //         let mut js_buffer = cx.buffer(result.len())?;
+    //         js_buffer.as_mut_slice(&mut cx).copy_from_slice(&result);
+    //         Ok(js_buffer)
+    //     });
 
-        Ok(promise)
-    }
+    //     Ok(promise)
+    // }
 
-    pub fn get_tag_remove(
-        store: &Store,
-        fid: u32,
-        r#type: String,
-        target: Option<Target>,
-    ) -> Result<Option<protos::Message>, HubError> {
-        let partial_message = protos::Message {
-            data: Some(protos::MessageData {
-                fid: fid as u64,
-                r#type: MessageType::TagRemove.into(),
-                body: Some(protos::message_data::Body::TagBody(TagBody {
-                    r#type: r#type.clone(),
-                    target: target.clone(),
-                })),
-                ..Default::default()
-            }),
-            ..Default::default()
-        };
+    // pub fn get_tag_remove(
+    //     store: &Store,
+    //     fid: u32,
+    //     name: String,
+    //     target: Option<Ref>,
+    // ) -> Result<Option<protos::Message>, HubError> {
+    //     let partial_message = protos::Message {
+    //         data: Some(protos::MessageData {
+    //             fid: fid as u64,
+    //             r#type: MessageType::TagRemove.into(),
+    //             body: Some(protos::message_data::Body::TagBody(TagBody {
+    //                 name: name.clone(),
+    //                 content: None,
+    //                 target: target.clone(),
+    //             })),
+    //             ..Default::default()
+    //         }),
+    //         ..Default::default()
+    //     };
 
-        let r = store.get_remove(&partial_message);
-        // println!("got tag remove: {:?}", r);
+    //     let r = store.get_remove(&partial_message);
+    //     // println!("got tag remove: {:?}", r);
 
-        r
-    }
+    //     r
+    // }
 
-    pub fn js_get_tag_remove(mut cx: FunctionContext) -> JsResult<JsPromise> {
-        let store = get_store(&mut cx)?;
+    // pub fn js_get_tag_remove(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    //     let store = get_store(&mut cx)?;
 
-        let fid = cx.argument::<JsNumber>(0).unwrap().value(&mut cx) as u32;
-        let r#type = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
+    //     let fid = cx.argument::<JsNumber>(0).unwrap().value(&mut cx) as u32;
+    //     let r#type = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
 
-        let target_cast_id_buffer = cx.argument::<JsBuffer>(2)?;
-        let target_cast_id_bytes = target_cast_id_buffer.as_slice(&cx);
-        let target_cast_id = if target_cast_id_bytes.len() > 0 {
-            match protos::CastId::decode(target_cast_id_bytes) {
-                Ok(cast_id) => Some(cast_id),
-                Err(e) => return cx.throw_error(e.to_string()),
-            }
-        } else {
-            None
-        };
+    //     let target_cast_id_buffer = cx.argument::<JsBuffer>(2)?;
+    //     let target_cast_id_bytes = target_cast_id_buffer.as_slice(&cx);
+    //     let target_cast_id = if target_cast_id_bytes.len() > 0 {
+    //         match protos::CastId::decode(target_cast_id_bytes) {
+    //             Ok(cast_id) => Some(cast_id),
+    //             Err(e) => return cx.throw_error(e.to_string()),
+    //         }
+    //     } else {
+    //         None
+    //     };
 
-        let target_url = cx.argument::<JsString>(3).map(|s| s.value(&mut cx))?;
+    //     let target_url = cx.argument::<JsString>(3).map(|s| s.value(&mut cx))?;
 
-        // We need at least one of target_cast_id or target_url
-        if target_cast_id.is_none() && target_url.is_empty() {
-            return cx.throw_error("target_cast_id or target_url is required");
-        }
+    //     // We need at least one of target_cast_id or target_url
+    //     if target_cast_id.is_none() && target_url.is_empty() {
+    //         return cx.throw_error("target_cast_id or target_url is required");
+    //     }
 
-        let target = if target_cast_id.is_some() {
-            Some(Target::TargetCastId(target_cast_id.unwrap()))
-        } else {
-            Some(Target::TargetUrl(target_url))
-        };
+    //     let target = if target_cast_id.is_some() {
+    //         Some(Target::TargetCastId(target_cast_id.unwrap()))
+    //     } else {
+    //         Some(Target::TargetUrl(target_url))
+    //     };
 
-        let result = match TagStore::get_tag_remove(&store, fid, r#type, target) {
-            Ok(Some(message)) => message.encode_to_vec(),
-            Ok(None) => cx.throw_error(format!(
-                "{}/{} for {}",
-                "not_found", "tagRemoveMessage not found", fid
-            ))?,
-            Err(e) => return hub_error_to_js_throw(&mut cx, e),
-        };
+    //     let result = match TagStore::get_tag_remove(&store, fid, r#type, target) {
+    //         Ok(Some(message)) => message.encode_to_vec(),
+    //         Ok(None) => cx.throw_error(format!(
+    //             "{}/{} for {}",
+    //             "not_found", "tagRemoveMessage not found", fid
+    //         ))?,
+    //         Err(e) => return hub_error_to_js_throw(&mut cx, e),
+    //     };
 
-        let channel = cx.channel();
-        let (deferred, promise) = cx.promise();
-        deferred.settle_with(&channel, move |mut cx| {
-            let mut js_buffer = cx.buffer(result.len())?;
-            js_buffer.as_mut_slice(&mut cx).copy_from_slice(&result);
-            Ok(js_buffer)
-        });
+    //     let channel = cx.channel();
+    //     let (deferred, promise) = cx.promise();
+    //     deferred.settle_with(&channel, move |mut cx| {
+    //         let mut js_buffer = cx.buffer(result.len())?;
+    //         js_buffer.as_mut_slice(&mut cx).copy_from_slice(&result);
+    //         Ok(js_buffer)
+    //     });
 
-        Ok(promise)
-    }
+    //     Ok(promise)
+    // }
 
     pub fn get_tag_adds_by_fid(
         store: &Store,
         fid: u32,
-        r#type: String,
+        name: String,
         page_options: &PageOptions,
     ) -> Result<MessagesPage, HubError> {
         store.get_adds_by_fid(
@@ -455,7 +467,7 @@ impl TagStore {
             Some(|message: &Message| {
                 if let Some(tag_body) = &message.data.as_ref().unwrap().body {
                     if let protos::message_data::Body::TagBody(tag_body) = tag_body {
-                        if r#type == "" || tag_body.r#type == r#type {
+                        if name == "" || tag_body.name == name {
                             return true;
                         }
                     }
@@ -509,7 +521,7 @@ impl TagStore {
     pub fn get_tag_removes_by_fid(
         store: &Store,
         fid: u32,
-        r#type: String,
+        name: String,
         page_options: &PageOptions,
     ) -> Result<MessagesPage, HubError> {
         store.get_removes_by_fid(
@@ -518,7 +530,7 @@ impl TagStore {
             Some(|message: &Message| {
                 if let Some(tag_body) = &message.data.as_ref().unwrap().body {
                     if let protos::message_data::Body::TagBody(tag_body) = tag_body {
-                        if tag_body.r#type == r#type {
+                        if tag_body.name == name {
                             return true;
                         }
                     }
@@ -555,7 +567,7 @@ impl TagStore {
 
     pub fn get_tags_by_target(
         store: &Store,
-        target: &Target,
+        target: &Ref,
         r#type: String,
         page_options: &PageOptions,
     ) -> Result<MessagesPage, HubError> {
@@ -607,58 +619,58 @@ impl TagStore {
         })
     }
 
-    pub fn js_get_tags_by_target(mut cx: FunctionContext) -> JsResult<JsPromise> {
-        let store = get_store(&mut cx)?;
+    // pub fn js_get_tags_by_target(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    //     let store = get_store(&mut cx)?;
 
-        let target_cast_id_buffer = cx.argument::<JsBuffer>(0)?;
-        let target_cast_id_bytes = target_cast_id_buffer.as_slice(&cx);
-        let target_cast_id = if target_cast_id_bytes.len() > 0 {
-            match protos::CastId::decode(target_cast_id_bytes) {
-                Ok(cast_id) => Some(cast_id),
-                Err(e) => return cx.throw_error(e.to_string()),
-            }
-        } else {
-            None
-        };
+    //     let target_cast_id_buffer = cx.argument::<JsBuffer>(0)?;
+    //     let target_cast_id_bytes = target_cast_id_buffer.as_slice(&cx);
+    //     let target_cast_id = if target_cast_id_bytes.len() > 0 {
+    //         match protos::CastId::decode(target_cast_id_bytes) {
+    //             Ok(cast_id) => Some(cast_id),
+    //             Err(e) => return cx.throw_error(e.to_string()),
+    //         }
+    //     } else {
+    //         None
+    //     };
 
-        let target_url = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
+    //     let target_url = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
 
-        // We need at least one of target_cast_id or target_url
-        if target_cast_id.is_none() && target_url.is_empty() {
-            return cx.throw_error("target_cast_id or target_url is required");
-        }
+    //     // We need at least one of target_cast_id or target_url
+    //     if target_cast_id.is_none() && target_url.is_empty() {
+    //         return cx.throw_error("target_cast_id or target_url is required");
+    //     }
 
-        let target = if target_cast_id.is_some() {
-            Target::TargetCastId(target_cast_id.unwrap())
-        } else {
-            Target::TargetUrl(target_url)
-        };
+    //     let target = if target_cast_id.is_some() {
+    //         Target::TargetCastId(target_cast_id.unwrap())
+    //     } else {
+    //         Target::TargetUrl(target_url)
+    //     };
 
-        // let r#type = match cx.argument_opt(2) {
-        //     Some(arg) => match arg.downcast::<JsString, _>(&mut cx) {
-        //         Ok(js_string) => js_string.value(&mut cx),
-        //         Err(_) => "".to_string(),  // Handle the case where the argument is not a JsString
-        //     },
-        //     None => "".to_string(),  // Default to an empty string if the argument is not provided
-        // };
-        let r#type = cx.argument::<JsString>(2).map(|s| s.value(&mut cx))?;
+    //     // let r#type = match cx.argument_opt(2) {
+    //     //     Some(arg) => match arg.downcast::<JsString, _>(&mut cx) {
+    //     //         Ok(js_string) => js_string.value(&mut cx),
+    //     //         Err(_) => "".to_string(),  // Handle the case where the argument is not a JsString
+    //     //     },
+    //     //     None => "".to_string(),  // Default to an empty string if the argument is not provided
+    //     // };
+    //     let r#type = cx.argument::<JsString>(2).map(|s| s.value(&mut cx))?;
 
-        let page_options = get_page_options(&mut cx, 3)?;
+    //     let page_options = get_page_options(&mut cx, 3)?;
 
-        let channel = cx.channel();
-        let (deferred, promise) = cx.promise();
+    //     let channel = cx.channel();
+    //     let (deferred, promise) = cx.promise();
 
-        THREAD_POOL.lock().unwrap().execute(move || {
-            let messages = TagStore::get_tags_by_target(
-                &store,
-                &target,
-                r#type,
-                &page_options,
-            );
+    //     THREAD_POOL.lock().unwrap().execute(move || {
+    //         let messages = TagStore::get_tags_by_target(
+    //             &store,
+    //             &target,
+    //             r#type,
+    //             &page_options,
+    //         );
 
-            deferred_settle_messages(deferred, &channel, messages);
-        });
+    //         deferred_settle_messages(deferred, &channel, messages);
+    //     });
 
-        Ok(promise)
-    }
+    //     Ok(promise)
+    // }
 }

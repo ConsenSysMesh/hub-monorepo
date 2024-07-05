@@ -173,8 +173,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     // TagStore methods
     cx.export_function("createTagStore", TagStore::create_tag_store)?;
-    cx.export_function("getTagAdd", TagStore::js_get_tag_add)?;
-    cx.export_function("getTagRemove", TagStore::js_get_tag_remove)?;
+    // cx.export_function("getTagAdd", TagStore::js_get_tag_add)?;
+    // cx.export_function("getTagRemove", TagStore::js_get_tag_remove)?;
     cx.export_function(
         "getTagAddsByFid",
         TagStore::js_get_tag_adds_by_fid,
@@ -183,10 +183,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         "getTagRemovesByFid",
         TagStore::js_get_tag_removes_by_fid,
     )?;
-    cx.export_function(
-        "getTagsByTarget",
-        TagStore::js_get_tags_by_target,
-    )?;
+    // cx.export_function(
+    //     "getTagsByTarget",
+    //     TagStore::js_get_tags_by_target,
+    // )?;
 
     // CastStore methods
     cx.export_function("createCastStore", CastStore::js_create_cast_store)?;
