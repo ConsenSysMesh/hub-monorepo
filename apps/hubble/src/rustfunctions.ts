@@ -314,6 +314,16 @@ export const rsCreateTagStore = (
   return store as RustDynStore;
 };
 
+export const rsCreateObjectStore = (
+  db: RustDb,
+  eventHandler: RustStoreEventHandler,
+  pruneSizeLimit: number,
+): RustDynStore => {
+  const store = lib.createObjectStore(db, eventHandler, pruneSizeLimit);
+
+  return store as RustDynStore;
+};
+
 /** Create a cast Store */
 export const rsCreateCastStore = (
   db: RustDb,
@@ -533,6 +543,51 @@ export const rsGetTagsByTarget = async (
   return await lib.getTagsByTarget.call(store, targetCastIdBytes, targetUrl, value, pageOptions);
 };
 
+
+/** Objects **/
+export const rsGetObjectAdd = async (
+  store: RustDynStore,
+  fid: number,
+  hashBytes: Buffer,
+): Promise<Buffer> => {
+  return await lib.getObjectAdd.call(store, fid, hashBytes);
+};
+
+export const rsGetObjectRemove = async (
+  store: RustDynStore,
+  fid: number,
+  hashBytes: Buffer,
+): Promise<Buffer> => {
+  return await lib.getObjectRemove.call(store, fid, hashBytes);
+};
+
+export const rsGetObjectAddsByFid = async (
+  store: RustDynStore,
+  fid: number,
+  type?: string,
+  pageOptions: PageOptions = {},
+): Promise<RustMessagesPage> => {
+  return await lib.getObjectAddsByFid.call(store, fid, type, pageOptions);
+};
+
+export const rsGetObjectRemovesByFid = async (
+  store: RustDynStore,
+  fid: number,
+  type?: string,
+  pageOptions: PageOptions = {},
+): Promise<RustMessagesPage> => {
+  return await lib.getObjectRemovesByFid.call(store, fid, type, pageOptions);
+};
+
+// export const rsGetObjectsByTarget = async (
+//   store: RustDynStore,
+//   targetCastIdBytes: Buffer,
+//   targetUrl: string,
+//   value: string,
+//   pageOptions: PageOptions = {},
+// ): Promise<RustMessagesPage> => {
+//   return await lib.getObjectsByTarget.call(store, targetCastIdBytes, targetUrl, value, pageOptions);
+// };
 
 /** UserData Store */
 export const rsCreateUserDataStore = (

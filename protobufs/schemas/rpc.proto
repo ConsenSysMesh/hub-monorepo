@@ -48,6 +48,11 @@ service HubService {
   rpc GetTagsByCast(TagsByTargetRequest) returns (MessagesResponse); // To be deprecated
   rpc GetTagsByTarget(TagsByTargetRequest) returns (MessagesResponse);
 
+ // Objects
+  // @http-api: objectById
+  rpc GetObject(ObjectId) returns (Message);
+  rpc GetObjectsByFid(ObjectsByFidRequest) returns (MessagesResponse);
+
   // User Data
   // @http-api: none
   rpc GetUserData(UserDataRequest) returns (Message);

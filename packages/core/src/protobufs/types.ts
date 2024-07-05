@@ -96,6 +96,26 @@ export type TagRemoveMessage = protobufs.Message & {
   signatureScheme: protobufs.SignatureScheme.ED25519;
 };
 
+export type ObjectAddData = protobufs.MessageData & {
+  type: protobufs.MessageType.OBJECT_ADD;
+  objectAddBody: protobufs.ObjectAddBody;
+};
+
+export type ObjectAddMessage = protobufs.Message & {
+  data: ObjectAddData;
+  signatureScheme: protobufs.SignatureScheme.ED25519;
+};
+
+export type ObjectRemoveData = protobufs.MessageData & {
+  type: protobufs.MessageType.OBJECT_REMOVE;
+  castRemoveBody: protobufs.ObjectRemoveBody;
+};
+
+export type ObjectRemoveMessage = protobufs.Message & {
+  data: ObjectRemoveData;
+  signatureScheme: protobufs.SignatureScheme.ED25519;
+};
+
 export type VerificationAddAddressData = protobufs.MessageData & {
   type: protobufs.MessageType.VERIFICATION_ADD_ETH_ADDRESS;
   verificationAddAddressBody: protobufs.VerificationAddAddressBody;

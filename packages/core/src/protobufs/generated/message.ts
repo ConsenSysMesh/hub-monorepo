@@ -107,6 +107,10 @@ export enum MessageType {
   TAG_ADD = 15,
   /** TAG_REMOVE - Remove a Tag from a Cast */
   TAG_REMOVE = 16,
+  /** OBJECT_ADD - Add a Tag to a Cast */
+  OBJECT_ADD = 17,
+  /** OBJECT_REMOVE - Remove a Tag from a Cast */
+  OBJECT_REMOVE = 18,
 }
 
 export function messageTypeFromJSON(object: any): MessageType {
@@ -156,6 +160,12 @@ export function messageTypeFromJSON(object: any): MessageType {
     case 16:
     case "MESSAGE_TYPE_TAG_REMOVE":
       return MessageType.TAG_REMOVE;
+    case 17:
+    case "MESSAGE_TYPE_OBJECT_ADD":
+      return MessageType.OBJECT_ADD;
+    case 18:
+    case "MESSAGE_TYPE_OBJECT_REMOVE":
+      return MessageType.OBJECT_REMOVE;
     default:
       throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum MessageType");
   }
@@ -193,6 +203,10 @@ export function messageTypeToJSON(object: MessageType): string {
       return "MESSAGE_TYPE_TAG_ADD";
     case MessageType.TAG_REMOVE:
       return "MESSAGE_TYPE_TAG_REMOVE";
+    case MessageType.OBJECT_ADD:
+      return "MESSAGE_TYPE_OBJECT_ADD";
+    case MessageType.OBJECT_REMOVE:
+      return "MESSAGE_TYPE_OBJECT_REMOVE";
     default:
       throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum MessageType");
   }
@@ -433,7 +447,8 @@ export interface MessageData {
   /** Compaction messages */
   linkCompactStateBody?: LinkCompactStateBody | undefined;
   tagBody?: TagBody | undefined;
-  objectBody?: ObjectBody | undefined;
+  objectAddBody?: ObjectAddBody | undefined;
+  objectRemoveBody?: ObjectRemoveBody | undefined;
 }
 
 /** Adds metadata about a user */
@@ -500,7 +515,7 @@ export interface ReactionBody {
 /** Generic reference to an H1/H2 object */
 export interface ObjectKey {
   network: FarcasterNetwork;
-  /** TODO: figure out the type */
+  /** Key to look up the object with within RocksDB */
   key: string;
 }
 
@@ -521,12 +536,30 @@ export interface TagBody {
   target: ObjectRef | undefined;
 }
 
+/** Identifier used to look up an H2 Object */
+export interface ObjectId {
+  /** Fid of the user who created the object */
+  fid: number;
+  /** Hash of the object */
+  hash: Uint8Array;
+}
+
 /** Generic object at H2 */
-export interface ObjectBody {
+export interface ObjectAddBody {
+  /** Type of object (completely user-defined, thus a string) */
   type: string;
-  displayName?: string | undefined;
+  displayName?:
+    | string
+    | undefined;
+  /** base64 encoded image or a URL? */
   avatar?: string | undefined;
   description?: string | undefined;
+}
+
+/** Removes an existing Cast */
+export interface ObjectRemoveBody {
+  /** Hash of the object to remove */
+  targetHash: Uint8Array;
 }
 
 /** Adds a Verification of ownership of an Address based on Protocol */
@@ -759,7 +792,8 @@ function createBaseMessageData(): MessageData {
     frameActionBody: undefined,
     linkCompactStateBody: undefined,
     tagBody: undefined,
-    objectBody: undefined,
+    objectAddBody: undefined,
+    objectRemoveBody: undefined,
   };
 }
 
@@ -810,8 +844,11 @@ export const MessageData = {
     if (message.tagBody !== undefined) {
       TagBody.encode(message.tagBody, writer.uint32(146).fork()).ldelim();
     }
-    if (message.objectBody !== undefined) {
-      ObjectBody.encode(message.objectBody, writer.uint32(154).fork()).ldelim();
+    if (message.objectAddBody !== undefined) {
+      ObjectAddBody.encode(message.objectAddBody, writer.uint32(154).fork()).ldelim();
+    }
+    if (message.objectRemoveBody !== undefined) {
+      ObjectRemoveBody.encode(message.objectRemoveBody, writer.uint32(162).fork()).ldelim();
     }
     return writer;
   },
@@ -933,7 +970,14 @@ export const MessageData = {
             break;
           }
 
-          message.objectBody = ObjectBody.decode(reader, reader.uint32());
+          message.objectAddBody = ObjectAddBody.decode(reader, reader.uint32());
+          continue;
+        case 20:
+          if (tag != 162) {
+            break;
+          }
+
+          message.objectRemoveBody = ObjectRemoveBody.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -967,7 +1011,8 @@ export const MessageData = {
         ? LinkCompactStateBody.fromJSON(object.linkCompactStateBody)
         : undefined,
       tagBody: isSet(object.tagBody) ? TagBody.fromJSON(object.tagBody) : undefined,
-      objectBody: isSet(object.objectBody) ? ObjectBody.fromJSON(object.objectBody) : undefined,
+      objectAddBody: isSet(object.objectAddBody) ? ObjectAddBody.fromJSON(object.objectAddBody) : undefined,
+      objectRemoveBody: isSet(object.objectRemoveBody) ? ObjectRemoveBody.fromJSON(object.objectRemoveBody) : undefined,
     };
   },
 
@@ -1001,8 +1046,10 @@ export const MessageData = {
       ? LinkCompactStateBody.toJSON(message.linkCompactStateBody)
       : undefined);
     message.tagBody !== undefined && (obj.tagBody = message.tagBody ? TagBody.toJSON(message.tagBody) : undefined);
-    message.objectBody !== undefined &&
-      (obj.objectBody = message.objectBody ? ObjectBody.toJSON(message.objectBody) : undefined);
+    message.objectAddBody !== undefined &&
+      (obj.objectAddBody = message.objectAddBody ? ObjectAddBody.toJSON(message.objectAddBody) : undefined);
+    message.objectRemoveBody !== undefined &&
+      (obj.objectRemoveBody = message.objectRemoveBody ? ObjectRemoveBody.toJSON(message.objectRemoveBody) : undefined);
     return obj;
   },
 
@@ -1051,8 +1098,11 @@ export const MessageData = {
     message.tagBody = (object.tagBody !== undefined && object.tagBody !== null)
       ? TagBody.fromPartial(object.tagBody)
       : undefined;
-    message.objectBody = (object.objectBody !== undefined && object.objectBody !== null)
-      ? ObjectBody.fromPartial(object.objectBody)
+    message.objectAddBody = (object.objectAddBody !== undefined && object.objectAddBody !== null)
+      ? ObjectAddBody.fromPartial(object.objectAddBody)
+      : undefined;
+    message.objectRemoveBody = (object.objectRemoveBody !== undefined && object.objectRemoveBody !== null)
+      ? ObjectRemoveBody.fromPartial(object.objectRemoveBody)
       : undefined;
     return message;
   },
@@ -1838,12 +1888,84 @@ export const TagBody = {
   },
 };
 
-function createBaseObjectBody(): ObjectBody {
+function createBaseObjectId(): ObjectId {
+  return { fid: 0, hash: new Uint8Array() };
+}
+
+export const ObjectId = {
+  encode(message: ObjectId, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.fid !== 0) {
+      writer.uint32(8).uint64(message.fid);
+    }
+    if (message.hash.length !== 0) {
+      writer.uint32(18).bytes(message.hash);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ObjectId {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObjectId();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 8) {
+            break;
+          }
+
+          message.fid = longToNumber(reader.uint64() as Long);
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.hash = reader.bytes();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ObjectId {
+    return {
+      fid: isSet(object.fid) ? Number(object.fid) : 0,
+      hash: isSet(object.hash) ? bytesFromBase64(object.hash) : new Uint8Array(),
+    };
+  },
+
+  toJSON(message: ObjectId): unknown {
+    const obj: any = {};
+    message.fid !== undefined && (obj.fid = Math.round(message.fid));
+    message.hash !== undefined &&
+      (obj.hash = base64FromBytes(message.hash !== undefined ? message.hash : new Uint8Array()));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ObjectId>, I>>(base?: I): ObjectId {
+    return ObjectId.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ObjectId>, I>>(object: I): ObjectId {
+    const message = createBaseObjectId();
+    message.fid = object.fid ?? 0;
+    message.hash = object.hash ?? new Uint8Array();
+    return message;
+  },
+};
+
+function createBaseObjectAddBody(): ObjectAddBody {
   return { type: "", displayName: undefined, avatar: undefined, description: undefined };
 }
 
-export const ObjectBody = {
-  encode(message: ObjectBody, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+export const ObjectAddBody = {
+  encode(message: ObjectAddBody, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     if (message.type !== "") {
       writer.uint32(10).string(message.type);
     }
@@ -1859,10 +1981,10 @@ export const ObjectBody = {
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): ObjectBody {
+  decode(input: _m0.Reader | Uint8Array, length?: number): ObjectAddBody {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseObjectBody();
+    const message = createBaseObjectAddBody();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1903,7 +2025,7 @@ export const ObjectBody = {
     return message;
   },
 
-  fromJSON(object: any): ObjectBody {
+  fromJSON(object: any): ObjectAddBody {
     return {
       type: isSet(object.type) ? String(object.type) : "",
       displayName: isSet(object.displayName) ? String(object.displayName) : undefined,
@@ -1912,7 +2034,7 @@ export const ObjectBody = {
     };
   },
 
-  toJSON(message: ObjectBody): unknown {
+  toJSON(message: ObjectAddBody): unknown {
     const obj: any = {};
     message.type !== undefined && (obj.type = message.type);
     message.displayName !== undefined && (obj.displayName = message.displayName);
@@ -1921,16 +2043,73 @@ export const ObjectBody = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ObjectBody>, I>>(base?: I): ObjectBody {
-    return ObjectBody.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<ObjectAddBody>, I>>(base?: I): ObjectAddBody {
+    return ObjectAddBody.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<ObjectBody>, I>>(object: I): ObjectBody {
-    const message = createBaseObjectBody();
+  fromPartial<I extends Exact<DeepPartial<ObjectAddBody>, I>>(object: I): ObjectAddBody {
+    const message = createBaseObjectAddBody();
     message.type = object.type ?? "";
     message.displayName = object.displayName ?? undefined;
     message.avatar = object.avatar ?? undefined;
     message.description = object.description ?? undefined;
+    return message;
+  },
+};
+
+function createBaseObjectRemoveBody(): ObjectRemoveBody {
+  return { targetHash: new Uint8Array() };
+}
+
+export const ObjectRemoveBody = {
+  encode(message: ObjectRemoveBody, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.targetHash.length !== 0) {
+      writer.uint32(10).bytes(message.targetHash);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ObjectRemoveBody {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObjectRemoveBody();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.targetHash = reader.bytes();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ObjectRemoveBody {
+    return { targetHash: isSet(object.targetHash) ? bytesFromBase64(object.targetHash) : new Uint8Array() };
+  },
+
+  toJSON(message: ObjectRemoveBody): unknown {
+    const obj: any = {};
+    message.targetHash !== undefined &&
+      (obj.targetHash = base64FromBytes(message.targetHash !== undefined ? message.targetHash : new Uint8Array()));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ObjectRemoveBody>, I>>(base?: I): ObjectRemoveBody {
+    return ObjectRemoveBody.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ObjectRemoveBody>, I>>(object: I): ObjectRemoveBody {
+    const message = createBaseObjectRemoveBody();
+    message.targetHash = object.targetHash ?? new Uint8Array();
     return message;
   },
 };
