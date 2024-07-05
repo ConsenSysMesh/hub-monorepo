@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{
     db::{RocksDB, RocksDbTransactionBatch},
-    protos::{self, object_ref::Ref, Message, MessageType, TagBody, ObjectKey},
+    protos::{self, object_ref::Ref, Message, MessageType, TagBody, ObjectKey, FarcasterNetwork},
 };
 use crate::{protos::message_data, THREAD_POOL};
 use neon::{
@@ -21,6 +21,12 @@ use std::{borrow::Borrow, convert::TryInto, sync::Arc};
 
 pub struct TagStoreDef {
     prune_size_limit: u32,
+}
+
+pub enum TargetTypePrefix {
+    H1Object = 1,
+    H2Object = 2,
+    Fid = 3,
 }
 
 impl StoreDef for TagStoreDef {
@@ -214,16 +220,28 @@ impl TagStoreDef {
     pub fn make_object_key_key(object_key: &ObjectKey) -> Vec<u8> {
         // What is the max length for a key? (for now its 24) (it should be 30? based on primary key length)
         let mut key = Vec::with_capacity(4 + 24);
-        key.extend_from_slice(&object_key.network.to_be_bytes().to_vec());
+        if object_key.network == FarcasterNetwork::Mainnet as i32 {
+            key.push(TargetTypePrefix::H1Object as u8);
+        } else {
+            // Should we have a specific network for H2
+            key.push(TargetTypePrefix::H2Object as u8);
+        }
         key.extend_from_slice(&object_key.key.as_bytes().to_vec());
     
+        key
+    }
+
+    pub fn make_object_ref_fid_key(fid: u32) -> Vec<u8> {
+        let mut key = Vec::with_capacity(1 + 4);
+        key.push(TargetTypePrefix::Fid as u8);
+        key.extend_from_slice(&make_fid_key(fid));
         key
     }
 
     pub fn make_ref_key(object_ref: &Ref) -> Vec<u8> {
         match object_ref {
             Ref::ObjectKey(obj_key) => Self::make_object_key_key(obj_key), 
-            Ref::Fid(fid) => make_fid_key(*fid as u32),
+            Ref::Fid(fid) => Self::make_object_ref_fid_key(*fid as u32),
         }
     }
 
