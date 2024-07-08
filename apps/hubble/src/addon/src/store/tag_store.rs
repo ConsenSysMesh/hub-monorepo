@@ -251,10 +251,10 @@ impl TagStoreDef {
         name: String,
         target: Option<&Ref>,
     ) -> Result<Vec<u8>, HubError> {
-        if target.is_some() && name.is_empty() {
+        if !target.is_some() || name.is_empty() {
             return Err(HubError {
                 code: "bad_request.validation_failure".to_string(),
-                message: "targetId provided without name".to_string(),
+                message: "tag provided without name or target".to_string(),
             });
         }
         let mut key = Vec::with_capacity(33 + 1 + 1 + 28);
@@ -262,16 +262,10 @@ impl TagStoreDef {
         key.extend_from_slice(&make_user_key(fid));
         key.push(UserPostfix::TagAdds as u8); // tagAdds postfix, 1 byte
 
-        // VIC-TODO: current key uses one byte for the like type
-        // explore using a hash of the tag type instead
-        // if r#type > 0 {
-        //     key.push(r#type as u8); // type, 1 byte
-        // }
+        key.extend_from_slice(&name.as_bytes().to_vec());
 
-        if target.is_some() {
-            // target, 28 bytes
-            key.extend_from_slice(&Self::make_ref_key(target.unwrap()));
-        }
+        // target, 28 bytes
+        key.extend_from_slice(&Self::make_ref_key(target.unwrap()));
 
         Ok(key)
     }
@@ -586,7 +580,7 @@ impl TagStore {
     pub fn get_tags_by_target(
         store: &Store,
         target: &Ref,
-        r#type: String,
+        name: String,
         page_options: &PageOptions,
     ) -> Result<MessagesPage, HubError> {
         let prefix = TagStoreDef::make_tags_by_target_key(target, 0, None);
@@ -597,7 +591,7 @@ impl TagStore {
         store
             .db()
             .for_each_iterator_by_prefix(&prefix, page_options, |key, value| {
-                if r#type.is_empty() || value.eq(r#type.as_bytes())
+                if name.is_empty() || value.eq(name.as_bytes())
                 {
                     let ts_hash_offset = prefix.len();
                     let fid_offset = ts_hash_offset + TS_HASH_LENGTH;
@@ -637,58 +631,42 @@ impl TagStore {
         })
     }
 
-    // pub fn js_get_tags_by_target(mut cx: FunctionContext) -> JsResult<JsPromise> {
-    //     let store = get_store(&mut cx)?;
+    pub fn js_get_tags_by_target(mut cx: FunctionContext) -> JsResult<JsPromise> {
+        let store = get_store(&mut cx)?;
 
-    //     let target_cast_id_buffer = cx.argument::<JsBuffer>(0)?;
-    //     let target_cast_id_bytes = target_cast_id_buffer.as_slice(&cx);
-    //     let target_cast_id = if target_cast_id_bytes.len() > 0 {
-    //         match protos::CastId::decode(target_cast_id_bytes) {
-    //             Ok(cast_id) => Some(cast_id),
-    //             Err(e) => return cx.throw_error(e.to_string()),
-    //         }
-    //     } else {
-    //         None
-    //     };
+        let target_buffer = cx.argument::<JsBuffer>(0)?;
+        let target_bytes = target_buffer.as_slice(&cx);
+        let target = if target_bytes.len() > 0 {
+            match protos::ObjectRef::decode(target_bytes) {
+                Ok(object_ref) => Some(object_ref),
+                Err(e) => return cx.throw_error(e.to_string()),
+            }
+        } else {
+            None
+        };
 
-    //     let target_url = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
+        if target.is_none() {
+            return cx.throw_error("target_cast_id is required");
+        }
 
-    //     // We need at least one of target_cast_id or target_url
-    //     if target_cast_id.is_none() && target_url.is_empty() {
-    //         return cx.throw_error("target_cast_id or target_url is required");
-    //     }
+        let name = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
 
-    //     let target = if target_cast_id.is_some() {
-    //         Target::TargetCastId(target_cast_id.unwrap())
-    //     } else {
-    //         Target::TargetUrl(target_url)
-    //     };
+        let page_options = get_page_options(&mut cx, 2)?;
 
-    //     // let r#type = match cx.argument_opt(2) {
-    //     //     Some(arg) => match arg.downcast::<JsString, _>(&mut cx) {
-    //     //         Ok(js_string) => js_string.value(&mut cx),
-    //     //         Err(_) => "".to_string(),  // Handle the case where the argument is not a JsString
-    //     //     },
-    //     //     None => "".to_string(),  // Default to an empty string if the argument is not provided
-    //     // };
-    //     let r#type = cx.argument::<JsString>(2).map(|s| s.value(&mut cx))?;
+        let channel = cx.channel();
+        let (deferred, promise) = cx.promise();
 
-    //     let page_options = get_page_options(&mut cx, 3)?;
+        THREAD_POOL.lock().unwrap().execute(move || {
+            let messages = TagStore::get_tags_by_target(
+                &store,
+                target.unwrap().r#ref.as_ref().unwrap(),
+                name,
+                &page_options,
+            );
 
-    //     let channel = cx.channel();
-    //     let (deferred, promise) = cx.promise();
+            deferred_settle_messages(deferred, &channel, messages);
+        });
 
-    //     THREAD_POOL.lock().unwrap().execute(move || {
-    //         let messages = TagStore::get_tags_by_target(
-    //             &store,
-    //             &target,
-    //             r#type,
-    //             &page_options,
-    //         );
-
-    //         deferred_settle_messages(deferred, &channel, messages);
-    //     });
-
-    //     Ok(promise)
-    // }
+        Ok(promise)
+    }
 }

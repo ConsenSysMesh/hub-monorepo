@@ -525,12 +525,11 @@ export const rsGetTagRemovesByFid = async (
 
 export const rsGetTagsByTarget = async (
   store: RustDynStore,
-  targetCastIdBytes: Buffer,
-  targetUrl: string,
+  target: Buffer,
   value: string,
   pageOptions: PageOptions = {},
 ): Promise<RustMessagesPage> => {
-  return await lib.getTagsByTarget.call(store, targetCastIdBytes, targetUrl, value, pageOptions);
+  return await lib.getTagsByTarget.call(store, target, value, pageOptions);
 };
 
 

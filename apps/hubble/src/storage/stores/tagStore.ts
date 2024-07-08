@@ -5,6 +5,7 @@ import {
   TagRemoveMessage,
   StoreType,
   getDefaultStoreLimit,
+  ObjectRef,
 } from "@farcaster/hub-nodejs";
 import {
   rsCreateTagStore,
@@ -114,23 +115,16 @@ class TagStore extends RustStoreBase<TagAddMessage, TagRemoveMessage> {
   }
 
   async getTagsByTarget(
-    target: CastId | string,
+    target: ObjectRef,
     value?: string,
     pageOptions: PageOptions = {},
   ): Promise<MessagesPage<TagAddMessage>> {
-    let targetCastId = Buffer.from([]);
-    let targetUrl = "";
-
-    if (typeof target === "string") {
-      targetUrl = target;
-    } else {
-      targetCastId = Buffer.from(CastId.encode(target).finish());
-    }
+    
+    const targetBuffer = Buffer.from(ObjectRef.encode(target).finish());
 
     const message_page = await rsGetTagsByTarget(
       this._rustStore,
-      targetCastId,
-      targetUrl,
+      targetBuffer,
       value ?? "",
       pageOptions,
     );

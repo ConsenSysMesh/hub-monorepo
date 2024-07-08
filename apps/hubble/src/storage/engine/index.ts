@@ -25,6 +25,7 @@ import {
   MergeUsernameProofHubEvent,
   Message,
   MessageType,
+  ObjectRef,
   OnChainEvent,
   OnChainEventResponse,
   OnChainEventType,
@@ -781,15 +782,14 @@ class Engine extends TypedEmitter<EngineEvents> {
   }
 
   async getTagsByTarget(
-    target: CastId | string,
+    target?: ObjectRef,
     value?: string,
     pageOptions: PageOptions = {},
   ): HubAsyncResult<MessagesPage<TagAddMessage>> {
-    if (typeof target !== "string") {
-      const validatedCastId = validations.validateCastId(target);
-      if (validatedCastId.isErr()) {
-        return err(validatedCastId.error);
-      }
+
+    // TODO: further validation
+    if (!target) {
+      return err(new HubError('bad_request', 'Target is undefined'))
     }
 
     return ResultAsync.fromPromise(
