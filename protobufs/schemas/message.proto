@@ -39,6 +39,8 @@ message MessageData {
 
     // Compaction messages
     LinkCompactStateBody link_compact_state_body = 17;
+
+    TagBody tag_body = 18;
   } // Properties specific to the MessageType
 }
 
@@ -73,6 +75,8 @@ enum MessageType {
   MESSAGE_TYPE_USERNAME_PROOF = 12; // Add or replace a username proof
   MESSAGE_TYPE_FRAME_ACTION = 13; // A Farcaster Frame action
   MESSAGE_TYPE_LINK_COMPACT_STATE = 14; // Link Compaction State Message
+  MESSAGE_TYPE_TAG_ADD = 15; // Add a Tag to a Cast
+  MESSAGE_TYPE_TAG_REMOVE = 16; // Remove a Tag from a Cast
 }
 
 /** Farcaster network the message is intended for */
@@ -133,6 +137,15 @@ message CastId {
 /** Adds or removes a Reaction from a Cast */
 message ReactionBody {
   ReactionType type = 1; // Type of reaction
+  oneof target {
+    CastId target_cast_id = 2; // CastId of the Cast to react to
+    string target_url = 3; // URL to react to
+  }
+}
+
+/** Adds or removes a Tag from a Cast */
+message TagBody {
+  string value = 1; // Tag value
   oneof target {
     CastId target_cast_id = 2; // CastId of the Cast to react to
     string target_url = 3; // URL to react to

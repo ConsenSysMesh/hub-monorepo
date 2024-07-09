@@ -26,6 +26,7 @@ type MessageBodyOptions = Pick<
   | "linkBody"
   | "usernameProofBody"
   | "frameActionBody"
+  | "tagBody"
 >;
 
 /** Generic Methods */
@@ -224,6 +225,48 @@ export const makeReactionRemoveData = (
   dataOptions: MessageDataOptions,
 ): HubAsyncResult<protobufs.ReactionRemoveData> => {
   return makeMessageData({ reactionBody: body }, protobufs.MessageType.REACTION_REMOVE, dataOptions);
+};
+
+/* -------------------------------------------------------------------------- */
+/*                                 TAG METHODS                                */
+/* -------------------------------------------------------------------------- */
+
+export const makeTagAdd = async (
+  body: protobufs.TagBody,
+  dataOptions: MessageDataOptions,
+  signer: Signer,
+): HubAsyncResult<protobufs.ReactionAddMessage> => {
+  const data = await makeTagAddData(body, dataOptions);
+  if (data.isErr()) {
+    return err(data.error);
+  }
+  return makeMessage(data.value, signer);
+};
+
+export const makeTagRemove = async (
+  body: protobufs.TagBody,
+  dataOptions: MessageDataOptions,
+  signer: Signer,
+): HubAsyncResult<protobufs.ReactionRemoveMessage> => {
+  const data = await makeTagRemoveData(body, dataOptions);
+  if (data.isErr()) {
+    return err(data.error);
+  }
+  return makeMessage(data.value, signer);
+};
+
+export const makeTagAddData = (
+  body: protobufs.TagBody,
+  dataOptions: MessageDataOptions,
+): HubAsyncResult<protobufs.TagAddData> => {
+  return makeMessageData({ tagBody: body }, protobufs.MessageType.TAG_ADD, dataOptions);
+};
+
+export const makeTagRemoveData = (
+  body: protobufs.TagBody,
+  dataOptions: MessageDataOptions,
+): HubAsyncResult<protobufs.TagRemoveData> => {
+  return makeMessageData({ tagBody: body }, protobufs.MessageType.TAG_REMOVE, dataOptions);
 };
 
 /* -------------------------------------------------------------------------- */

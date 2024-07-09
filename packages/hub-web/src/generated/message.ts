@@ -103,6 +103,10 @@ export enum MessageType {
   FRAME_ACTION = 13,
   /** LINK_COMPACT_STATE - Link Compaction State Message */
   LINK_COMPACT_STATE = 14,
+  /** TAG_ADD - Add a Tag to a Cast */
+  TAG_ADD = 15,
+  /** TAG_REMOVE - Remove a Tag from a Cast */
+  TAG_REMOVE = 16,
 }
 
 export function messageTypeFromJSON(object: any): MessageType {
@@ -146,6 +150,12 @@ export function messageTypeFromJSON(object: any): MessageType {
     case 14:
     case "MESSAGE_TYPE_LINK_COMPACT_STATE":
       return MessageType.LINK_COMPACT_STATE;
+    case 15:
+    case "MESSAGE_TYPE_TAG_ADD":
+      return MessageType.TAG_ADD;
+    case 16:
+    case "MESSAGE_TYPE_TAG_REMOVE":
+      return MessageType.TAG_REMOVE;
     default:
       throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum MessageType");
   }
@@ -179,6 +189,10 @@ export function messageTypeToJSON(object: MessageType): string {
       return "MESSAGE_TYPE_FRAME_ACTION";
     case MessageType.LINK_COMPACT_STATE:
       return "MESSAGE_TYPE_LINK_COMPACT_STATE";
+    case MessageType.TAG_ADD:
+      return "MESSAGE_TYPE_TAG_ADD";
+    case MessageType.TAG_REMOVE:
+      return "MESSAGE_TYPE_TAG_REMOVE";
     default:
       throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum MessageType");
   }
@@ -418,6 +432,7 @@ export interface MessageData {
     | undefined;
   /** Compaction messages */
   linkCompactStateBody?: LinkCompactStateBody | undefined;
+  tagBody?: TagBody | undefined;
 }
 
 /** Adds metadata about a user */
@@ -473,6 +488,18 @@ export interface CastId {
 export interface ReactionBody {
   /** Type of reaction */
   type: ReactionType;
+  /** CastId of the Cast to react to */
+  targetCastId?:
+    | CastId
+    | undefined;
+  /** URL to react to */
+  targetUrl?: string | undefined;
+}
+
+/** Adds or removes a Tag from a Cast */
+export interface TagBody {
+  /** Tag value */
+  value: string;
   /** CastId of the Cast to react to */
   targetCastId?:
     | CastId
@@ -710,6 +737,7 @@ function createBaseMessageData(): MessageData {
     usernameProofBody: undefined,
     frameActionBody: undefined,
     linkCompactStateBody: undefined,
+    tagBody: undefined,
   };
 }
 
@@ -756,6 +784,9 @@ export const MessageData = {
     }
     if (message.linkCompactStateBody !== undefined) {
       LinkCompactStateBody.encode(message.linkCompactStateBody, writer.uint32(138).fork()).ldelim();
+    }
+    if (message.tagBody !== undefined) {
+      TagBody.encode(message.tagBody, writer.uint32(146).fork()).ldelim();
     }
     return writer;
   },
@@ -865,6 +896,13 @@ export const MessageData = {
 
           message.linkCompactStateBody = LinkCompactStateBody.decode(reader, reader.uint32());
           continue;
+        case 18:
+          if (tag != 146) {
+            break;
+          }
+
+          message.tagBody = TagBody.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -896,6 +934,7 @@ export const MessageData = {
       linkCompactStateBody: isSet(object.linkCompactStateBody)
         ? LinkCompactStateBody.fromJSON(object.linkCompactStateBody)
         : undefined,
+      tagBody: isSet(object.tagBody) ? TagBody.fromJSON(object.tagBody) : undefined,
     };
   },
 
@@ -928,6 +967,7 @@ export const MessageData = {
     message.linkCompactStateBody !== undefined && (obj.linkCompactStateBody = message.linkCompactStateBody
       ? LinkCompactStateBody.toJSON(message.linkCompactStateBody)
       : undefined);
+    message.tagBody !== undefined && (obj.tagBody = message.tagBody ? TagBody.toJSON(message.tagBody) : undefined);
     return obj;
   },
 
@@ -972,6 +1012,9 @@ export const MessageData = {
       : undefined;
     message.linkCompactStateBody = (object.linkCompactStateBody !== undefined && object.linkCompactStateBody !== null)
       ? LinkCompactStateBody.fromPartial(object.linkCompactStateBody)
+      : undefined;
+    message.tagBody = (object.tagBody !== undefined && object.tagBody !== null)
+      ? TagBody.fromPartial(object.tagBody)
       : undefined;
     return message;
   },
@@ -1518,6 +1561,93 @@ export const ReactionBody = {
   fromPartial<I extends Exact<DeepPartial<ReactionBody>, I>>(object: I): ReactionBody {
     const message = createBaseReactionBody();
     message.type = object.type ?? 0;
+    message.targetCastId = (object.targetCastId !== undefined && object.targetCastId !== null)
+      ? CastId.fromPartial(object.targetCastId)
+      : undefined;
+    message.targetUrl = object.targetUrl ?? undefined;
+    return message;
+  },
+};
+
+function createBaseTagBody(): TagBody {
+  return { value: "", targetCastId: undefined, targetUrl: undefined };
+}
+
+export const TagBody = {
+  encode(message: TagBody, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.value !== "") {
+      writer.uint32(10).string(message.value);
+    }
+    if (message.targetCastId !== undefined) {
+      CastId.encode(message.targetCastId, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.targetUrl !== undefined) {
+      writer.uint32(26).string(message.targetUrl);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TagBody {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTagBody();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.targetCastId = CastId.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.targetUrl = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TagBody {
+    return {
+      value: isSet(object.value) ? String(object.value) : "",
+      targetCastId: isSet(object.targetCastId) ? CastId.fromJSON(object.targetCastId) : undefined,
+      targetUrl: isSet(object.targetUrl) ? String(object.targetUrl) : undefined,
+    };
+  },
+
+  toJSON(message: TagBody): unknown {
+    const obj: any = {};
+    message.value !== undefined && (obj.value = message.value);
+    message.targetCastId !== undefined &&
+      (obj.targetCastId = message.targetCastId ? CastId.toJSON(message.targetCastId) : undefined);
+    message.targetUrl !== undefined && (obj.targetUrl = message.targetUrl);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<TagBody>, I>>(base?: I): TagBody {
+    return TagBody.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<TagBody>, I>>(object: I): TagBody {
+    const message = createBaseTagBody();
+    message.value = object.value ?? "";
     message.targetCastId = (object.targetCastId !== undefined && object.targetCastId !== null)
       ? CastId.fromPartial(object.targetCastId)
       : undefined;
