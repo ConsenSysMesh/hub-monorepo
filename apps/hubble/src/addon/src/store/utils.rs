@@ -269,7 +269,7 @@ pub enum TargetTypePrefix {
 // TODO: Figure out what the object key key is
 pub fn make_object_key_key(object_key: &ObjectKey) -> Vec<u8> {
     // What is the max length for a key? (for now its 24) (it should be 30? based on primary key length)
-    let mut key = Vec::with_capacity(4 + 24);
+    let mut key = Vec::with_capacity(1 + 30);
     if object_key.network == FarcasterNetwork::Mainnet as i32 {
         key.push(TargetTypePrefix::H1Object as u8);
     } else {

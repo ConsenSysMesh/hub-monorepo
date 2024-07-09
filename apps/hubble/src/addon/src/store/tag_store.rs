@@ -193,7 +193,7 @@ impl TagStoreDef {
         fid: u32,
         ts_hash: Option<&[u8; TS_HASH_LENGTH]>,
     ) -> Vec<u8> {
-        let mut key = Vec::with_capacity(1 + 28 + 24 + 4);
+        let mut key = Vec::with_capacity(1 + 31 + 24 + 4);
 
         key.push(RootPrefix::TagsByTarget as u8); // TagsByTarget prefix, 1 byte
         key.extend_from_slice(&make_ref_key(target));
@@ -218,14 +218,14 @@ impl TagStoreDef {
                 message: "tag provided without name or target".to_string(),
             });
         }
-        let mut key = Vec::with_capacity(33 + 1 + 1 + 28);
+        let mut key = Vec::with_capacity(33 + 1 + 1 + 31);
 
         key.extend_from_slice(&make_user_key(fid));
         key.push(UserPostfix::TagAdds as u8); // tagAdds postfix, 1 byte
 
         key.extend_from_slice(&name.as_bytes().to_vec());
 
-        // target, 28 bytes
+        // target, 31 bytes
         key.extend_from_slice(&make_ref_key(target.unwrap()));
 
         Ok(key)
@@ -242,14 +242,14 @@ impl TagStoreDef {
                 message: "tag provided without name or target".to_string(),
             });
         }
-        let mut key = Vec::with_capacity(33 + 1 + 1 + 28);
+        let mut key = Vec::with_capacity(33 + 1 + 1 + 31);
 
         key.extend_from_slice(&make_user_key(fid));
         key.push(UserPostfix::TagRemoves as u8); // TagRemoves postfix, 1 byte
 
         key.extend_from_slice(&name.as_bytes().to_vec());
 
-        // target, 28 bytes
+        // target, 31 bytes
         key.extend_from_slice(&make_ref_key(target.unwrap()));
 
         Ok(key)
