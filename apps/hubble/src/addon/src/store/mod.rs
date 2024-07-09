@@ -22,3 +22,6 @@ mod username_proof_store;
 mod utils;
 mod verification_store;
 mod tag_store;
+
+#[cfg(test)]
+mod store_tests;

@@ -509,7 +509,7 @@ export const rsGetTagAddsByFid = async (
   store: RustDynStore,
   fid: number,
   value: string,
-  pageOptions: PageOptions,
+  pageOptions: PageOptions = {},
 ): Promise<RustMessagesPage> => {
   return await lib.getTagAddsByFid.call(store, fid, value, pageOptions);
 };
@@ -517,8 +517,8 @@ export const rsGetTagAddsByFid = async (
 export const rsGetTagRemovesByFid = async (
   store: RustDynStore,
   fid: number,
-  value: string,
-  pageOptions: PageOptions,
+  value?: string,
+  pageOptions: PageOptions = {},
 ): Promise<RustMessagesPage> => {
   return await lib.getTagRemovesByFid.call(store, fid, value, pageOptions);
 };
@@ -528,7 +528,7 @@ export const rsGetTagsByTarget = async (
   targetCastIdBytes: Buffer,
   targetUrl: string,
   value: string,
-  pageOptions: PageOptions,
+  pageOptions: PageOptions = {},
 ): Promise<RustMessagesPage> => {
   return await lib.getTagsByTarget.call(store, targetCastIdBytes, targetUrl, value, pageOptions);
 };

@@ -560,7 +560,7 @@ impl ReactionStore {
 
                     let fid =
                         u32::from_be_bytes(key[fid_offset..fid_offset + 4].try_into().unwrap());
-                    let ts_hash = key[ts_hash_offset..ts_hash_offset + TS_HASH_LENGTH]
+                    let ts_hash: [u8; 24] = key[ts_hash_offset..ts_hash_offset + TS_HASH_LENGTH]
                         .try_into()
                         .unwrap();
                     let message_primary_key = crate::store::message::make_message_primary_key(

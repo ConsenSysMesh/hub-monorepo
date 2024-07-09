@@ -210,6 +210,30 @@ export interface ReactionsByTargetRequest {
   reverse?: boolean | undefined;
 }
 
+export interface TagRequest {
+  fid: number;
+  value: string;
+  targetCastId?: CastId | undefined;
+  targetUrl?: string | undefined;
+}
+
+export interface TagsByFidRequest {
+  fid: number;
+  value?: string | undefined;
+  pageSize?: number | undefined;
+  pageToken?: Uint8Array | undefined;
+  reverse?: boolean | undefined;
+}
+
+export interface TagsByTargetRequest {
+  targetCastId?: CastId | undefined;
+  targetUrl?: string | undefined;
+  value?: string | undefined;
+  pageSize?: number | undefined;
+  pageToken?: Uint8Array | undefined;
+  reverse?: boolean | undefined;
+}
+
 export interface UserDataRequest {
   fid: number;
   userDataType: UserDataType;
@@ -2259,6 +2283,351 @@ export const ReactionsByTargetRequest = {
       : undefined;
     message.targetUrl = object.targetUrl ?? undefined;
     message.reactionType = object.reactionType ?? undefined;
+    message.pageSize = object.pageSize ?? undefined;
+    message.pageToken = object.pageToken ?? undefined;
+    message.reverse = object.reverse ?? undefined;
+    return message;
+  },
+};
+
+function createBaseTagRequest(): TagRequest {
+  return { fid: 0, value: "", targetCastId: undefined, targetUrl: undefined };
+}
+
+export const TagRequest = {
+  encode(message: TagRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.fid !== 0) {
+      writer.uint32(8).uint64(message.fid);
+    }
+    if (message.value !== "") {
+      writer.uint32(18).string(message.value);
+    }
+    if (message.targetCastId !== undefined) {
+      CastId.encode(message.targetCastId, writer.uint32(26).fork()).ldelim();
+    }
+    if (message.targetUrl !== undefined) {
+      writer.uint32(34).string(message.targetUrl);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TagRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTagRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 8) {
+            break;
+          }
+
+          message.fid = longToNumber(reader.uint64() as Long);
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.targetCastId = CastId.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.targetUrl = reader.string();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TagRequest {
+    return {
+      fid: isSet(object.fid) ? Number(object.fid) : 0,
+      value: isSet(object.value) ? String(object.value) : "",
+      targetCastId: isSet(object.targetCastId) ? CastId.fromJSON(object.targetCastId) : undefined,
+      targetUrl: isSet(object.targetUrl) ? String(object.targetUrl) : undefined,
+    };
+  },
+
+  toJSON(message: TagRequest): unknown {
+    const obj: any = {};
+    message.fid !== undefined && (obj.fid = Math.round(message.fid));
+    message.value !== undefined && (obj.value = message.value);
+    message.targetCastId !== undefined &&
+      (obj.targetCastId = message.targetCastId ? CastId.toJSON(message.targetCastId) : undefined);
+    message.targetUrl !== undefined && (obj.targetUrl = message.targetUrl);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<TagRequest>, I>>(base?: I): TagRequest {
+    return TagRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<TagRequest>, I>>(object: I): TagRequest {
+    const message = createBaseTagRequest();
+    message.fid = object.fid ?? 0;
+    message.value = object.value ?? "";
+    message.targetCastId = (object.targetCastId !== undefined && object.targetCastId !== null)
+      ? CastId.fromPartial(object.targetCastId)
+      : undefined;
+    message.targetUrl = object.targetUrl ?? undefined;
+    return message;
+  },
+};
+
+function createBaseTagsByFidRequest(): TagsByFidRequest {
+  return { fid: 0, value: undefined, pageSize: undefined, pageToken: undefined, reverse: undefined };
+}
+
+export const TagsByFidRequest = {
+  encode(message: TagsByFidRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.fid !== 0) {
+      writer.uint32(8).uint64(message.fid);
+    }
+    if (message.value !== undefined) {
+      writer.uint32(18).string(message.value);
+    }
+    if (message.pageSize !== undefined) {
+      writer.uint32(24).uint32(message.pageSize);
+    }
+    if (message.pageToken !== undefined) {
+      writer.uint32(34).bytes(message.pageToken);
+    }
+    if (message.reverse !== undefined) {
+      writer.uint32(40).bool(message.reverse);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TagsByFidRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTagsByFidRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 8) {
+            break;
+          }
+
+          message.fid = longToNumber(reader.uint64() as Long);
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        case 3:
+          if (tag != 24) {
+            break;
+          }
+
+          message.pageSize = reader.uint32();
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.pageToken = reader.bytes();
+          continue;
+        case 5:
+          if (tag != 40) {
+            break;
+          }
+
+          message.reverse = reader.bool();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TagsByFidRequest {
+    return {
+      fid: isSet(object.fid) ? Number(object.fid) : 0,
+      value: isSet(object.value) ? String(object.value) : undefined,
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : undefined,
+      pageToken: isSet(object.pageToken) ? bytesFromBase64(object.pageToken) : undefined,
+      reverse: isSet(object.reverse) ? Boolean(object.reverse) : undefined,
+    };
+  },
+
+  toJSON(message: TagsByFidRequest): unknown {
+    const obj: any = {};
+    message.fid !== undefined && (obj.fid = Math.round(message.fid));
+    message.value !== undefined && (obj.value = message.value);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined &&
+      (obj.pageToken = message.pageToken !== undefined ? base64FromBytes(message.pageToken) : undefined);
+    message.reverse !== undefined && (obj.reverse = message.reverse);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<TagsByFidRequest>, I>>(base?: I): TagsByFidRequest {
+    return TagsByFidRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<TagsByFidRequest>, I>>(object: I): TagsByFidRequest {
+    const message = createBaseTagsByFidRequest();
+    message.fid = object.fid ?? 0;
+    message.value = object.value ?? undefined;
+    message.pageSize = object.pageSize ?? undefined;
+    message.pageToken = object.pageToken ?? undefined;
+    message.reverse = object.reverse ?? undefined;
+    return message;
+  },
+};
+
+function createBaseTagsByTargetRequest(): TagsByTargetRequest {
+  return {
+    targetCastId: undefined,
+    targetUrl: undefined,
+    value: undefined,
+    pageSize: undefined,
+    pageToken: undefined,
+    reverse: undefined,
+  };
+}
+
+export const TagsByTargetRequest = {
+  encode(message: TagsByTargetRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.targetCastId !== undefined) {
+      CastId.encode(message.targetCastId, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.targetUrl !== undefined) {
+      writer.uint32(50).string(message.targetUrl);
+    }
+    if (message.value !== undefined) {
+      writer.uint32(18).string(message.value);
+    }
+    if (message.pageSize !== undefined) {
+      writer.uint32(24).uint32(message.pageSize);
+    }
+    if (message.pageToken !== undefined) {
+      writer.uint32(34).bytes(message.pageToken);
+    }
+    if (message.reverse !== undefined) {
+      writer.uint32(40).bool(message.reverse);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): TagsByTargetRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseTagsByTargetRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.targetCastId = CastId.decode(reader, reader.uint32());
+          continue;
+        case 6:
+          if (tag != 50) {
+            break;
+          }
+
+          message.targetUrl = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.value = reader.string();
+          continue;
+        case 3:
+          if (tag != 24) {
+            break;
+          }
+
+          message.pageSize = reader.uint32();
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.pageToken = reader.bytes();
+          continue;
+        case 5:
+          if (tag != 40) {
+            break;
+          }
+
+          message.reverse = reader.bool();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): TagsByTargetRequest {
+    return {
+      targetCastId: isSet(object.targetCastId) ? CastId.fromJSON(object.targetCastId) : undefined,
+      targetUrl: isSet(object.targetUrl) ? String(object.targetUrl) : undefined,
+      value: isSet(object.value) ? String(object.value) : undefined,
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : undefined,
+      pageToken: isSet(object.pageToken) ? bytesFromBase64(object.pageToken) : undefined,
+      reverse: isSet(object.reverse) ? Boolean(object.reverse) : undefined,
+    };
+  },
+
+  toJSON(message: TagsByTargetRequest): unknown {
+    const obj: any = {};
+    message.targetCastId !== undefined &&
+      (obj.targetCastId = message.targetCastId ? CastId.toJSON(message.targetCastId) : undefined);
+    message.targetUrl !== undefined && (obj.targetUrl = message.targetUrl);
+    message.value !== undefined && (obj.value = message.value);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined &&
+      (obj.pageToken = message.pageToken !== undefined ? base64FromBytes(message.pageToken) : undefined);
+    message.reverse !== undefined && (obj.reverse = message.reverse);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<TagsByTargetRequest>, I>>(base?: I): TagsByTargetRequest {
+    return TagsByTargetRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<TagsByTargetRequest>, I>>(object: I): TagsByTargetRequest {
+    const message = createBaseTagsByTargetRequest();
+    message.targetCastId = (object.targetCastId !== undefined && object.targetCastId !== null)
+      ? CastId.fromPartial(object.targetCastId)
+      : undefined;
+    message.targetUrl = object.targetUrl ?? undefined;
+    message.value = object.value ?? undefined;
     message.pageSize = object.pageSize ?? undefined;
     message.pageToken = object.pageToken ?? undefined;
     message.reverse = object.reverse ?? undefined;

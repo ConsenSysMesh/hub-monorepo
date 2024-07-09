@@ -279,6 +279,8 @@ class Engine extends TypedEmitter<EngineEvents> {
     const mergeResults: Map<number, HubResult<number>> = new Map();
     const validatedMessages: IndexedMessage[] = [];
 
+    messages.forEach(m => console.log('VIC -- About to merge', m, JSON.stringify(m.data, null, 2)));
+
     // Validate all messages first
     await Promise.all(
       messages.map(async (message, i) => {
@@ -764,7 +766,7 @@ class Engine extends TypedEmitter<EngineEvents> {
 
   async getTagsByFid(
     fid: number,
-    value: string,
+    value?: string,
     pageOptions: PageOptions = {},
   ): HubAsyncResult<MessagesPage<TagAddMessage>> {
     const validatedFid = validations.validateFid(fid);
@@ -780,7 +782,7 @@ class Engine extends TypedEmitter<EngineEvents> {
 
   async getTagsByTarget(
     target: CastId | string,
-    value: string,
+    value?: string,
     pageOptions: PageOptions = {},
   ): HubAsyncResult<MessagesPage<TagAddMessage>> {
     if (typeof target !== "string") {

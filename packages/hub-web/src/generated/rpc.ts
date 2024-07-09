@@ -32,6 +32,9 @@ import {
   SyncIds,
   SyncStatusRequest,
   SyncStatusResponse,
+  TagRequest,
+  TagsByFidRequest,
+  TagsByTargetRequest,
   TrieNodeMetadataResponse,
   TrieNodePrefix,
   TrieNodeSnapshotResponse,
@@ -78,6 +81,15 @@ export interface HubService {
     request: DeepPartial<ReactionsByTargetRequest>,
     metadata?: grpc.Metadata,
   ): Promise<MessagesResponse>;
+  /**
+   * Tags
+   * @http-api: tagById
+   */
+  getTag(request: DeepPartial<TagRequest>, metadata?: grpc.Metadata): Promise<Message>;
+  getTagsByFid(request: DeepPartial<TagsByFidRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse>;
+  /** To be deprecated */
+  getTagsByCast(request: DeepPartial<TagsByTargetRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse>;
+  getTagsByTarget(request: DeepPartial<TagsByTargetRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse>;
   /**
    * User Data
    * @http-api: none
@@ -135,6 +147,8 @@ export interface HubService {
   /** @http-api: none */
   getAllReactionMessagesByFid(request: DeepPartial<FidRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse>;
   /** @http-api: none */
+  getAllTagMessagesByFid(request: DeepPartial<FidRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse>;
+  /** @http-api: none */
   getAllVerificationMessagesByFid(
     request: DeepPartial<FidRequest>,
     metadata?: grpc.Metadata,
@@ -181,6 +195,10 @@ export class HubServiceClientImpl implements HubService {
     this.getReactionsByFid = this.getReactionsByFid.bind(this);
     this.getReactionsByCast = this.getReactionsByCast.bind(this);
     this.getReactionsByTarget = this.getReactionsByTarget.bind(this);
+    this.getTag = this.getTag.bind(this);
+    this.getTagsByFid = this.getTagsByFid.bind(this);
+    this.getTagsByCast = this.getTagsByCast.bind(this);
+    this.getTagsByTarget = this.getTagsByTarget.bind(this);
     this.getUserData = this.getUserData.bind(this);
     this.getUserDataByFid = this.getUserDataByFid.bind(this);
     this.getUsernameProof = this.getUsernameProof.bind(this);
@@ -199,6 +217,7 @@ export class HubServiceClientImpl implements HubService {
     this.getLinksByTarget = this.getLinksByTarget.bind(this);
     this.getAllCastMessagesByFid = this.getAllCastMessagesByFid.bind(this);
     this.getAllReactionMessagesByFid = this.getAllReactionMessagesByFid.bind(this);
+    this.getAllTagMessagesByFid = this.getAllTagMessagesByFid.bind(this);
     this.getAllVerificationMessagesByFid = this.getAllVerificationMessagesByFid.bind(this);
     this.getAllUserDataMessagesByFid = this.getAllUserDataMessagesByFid.bind(this);
     this.getAllLinkMessagesByFid = this.getAllLinkMessagesByFid.bind(this);
@@ -263,6 +282,22 @@ export class HubServiceClientImpl implements HubService {
     metadata?: grpc.Metadata,
   ): Promise<MessagesResponse> {
     return this.rpc.unary(HubServiceGetReactionsByTargetDesc, ReactionsByTargetRequest.fromPartial(request), metadata);
+  }
+
+  getTag(request: DeepPartial<TagRequest>, metadata?: grpc.Metadata): Promise<Message> {
+    return this.rpc.unary(HubServiceGetTagDesc, TagRequest.fromPartial(request), metadata);
+  }
+
+  getTagsByFid(request: DeepPartial<TagsByFidRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse> {
+    return this.rpc.unary(HubServiceGetTagsByFidDesc, TagsByFidRequest.fromPartial(request), metadata);
+  }
+
+  getTagsByCast(request: DeepPartial<TagsByTargetRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse> {
+    return this.rpc.unary(HubServiceGetTagsByCastDesc, TagsByTargetRequest.fromPartial(request), metadata);
+  }
+
+  getTagsByTarget(request: DeepPartial<TagsByTargetRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse> {
+    return this.rpc.unary(HubServiceGetTagsByTargetDesc, TagsByTargetRequest.fromPartial(request), metadata);
   }
 
   getUserData(request: DeepPartial<UserDataRequest>, metadata?: grpc.Metadata): Promise<Message> {
@@ -345,6 +380,10 @@ export class HubServiceClientImpl implements HubService {
 
   getAllReactionMessagesByFid(request: DeepPartial<FidRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse> {
     return this.rpc.unary(HubServiceGetAllReactionMessagesByFidDesc, FidRequest.fromPartial(request), metadata);
+  }
+
+  getAllTagMessagesByFid(request: DeepPartial<FidRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse> {
+    return this.rpc.unary(HubServiceGetAllTagMessagesByFidDesc, FidRequest.fromPartial(request), metadata);
   }
 
   getAllVerificationMessagesByFid(
@@ -660,6 +699,98 @@ export const HubServiceGetReactionsByTargetDesc: UnaryMethodDefinitionish = {
   requestType: {
     serializeBinary() {
       return ReactionsByTargetRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = MessagesResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const HubServiceGetTagDesc: UnaryMethodDefinitionish = {
+  methodName: "GetTag",
+  service: HubServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return TagRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = Message.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const HubServiceGetTagsByFidDesc: UnaryMethodDefinitionish = {
+  methodName: "GetTagsByFid",
+  service: HubServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return TagsByFidRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = MessagesResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const HubServiceGetTagsByCastDesc: UnaryMethodDefinitionish = {
+  methodName: "GetTagsByCast",
+  service: HubServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return TagsByTargetRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = MessagesResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const HubServiceGetTagsByTargetDesc: UnaryMethodDefinitionish = {
+  methodName: "GetTagsByTarget",
+  service: HubServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return TagsByTargetRequest.encode(this).finish();
     },
   } as any,
   responseType: {
@@ -1068,6 +1199,29 @@ export const HubServiceGetAllCastMessagesByFidDesc: UnaryMethodDefinitionish = {
 
 export const HubServiceGetAllReactionMessagesByFidDesc: UnaryMethodDefinitionish = {
   methodName: "GetAllReactionMessagesByFid",
+  service: HubServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return FidRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = MessagesResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const HubServiceGetAllTagMessagesByFidDesc: UnaryMethodDefinitionish = {
+  methodName: "GetAllTagMessagesByFid",
   service: HubServiceDesc,
   requestStream: false,
   responseStream: false,

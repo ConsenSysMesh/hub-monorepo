@@ -146,6 +146,34 @@ message ReactionsByTargetRequest {
   optional bool reverse = 5;
 }
 
+message TagRequest {
+  uint64 fid = 1;
+  string value = 2;
+  oneof target {
+    CastId target_cast_id = 3;
+    string target_url = 4;
+  }
+}
+
+message TagsByFidRequest {
+  uint64 fid = 1;
+  optional string value = 2;
+  optional uint32 page_size = 3;
+  optional bytes page_token = 4;
+  optional bool reverse = 5;
+}
+
+message TagsByTargetRequest {
+  oneof target {
+    CastId target_cast_id = 1;
+    string target_url = 6;
+  }
+  optional string value = 2;
+  optional uint32 page_size = 3;
+  optional bytes page_token = 4;
+  optional bool reverse = 5;
+}
+
 message UserDataRequest {
   uint64 fid = 1;
   UserDataType user_data_type = 2;
