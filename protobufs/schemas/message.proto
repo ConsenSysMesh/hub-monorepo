@@ -45,6 +45,9 @@ message MessageData {
     ObjectAddBody object_add_body = 19;
     ObjectRemoveBody object_remove_body = 20;
 
+    RelationshipAddBody relationship_add_body = 21;
+    RelationshipRemoveBody relationship_remove_body = 22;
+
   } // Properties specific to the MessageType
 }
 
@@ -81,8 +84,10 @@ enum MessageType {
   MESSAGE_TYPE_LINK_COMPACT_STATE = 14; // Link Compaction State Message
   MESSAGE_TYPE_TAG_ADD = 15; // Add a Tag to a Cast
   MESSAGE_TYPE_TAG_REMOVE = 16; // Remove a Tag from a Cast
-  MESSAGE_TYPE_OBJECT_ADD = 17; // Add a Tag to a Cast
-  MESSAGE_TYPE_OBJECT_REMOVE = 18; // Remove a Tag from a Cast
+  MESSAGE_TYPE_OBJECT_ADD = 17; // Add a generic Object
+  MESSAGE_TYPE_OBJECT_REMOVE = 18; // Remove a generic Object
+  MESSAGE_TYPE_RELATIONSHIP_ADD = 19; // Add a generic Relationship
+  MESSAGE_TYPE_RELATIONSHIP_REMOVE = 20; // Remove a generic Relationship
 }
 
 /** Farcaster network the message is intended for */
@@ -166,7 +171,7 @@ message ObjectRef {
 message TagBody {
   string name = 1; // Tag value
   optional string content = 2;
-  ObjectRef target = 3;  
+  ObjectRef target = 3;
 }
 
 /** Identifier used to look up an H2 Object (equivalent to CastId atm) */
@@ -186,6 +191,19 @@ message ObjectAddBody {
 /** Removes an existing Cast */
 message ObjectRemoveBody {
   bytes target_hash = 1; // Hash of the object to remove
+}
+
+/* Generic relationship at H2 */
+message RelationshipAddBody {
+  string type = 1; // Type of relationship (completely user-defined, thus a string)
+  // The implied directionality of the relationship is from source towards the target
+  ObjectRef source = 2;
+  ObjectRef target = 3;
+}
+
+/** Removes an existing Cast */
+message RelationshipRemoveBody {
+  bytes target_hash = 1; // Hash of the relationship to remove
 }
 
 /** Type of Reaction */

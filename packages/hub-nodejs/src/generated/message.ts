@@ -107,10 +107,14 @@ export enum MessageType {
   TAG_ADD = 15,
   /** TAG_REMOVE - Remove a Tag from a Cast */
   TAG_REMOVE = 16,
-  /** OBJECT_ADD - Add a Tag to a Cast */
+  /** OBJECT_ADD - Add a generic Object */
   OBJECT_ADD = 17,
-  /** OBJECT_REMOVE - Remove a Tag from a Cast */
+  /** OBJECT_REMOVE - Remove a generic Object */
   OBJECT_REMOVE = 18,
+  /** RELATIONSHIP_ADD - Add a generic Relationship */
+  RELATIONSHIP_ADD = 19,
+  /** RELATIONSHIP_REMOVE - Remove a generic Relationship */
+  RELATIONSHIP_REMOVE = 20,
 }
 
 export function messageTypeFromJSON(object: any): MessageType {
@@ -166,6 +170,12 @@ export function messageTypeFromJSON(object: any): MessageType {
     case 18:
     case "MESSAGE_TYPE_OBJECT_REMOVE":
       return MessageType.OBJECT_REMOVE;
+    case 19:
+    case "MESSAGE_TYPE_RELATIONSHIP_ADD":
+      return MessageType.RELATIONSHIP_ADD;
+    case 20:
+    case "MESSAGE_TYPE_RELATIONSHIP_REMOVE":
+      return MessageType.RELATIONSHIP_REMOVE;
     default:
       throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum MessageType");
   }
@@ -207,6 +217,10 @@ export function messageTypeToJSON(object: MessageType): string {
       return "MESSAGE_TYPE_OBJECT_ADD";
     case MessageType.OBJECT_REMOVE:
       return "MESSAGE_TYPE_OBJECT_REMOVE";
+    case MessageType.RELATIONSHIP_ADD:
+      return "MESSAGE_TYPE_RELATIONSHIP_ADD";
+    case MessageType.RELATIONSHIP_REMOVE:
+      return "MESSAGE_TYPE_RELATIONSHIP_REMOVE";
     default:
       throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum MessageType");
   }
@@ -449,6 +463,8 @@ export interface MessageData {
   tagBody?: TagBody | undefined;
   objectAddBody?: ObjectAddBody | undefined;
   objectRemoveBody?: ObjectRemoveBody | undefined;
+  relationshipAddBody?: RelationshipAddBody | undefined;
+  relationshipRemoveBody?: RelationshipRemoveBody | undefined;
 }
 
 /** Adds metadata about a user */
@@ -536,7 +552,7 @@ export interface TagBody {
   target: ObjectRef | undefined;
 }
 
-/** Identifier used to look up an H2 Object */
+/** Identifier used to look up an H2 Object (equivalent to CastId atm) */
 export interface ObjectId {
   /** Fid of the user who created the object */
   fid: number;
@@ -559,6 +575,21 @@ export interface ObjectAddBody {
 /** Removes an existing Cast */
 export interface ObjectRemoveBody {
   /** Hash of the object to remove */
+  targetHash: Uint8Array;
+}
+
+/** Generic relationship at H2 */
+export interface RelationshipAddBody {
+  /** Type of relationship (completely user-defined, thus a string) */
+  type: string;
+  /** The implied directionality of the relationship is from source towards the target */
+  source: ObjectRef | undefined;
+  target: ObjectRef | undefined;
+}
+
+/** Removes an existing Cast */
+export interface RelationshipRemoveBody {
+  /** Hash of the relationship to remove */
   targetHash: Uint8Array;
 }
 
@@ -794,6 +825,8 @@ function createBaseMessageData(): MessageData {
     tagBody: undefined,
     objectAddBody: undefined,
     objectRemoveBody: undefined,
+    relationshipAddBody: undefined,
+    relationshipRemoveBody: undefined,
   };
 }
 
@@ -849,6 +882,12 @@ export const MessageData = {
     }
     if (message.objectRemoveBody !== undefined) {
       ObjectRemoveBody.encode(message.objectRemoveBody, writer.uint32(162).fork()).ldelim();
+    }
+    if (message.relationshipAddBody !== undefined) {
+      RelationshipAddBody.encode(message.relationshipAddBody, writer.uint32(170).fork()).ldelim();
+    }
+    if (message.relationshipRemoveBody !== undefined) {
+      RelationshipRemoveBody.encode(message.relationshipRemoveBody, writer.uint32(178).fork()).ldelim();
     }
     return writer;
   },
@@ -979,6 +1018,20 @@ export const MessageData = {
 
           message.objectRemoveBody = ObjectRemoveBody.decode(reader, reader.uint32());
           continue;
+        case 21:
+          if (tag != 170) {
+            break;
+          }
+
+          message.relationshipAddBody = RelationshipAddBody.decode(reader, reader.uint32());
+          continue;
+        case 22:
+          if (tag != 178) {
+            break;
+          }
+
+          message.relationshipRemoveBody = RelationshipRemoveBody.decode(reader, reader.uint32());
+          continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
         break;
@@ -1013,6 +1066,12 @@ export const MessageData = {
       tagBody: isSet(object.tagBody) ? TagBody.fromJSON(object.tagBody) : undefined,
       objectAddBody: isSet(object.objectAddBody) ? ObjectAddBody.fromJSON(object.objectAddBody) : undefined,
       objectRemoveBody: isSet(object.objectRemoveBody) ? ObjectRemoveBody.fromJSON(object.objectRemoveBody) : undefined,
+      relationshipAddBody: isSet(object.relationshipAddBody)
+        ? RelationshipAddBody.fromJSON(object.relationshipAddBody)
+        : undefined,
+      relationshipRemoveBody: isSet(object.relationshipRemoveBody)
+        ? RelationshipRemoveBody.fromJSON(object.relationshipRemoveBody)
+        : undefined,
     };
   },
 
@@ -1050,6 +1109,12 @@ export const MessageData = {
       (obj.objectAddBody = message.objectAddBody ? ObjectAddBody.toJSON(message.objectAddBody) : undefined);
     message.objectRemoveBody !== undefined &&
       (obj.objectRemoveBody = message.objectRemoveBody ? ObjectRemoveBody.toJSON(message.objectRemoveBody) : undefined);
+    message.relationshipAddBody !== undefined && (obj.relationshipAddBody = message.relationshipAddBody
+      ? RelationshipAddBody.toJSON(message.relationshipAddBody)
+      : undefined);
+    message.relationshipRemoveBody !== undefined && (obj.relationshipRemoveBody = message.relationshipRemoveBody
+      ? RelationshipRemoveBody.toJSON(message.relationshipRemoveBody)
+      : undefined);
     return obj;
   },
 
@@ -1104,6 +1169,13 @@ export const MessageData = {
     message.objectRemoveBody = (object.objectRemoveBody !== undefined && object.objectRemoveBody !== null)
       ? ObjectRemoveBody.fromPartial(object.objectRemoveBody)
       : undefined;
+    message.relationshipAddBody = (object.relationshipAddBody !== undefined && object.relationshipAddBody !== null)
+      ? RelationshipAddBody.fromPartial(object.relationshipAddBody)
+      : undefined;
+    message.relationshipRemoveBody =
+      (object.relationshipRemoveBody !== undefined && object.relationshipRemoveBody !== null)
+        ? RelationshipRemoveBody.fromPartial(object.relationshipRemoveBody)
+        : undefined;
     return message;
   },
 };
@@ -2109,6 +2181,151 @@ export const ObjectRemoveBody = {
 
   fromPartial<I extends Exact<DeepPartial<ObjectRemoveBody>, I>>(object: I): ObjectRemoveBody {
     const message = createBaseObjectRemoveBody();
+    message.targetHash = object.targetHash ?? new Uint8Array();
+    return message;
+  },
+};
+
+function createBaseRelationshipAddBody(): RelationshipAddBody {
+  return { type: "", source: undefined, target: undefined };
+}
+
+export const RelationshipAddBody = {
+  encode(message: RelationshipAddBody, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.type !== "") {
+      writer.uint32(10).string(message.type);
+    }
+    if (message.source !== undefined) {
+      ObjectRef.encode(message.source, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.target !== undefined) {
+      ObjectRef.encode(message.target, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RelationshipAddBody {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRelationshipAddBody();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.type = reader.string();
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.source = ObjectRef.decode(reader, reader.uint32());
+          continue;
+        case 3:
+          if (tag != 26) {
+            break;
+          }
+
+          message.target = ObjectRef.decode(reader, reader.uint32());
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RelationshipAddBody {
+    return {
+      type: isSet(object.type) ? String(object.type) : "",
+      source: isSet(object.source) ? ObjectRef.fromJSON(object.source) : undefined,
+      target: isSet(object.target) ? ObjectRef.fromJSON(object.target) : undefined,
+    };
+  },
+
+  toJSON(message: RelationshipAddBody): unknown {
+    const obj: any = {};
+    message.type !== undefined && (obj.type = message.type);
+    message.source !== undefined && (obj.source = message.source ? ObjectRef.toJSON(message.source) : undefined);
+    message.target !== undefined && (obj.target = message.target ? ObjectRef.toJSON(message.target) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RelationshipAddBody>, I>>(base?: I): RelationshipAddBody {
+    return RelationshipAddBody.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<RelationshipAddBody>, I>>(object: I): RelationshipAddBody {
+    const message = createBaseRelationshipAddBody();
+    message.type = object.type ?? "";
+    message.source = (object.source !== undefined && object.source !== null)
+      ? ObjectRef.fromPartial(object.source)
+      : undefined;
+    message.target = (object.target !== undefined && object.target !== null)
+      ? ObjectRef.fromPartial(object.target)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseRelationshipRemoveBody(): RelationshipRemoveBody {
+  return { targetHash: new Uint8Array() };
+}
+
+export const RelationshipRemoveBody = {
+  encode(message: RelationshipRemoveBody, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.targetHash.length !== 0) {
+      writer.uint32(10).bytes(message.targetHash);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RelationshipRemoveBody {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRelationshipRemoveBody();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.targetHash = reader.bytes();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RelationshipRemoveBody {
+    return { targetHash: isSet(object.targetHash) ? bytesFromBase64(object.targetHash) : new Uint8Array() };
+  },
+
+  toJSON(message: RelationshipRemoveBody): unknown {
+    const obj: any = {};
+    message.targetHash !== undefined &&
+      (obj.targetHash = base64FromBytes(message.targetHash !== undefined ? message.targetHash : new Uint8Array()));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RelationshipRemoveBody>, I>>(base?: I): RelationshipRemoveBody {
+    return RelationshipRemoveBody.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<RelationshipRemoveBody>, I>>(object: I): RelationshipRemoveBody {
+    const message = createBaseRelationshipRemoveBody();
     message.targetHash = object.targetHash ?? new Uint8Array();
     return message;
   },

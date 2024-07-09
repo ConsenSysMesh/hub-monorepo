@@ -26,6 +26,9 @@ export enum StoreType {
   USER_DATA = 4,
   VERIFICATIONS = 5,
   USERNAME_PROOFS = 6,
+  TAGS = 7,
+  OBJECTS = 8,
+  RELATIONSHIPS = 9,
 }
 
 export function storeTypeFromJSON(object: any): StoreType {
@@ -51,6 +54,15 @@ export function storeTypeFromJSON(object: any): StoreType {
     case 6:
     case "STORE_TYPE_USERNAME_PROOFS":
       return StoreType.USERNAME_PROOFS;
+    case 7:
+    case "STORE_TYPE_TAGS":
+      return StoreType.TAGS;
+    case 8:
+    case "STORE_TYPE_OBJECTS":
+      return StoreType.OBJECTS;
+    case 9:
+    case "STORE_TYPE_RELATIONSHIPS":
+      return StoreType.RELATIONSHIPS;
     default:
       throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum StoreType");
   }
@@ -72,6 +84,12 @@ export function storeTypeToJSON(object: StoreType): string {
       return "STORE_TYPE_VERIFICATIONS";
     case StoreType.USERNAME_PROOFS:
       return "STORE_TYPE_USERNAME_PROOFS";
+    case StoreType.TAGS:
+      return "STORE_TYPE_TAGS";
+    case StoreType.OBJECTS:
+      return "STORE_TYPE_OBJECTS";
+    case StoreType.RELATIONSHIPS:
+      return "STORE_TYPE_RELATIONSHIPS";
     default:
       throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum StoreType");
   }
@@ -236,6 +254,14 @@ export interface TagsByTargetRequest {
 }
 
 export interface ObjectsByFidRequest {
+  fid: number;
+  type?: string | undefined;
+  pageSize?: number | undefined;
+  pageToken?: Uint8Array | undefined;
+  reverse?: boolean | undefined;
+}
+
+export interface RelationshipsByFidRequest {
   fid: number;
   type?: string | undefined;
   pageSize?: number | undefined;
@@ -2725,6 +2751,117 @@ export const ObjectsByFidRequest = {
 
   fromPartial<I extends Exact<DeepPartial<ObjectsByFidRequest>, I>>(object: I): ObjectsByFidRequest {
     const message = createBaseObjectsByFidRequest();
+    message.fid = object.fid ?? 0;
+    message.type = object.type ?? undefined;
+    message.pageSize = object.pageSize ?? undefined;
+    message.pageToken = object.pageToken ?? undefined;
+    message.reverse = object.reverse ?? undefined;
+    return message;
+  },
+};
+
+function createBaseRelationshipsByFidRequest(): RelationshipsByFidRequest {
+  return { fid: 0, type: undefined, pageSize: undefined, pageToken: undefined, reverse: undefined };
+}
+
+export const RelationshipsByFidRequest = {
+  encode(message: RelationshipsByFidRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.fid !== 0) {
+      writer.uint32(8).uint64(message.fid);
+    }
+    if (message.type !== undefined) {
+      writer.uint32(18).string(message.type);
+    }
+    if (message.pageSize !== undefined) {
+      writer.uint32(24).uint32(message.pageSize);
+    }
+    if (message.pageToken !== undefined) {
+      writer.uint32(34).bytes(message.pageToken);
+    }
+    if (message.reverse !== undefined) {
+      writer.uint32(40).bool(message.reverse);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RelationshipsByFidRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRelationshipsByFidRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 8) {
+            break;
+          }
+
+          message.fid = longToNumber(reader.uint64() as Long);
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.type = reader.string();
+          continue;
+        case 3:
+          if (tag != 24) {
+            break;
+          }
+
+          message.pageSize = reader.uint32();
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.pageToken = reader.bytes();
+          continue;
+        case 5:
+          if (tag != 40) {
+            break;
+          }
+
+          message.reverse = reader.bool();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RelationshipsByFidRequest {
+    return {
+      fid: isSet(object.fid) ? Number(object.fid) : 0,
+      type: isSet(object.type) ? String(object.type) : undefined,
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : undefined,
+      pageToken: isSet(object.pageToken) ? bytesFromBase64(object.pageToken) : undefined,
+      reverse: isSet(object.reverse) ? Boolean(object.reverse) : undefined,
+    };
+  },
+
+  toJSON(message: RelationshipsByFidRequest): unknown {
+    const obj: any = {};
+    message.fid !== undefined && (obj.fid = Math.round(message.fid));
+    message.type !== undefined && (obj.type = message.type);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined &&
+      (obj.pageToken = message.pageToken !== undefined ? base64FromBytes(message.pageToken) : undefined);
+    message.reverse !== undefined && (obj.reverse = message.reverse);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RelationshipsByFidRequest>, I>>(base?: I): RelationshipsByFidRequest {
+    return RelationshipsByFidRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<RelationshipsByFidRequest>, I>>(object: I): RelationshipsByFidRequest {
+    const message = createBaseRelationshipsByFidRequest();
     message.fid = object.fid ?? 0;
     message.type = object.type ?? undefined;
     message.pageSize = object.pageSize ?? undefined;

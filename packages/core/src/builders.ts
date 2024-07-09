@@ -29,6 +29,8 @@ type MessageBodyOptions = Pick<
   | "tagBody"
   | "objectAddBody"
   | "objectRemoveBody"
+  | "relationshipAddBody"
+  | "relationshipRemoveBody"
 >;
 
 /** Generic Methods */
@@ -311,7 +313,50 @@ export const makeObjectRemoveData = (
   body: protobufs.ObjectRemoveBody,
   dataOptions: MessageDataOptions,
 ): HubAsyncResult<protobufs.ObjectRemoveData> => {
-  return makeMessageData({ castRemoveBody: body }, protobufs.MessageType.OBJECT_REMOVE, dataOptions);
+  return makeMessageData({ objectRemoveBody: body }, protobufs.MessageType.OBJECT_REMOVE, dataOptions);
+};
+
+
+/* -------------------------------------------------------------------------- */
+/*                                 RELATIONSHIP METHODS                       */
+/* -------------------------------------------------------------------------- */
+
+export const makeRelationshipAdd = async (
+  body: protobufs.RelationshipAddBody,
+  dataOptions: MessageDataOptions,
+  signer: Signer,
+): HubAsyncResult<protobufs.TagAddMessage> => {
+  const data = await makeRelationshipAddData(body, dataOptions);
+  if (data.isErr()) {
+    return err(data.error);
+  }
+  return makeMessage(data.value, signer);
+};
+
+export const makeRelationshipRemove = async (
+  body: protobufs.RelationshipRemoveBody,
+  dataOptions: MessageDataOptions,
+  signer: Signer,
+): HubAsyncResult<protobufs.TagRemoveMessage> => {
+  const data = await makeRelationshipRemoveData(body, dataOptions);
+  if (data.isErr()) {
+    return err(data.error);
+  }
+  return makeMessage(data.value, signer);
+};
+
+export const makeRelationshipAddData = (
+  body: protobufs.RelationshipAddBody,
+  dataOptions: MessageDataOptions,
+): HubAsyncResult<protobufs.TagAddData> => {
+  return makeMessageData({ relationshipAddBody: body }, protobufs.MessageType.RELATIONSHIP_ADD, dataOptions);
+};
+
+export const makeRelationshipRemoveData = (
+  body: protobufs.RelationshipRemoveBody,
+  dataOptions: MessageDataOptions,
+): HubAsyncResult<protobufs.RelationshipRemoveData> => {
+  return makeMessageData({ relationshipRemoveBody: body }, protobufs.MessageType.RELATIONSHIP_REMOVE, dataOptions);
 };
 
 /* -------------------------------------------------------------------------- */

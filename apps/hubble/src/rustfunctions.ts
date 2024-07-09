@@ -324,6 +324,16 @@ export const rsCreateObjectStore = (
   return store as RustDynStore;
 };
 
+export const rsCreateRelationshipStore = (
+  db: RustDb,
+  eventHandler: RustStoreEventHandler,
+  pruneSizeLimit: number,
+): RustDynStore => {
+  const store = lib.createRelationshipStore(db, eventHandler, pruneSizeLimit);
+
+  return store as RustDynStore;
+};
+
 /** Create a cast Store */
 export const rsCreateCastStore = (
   db: RustDb,
@@ -578,15 +588,40 @@ export const rsGetObjectRemovesByFid = async (
   return await lib.getObjectRemovesByFid.call(store, fid, type, pageOptions);
 };
 
-// export const rsGetObjectsByTarget = async (
-//   store: RustDynStore,
-//   targetCastIdBytes: Buffer,
-//   targetUrl: string,
-//   value: string,
-//   pageOptions: PageOptions = {},
-// ): Promise<RustMessagesPage> => {
-//   return await lib.getObjectsByTarget.call(store, targetCastIdBytes, targetUrl, value, pageOptions);
-// };
+/** Relationship **/
+export const rsGetRelationshipAdd = async (
+  store: RustDynStore,
+  fid: number,
+  hashBytes: Buffer,
+): Promise<Buffer> => {
+  return await lib.getRelationshipAdd.call(store, fid, hashBytes);
+};
+
+export const rsGetRelationshipRemove = async (
+  store: RustDynStore,
+  fid: number,
+  hashBytes: Buffer,
+): Promise<Buffer> => {
+  return await lib.getRelationshipRemove.call(store, fid, hashBytes);
+};
+
+export const rsGetRelationshipAddsByFid = async (
+  store: RustDynStore,
+  fid: number,
+  type?: string,
+  pageOptions: PageOptions = {},
+): Promise<RustMessagesPage> => {
+  return await lib.getRelationshipAddsByFid.call(store, fid, type, pageOptions);
+};
+
+export const rsGetRelationshipRemovesByFid = async (
+  store: RustDynStore,
+  fid: number,
+  type?: string,
+  pageOptions: PageOptions = {},
+): Promise<RustMessagesPage> => {
+  return await lib.getRelationshipRemovesByFid.call(store, fid, type, pageOptions);
+};
 
 /** UserData Store */
 export const rsCreateUserDataStore = (

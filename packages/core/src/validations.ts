@@ -364,6 +364,10 @@ export const validateMessageData = async <T extends protobufs.MessageData>(
     bodyResult = validateObjectAddBody(data.objectAddBody);
   } else if (validType.value === protobufs.MessageType.OBJECT_REMOVE && !!data.objectRemoveBody) {
     bodyResult = validateObjectRemoveBody(data.objectRemoveBody);
+  } else if (validType.value === protobufs.MessageType.RELATIONSHIP_ADD && !!data.relationshipAddBody) {
+    bodyResult = validateRelationshipAddBody(data.relationshipAddBody);
+  } else if (validType.value === protobufs.MessageType.RELATIONSHIP_REMOVE && !!data.relationshipRemoveBody) {
+    bodyResult = validateRelationshipRemoveBody(data.relationshipRemoveBody);
   } else {
     return err(new HubError("bad_request.invalid_param", "bodyType is invalid"));
   }
@@ -657,6 +661,15 @@ export const validateObjectType = (type: string): HubResult<string> => {
   return ok(type);
 };
 
+// VLAD-TODO: determine reasonable max relationship type size (1-64 chars for now)
+export const validateRelationshipType = (type: string): HubResult<string> => {
+  if (type.length === 0 || type.length > 64) {
+    return err(new HubError("bad_request.validation_failure", "invalid relationship type (must be 1-64 characters)"));
+  }
+
+  return ok(type);
+};
+
 export const validateTarget = (
   target: protobufs.CastId | string | number,
 ): HubResult<protobufs.CastId | string | number> => {
@@ -794,6 +807,21 @@ export const validateObjectAddBody = (body: protobufs.ObjectAddBody): HubResult<
 };
 
 export const validateObjectRemoveBody = (body: protobufs.ObjectRemoveBody): HubResult<protobufs.ObjectRemoveBody> => {
+  return validateMessageHash(body.targetHash).map(() => body);
+};
+
+export const validateRelationshipAddBody = (body: protobufs.RelationshipAddBody): HubResult<protobufs.RelationshipAddBody> => {
+  const validatedType = validateRelationshipType(body.type);
+  if (validatedType.isErr()) {
+    return err(validatedType.error);
+  }
+
+  // VLAD-TODO: validate relationship source and target fields?
+
+  return ok(body);
+};
+
+export const validateRelationshipRemoveBody = (body: protobufs.RelationshipRemoveBody): HubResult<protobufs.RelationshipRemoveBody> => {
   return validateMessageHash(body.targetHash).map(() => body);
 };
 

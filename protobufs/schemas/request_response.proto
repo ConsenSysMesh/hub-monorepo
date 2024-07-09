@@ -179,6 +179,14 @@ message ObjectsByFidRequest {
   optional bool reverse = 5;
 }
 
+message RelationshipsByFidRequest {
+  uint64 fid = 1;
+  optional string type = 2;
+  optional uint32 page_size = 3;
+  optional bytes page_token = 4;
+  optional bool reverse = 5;
+}
+
 message UserDataRequest {
   uint64 fid = 1;
   UserDataType user_data_type = 2;
@@ -219,6 +227,9 @@ enum StoreType {
   STORE_TYPE_USER_DATA = 4;
   STORE_TYPE_VERIFICATIONS = 5;
   STORE_TYPE_USERNAME_PROOFS = 6;
+  STORE_TYPE_TAGS = 7;
+  STORE_TYPE_OBJECTS = 8;
+  STORE_TYPE_RELATIONSHIPS = 9;
 }
 
 message StorageLimit {

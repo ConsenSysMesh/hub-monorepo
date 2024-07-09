@@ -37,6 +37,8 @@
     "prepublishOnly": "yarn run build",
     "register-accounts": "tsx src/scripts/register-accounts.ts",
     "test-script": "tsx src/scripts/test.ts",
+    "test-obj-script": "tsx src/scripts/object_test.ts",
+    "test-rel-script": "tsx src/scripts/relationship-test.ts",
     "start:chain": "yarn hardhat node --config hardhat.config.cjs"
   },
   "devDependencies": {

@@ -37,6 +37,7 @@ import {
   ReactionRequest,
   ReactionsByFidRequest,
   ReactionsByTargetRequest,
+  RelationshipsByFidRequest,
   SignerRequest,
   StorageLimitsResponse,
   SubscribeRequest,
@@ -226,7 +227,7 @@ export const HubServiceService = {
   },
   /**
    * Objects
-   * @http-api: tagById
+   * @http-api: objectById
    */
   getObject: {
     path: "/HubService/GetObject",
@@ -243,6 +244,29 @@ export const HubServiceService = {
     responseStream: false,
     requestSerialize: (value: ObjectsByFidRequest) => Buffer.from(ObjectsByFidRequest.encode(value).finish()),
     requestDeserialize: (value: Buffer) => ObjectsByFidRequest.decode(value),
+    responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
+  },
+  /**
+   * Relationships
+   * @http-api: relationshipById
+   */
+  getRelationship: {
+    path: "/HubService/GetRelationship",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: ObjectId) => Buffer.from(ObjectId.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => ObjectId.decode(value),
+    responseSerialize: (value: Message) => Buffer.from(Message.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => Message.decode(value),
+  },
+  getRelationshipsByFid: {
+    path: "/HubService/GetRelationshipsByFid",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: RelationshipsByFidRequest) =>
+      Buffer.from(RelationshipsByFidRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => RelationshipsByFidRequest.decode(value),
     responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
     responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
   },
@@ -594,10 +618,16 @@ export interface HubServiceServer extends UntypedServiceImplementation {
   getTagsByTarget: handleUnaryCall<TagsByTargetRequest, MessagesResponse>;
   /**
    * Objects
-   * @http-api: tagById
+   * @http-api: objectById
    */
   getObject: handleUnaryCall<ObjectId, Message>;
   getObjectsByFid: handleUnaryCall<ObjectsByFidRequest, MessagesResponse>;
+  /**
+   * Relationships
+   * @http-api: relationshipById
+   */
+  getRelationship: handleUnaryCall<ObjectId, Message>;
+  getRelationshipsByFid: handleUnaryCall<RelationshipsByFidRequest, MessagesResponse>;
   /**
    * User Data
    * @http-api: none
@@ -914,7 +944,7 @@ export interface HubServiceClient extends Client {
   ): ClientUnaryCall;
   /**
    * Objects
-   * @http-api: tagById
+   * @http-api: objectById
    */
   getObject(request: ObjectId, callback: (error: ServiceError | null, response: Message) => void): ClientUnaryCall;
   getObject(
@@ -939,6 +969,40 @@ export interface HubServiceClient extends Client {
   ): ClientUnaryCall;
   getObjectsByFid(
     request: ObjectsByFidRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  /**
+   * Relationships
+   * @http-api: relationshipById
+   */
+  getRelationship(
+    request: ObjectId,
+    callback: (error: ServiceError | null, response: Message) => void,
+  ): ClientUnaryCall;
+  getRelationship(
+    request: ObjectId,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: Message) => void,
+  ): ClientUnaryCall;
+  getRelationship(
+    request: ObjectId,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: Message) => void,
+  ): ClientUnaryCall;
+  getRelationshipsByFid(
+    request: RelationshipsByFidRequest,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getRelationshipsByFid(
+    request: RelationshipsByFidRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getRelationshipsByFid(
+    request: RelationshipsByFidRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: MessagesResponse) => void,

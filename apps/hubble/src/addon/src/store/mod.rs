@@ -10,6 +10,7 @@ pub use self::utils::*;
 pub use self::verification_store::*;
 pub use self::tag_store::*;
 pub use self::object_store::*;
+pub use self::relationship_store::*;
 
 mod cast_store;
 mod link_store;
@@ -24,6 +25,7 @@ mod utils;
 mod verification_store;
 mod tag_store;
 mod object_store;
+mod relationship_store;
 
 #[cfg(test)]
 mod store_tests;
