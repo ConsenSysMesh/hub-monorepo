@@ -1,14 +1,14 @@
 use super::{
-    deferred_settle_messages, hub_error_to_js_throw, make_cast_id_key, make_fid_key, make_user_key,
+    deferred_settle_messages, make_fid_key, make_user_key,
     message,
     store::{Store, StoreDef},
-    utils::{get_page_options, get_store},
+    utils::{get_page_options, get_store, make_ref_key},
     HubError, IntoU8, MessagesPage, PageOptions, RootPrefix, StoreEventHandler, UserPostfix,
     PAGE_SIZE_MAX, TS_HASH_LENGTH,
 };
 use crate::{
     db::{RocksDB, RocksDbTransactionBatch},
-    protos::{self, object_ref::Ref, Message, MessageType, TagBody, ObjectKey, FarcasterNetwork},
+    protos::{self, object_ref::Ref, Message, MessageType},
 };
 use crate::{protos::message_data, THREAD_POOL};
 use neon::{
@@ -21,12 +21,6 @@ use std::{borrow::Borrow, convert::TryInto, sync::Arc};
 
 pub struct TagStoreDef {
     prune_size_limit: u32,
-}
-
-pub enum TargetTypePrefix {
-    H1Object = 1,
-    H2Object = 2,
-    Fid = 3,
 }
 
 impl StoreDef for TagStoreDef {
@@ -167,7 +161,6 @@ impl StoreDef for TagStoreDef {
 }
 
 impl TagStoreDef {
-    // VIC-TODO: convert from u8 as part of key to hash of type
     fn secondary_index_key(
         &self,
         ts_hash: &[u8; TS_HASH_LENGTH],
@@ -192,8 +185,6 @@ impl TagStoreDef {
             Some(ts_hash),
         );
 
-        // VIC-TODO: blake3_20 hash here?
-        // Ok((by_target_key, tag_body.r#type as u8))
         Ok((by_target_key, tag_body.name.as_bytes().to_vec()))
     }
 
@@ -205,7 +196,7 @@ impl TagStoreDef {
         let mut key = Vec::with_capacity(1 + 28 + 24 + 4);
 
         key.push(RootPrefix::TagsByTarget as u8); // TagsByTarget prefix, 1 byte
-        key.extend_from_slice(&Self::make_ref_key(target));
+        key.extend_from_slice(&make_ref_key(target));
         if ts_hash.is_some() && ts_hash.unwrap().len() == TS_HASH_LENGTH {
             key.extend_from_slice(ts_hash.unwrap());
         }
@@ -216,36 +207,6 @@ impl TagStoreDef {
         key
     }
 
-    // TODO: Figure out what the object key key is
-    pub fn make_object_key_key(object_key: &ObjectKey) -> Vec<u8> {
-        // What is the max length for a key? (for now its 24) (it should be 30? based on primary key length)
-        let mut key = Vec::with_capacity(4 + 24);
-        if object_key.network == FarcasterNetwork::Mainnet as i32 {
-            key.push(TargetTypePrefix::H1Object as u8);
-        } else {
-            // Should we have a specific network for H2
-            key.push(TargetTypePrefix::H2Object as u8);
-        }
-        key.extend_from_slice(&object_key.key.as_bytes().to_vec());
-    
-        key
-    }
-
-    pub fn make_object_ref_fid_key(fid: u32) -> Vec<u8> {
-        let mut key = Vec::with_capacity(1 + 4);
-        key.push(TargetTypePrefix::Fid as u8);
-        key.extend_from_slice(&make_fid_key(fid));
-        key
-    }
-
-    pub fn make_ref_key(object_ref: &Ref) -> Vec<u8> {
-        match object_ref {
-            Ref::ObjectKey(obj_key) => Self::make_object_key_key(obj_key), 
-            Ref::Fid(fid) => Self::make_object_ref_fid_key(*fid as u32),
-        }
-    }
-
-    // VIC-TODO: fix the key here
     pub fn make_tag_adds_key(
         fid: u32,
         name: String,
@@ -265,21 +226,20 @@ impl TagStoreDef {
         key.extend_from_slice(&name.as_bytes().to_vec());
 
         // target, 28 bytes
-        key.extend_from_slice(&Self::make_ref_key(target.unwrap()));
+        key.extend_from_slice(&make_ref_key(target.unwrap()));
 
         Ok(key)
     }
 
-    // VIC-TODO: fix the key here
     pub fn make_tag_removes_key(
         fid: u32,
-        r#type: String,
+        name: String,
         target: Option<&Ref>,
     ) -> Result<Vec<u8>, HubError> {
-        if target.is_some() && r#type.is_empty() {
+        if !target.is_some() || name.is_empty() {
             return Err(HubError {
                 code: "bad_request.validation_failure".to_string(),
-                message: "targetId provided without type".to_string(),
+                message: "tag provided without name or target".to_string(),
             });
         }
         let mut key = Vec::with_capacity(33 + 1 + 1 + 28);
@@ -287,16 +247,10 @@ impl TagStoreDef {
         key.extend_from_slice(&make_user_key(fid));
         key.push(UserPostfix::TagRemoves as u8); // TagRemoves postfix, 1 byte
 
-        // VIC-TODO: current key uses one byte for the like type
-        // explore using a hash of the tag type instead
-        // if r#type > 0 {
-        //     key.push(r#type as u8); // type, 1 byte
-        // }
+        key.extend_from_slice(&name.as_bytes().to_vec());
 
-        if target.is_some() {
-            key.extend_from_slice(&Self::make_ref_key(target.unwrap()));
-            // target, 28 bytes
-        }
+        // target, 28 bytes
+        key.extend_from_slice(&make_ref_key(target.unwrap()));
 
         Ok(key)
     }

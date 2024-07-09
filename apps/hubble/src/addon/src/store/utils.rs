@@ -1,7 +1,9 @@
-use super::{HubError, MessagesPage, PageOptions, Store, FARCASTER_EPOCH};
+use super::{HubError, MessagesPage, PageOptions, Store, FARCASTER_EPOCH, make_fid_key};
 use crate::{
     db::{JsIteratorOptions, RocksDB},
     trie::merkle_trie::{MerkleTrie, NodeMetadata},
+    protos::{object_ref::Ref, ObjectKey, FarcasterNetwork},
+
 };
 use neon::{
     context::{Context, FunctionContext, TaskContext},
@@ -254,6 +256,43 @@ pub fn deferred_settle_messages(
         Ok(messages) => encode_messages_to_js_object(&mut cx, messages),
         Err(e) => hub_error_to_js_throw(&mut cx, e),
     });
+}
+
+/** Object Ref Utils */
+
+pub enum TargetTypePrefix {
+    H1Object = 1,
+    H2Object = 2,
+    Fid = 3,
+}
+
+// TODO: Figure out what the object key key is
+pub fn make_object_key_key(object_key: &ObjectKey) -> Vec<u8> {
+    // What is the max length for a key? (for now its 24) (it should be 30? based on primary key length)
+    let mut key = Vec::with_capacity(4 + 24);
+    if object_key.network == FarcasterNetwork::Mainnet as i32 {
+        key.push(TargetTypePrefix::H1Object as u8);
+    } else {
+        // Should we have a specific network for H2
+        key.push(TargetTypePrefix::H2Object as u8);
+    }
+    key.extend_from_slice(&object_key.key.as_bytes().to_vec());
+
+    key
+}
+
+pub fn make_object_ref_fid_key(fid: u32) -> Vec<u8> {
+    let mut key = Vec::with_capacity(1 + 4);
+    key.push(TargetTypePrefix::Fid as u8);
+    key.extend_from_slice(&make_fid_key(fid));
+    key
+}
+
+pub fn make_ref_key(object_ref: &Ref) -> Vec<u8> {
+    match object_ref {
+        Ref::ObjectKey(obj_key) => make_object_key_key(obj_key), 
+        Ref::Fid(fid) => make_object_ref_fid_key(*fid as u32),
+    }
 }
 
 #[allow(dead_code)]
