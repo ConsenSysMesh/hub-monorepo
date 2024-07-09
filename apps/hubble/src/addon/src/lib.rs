@@ -6,7 +6,7 @@ use db::RocksDB;
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey, EXPANDED_SECRET_KEY_LENGTH};
 use neon::{prelude::*, types::buffer::TypedArray};
 use std::{convert::TryInto, sync::Mutex};
-use store::{LinkStore, ReactionStore, TagStore, ObjectStore, Store, UserDataStore};
+use store::{LinkStore, ReactionStore, TagStore, ObjectStore, RelationshipStore, Store, UserDataStore};
 use threadpool::ThreadPool;
 
 mod db;
@@ -200,10 +200,19 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         "getObjectRemovesByFid",
         ObjectStore::js_get_object_removes_by_fid,
     )?;
-    // cx.export_function(
-    //     "getObjectByTarget",
-    //     ObjectStore::js_get_objects_by_target,
-    // )?;
+
+    // RelationshipStore methods
+    cx.export_function("createRelationshipStore", RelationshipStore::create_relationship_store)?;
+    cx.export_function("getRelationshipAdd", RelationshipStore::js_get_relationship_add)?;
+    cx.export_function("getRelationshipRemove", RelationshipStore::js_get_relationship_remove)?;
+    cx.export_function(
+        "getRelationshipAddsByFid",
+        RelationshipStore::js_get_relationship_adds_by_fid,
+    )?;
+    cx.export_function(
+        "getRelationshipRemovesByFid",
+        RelationshipStore::js_get_relationship_removes_by_fid,
+    )?;
 
     // CastStore methods
     cx.export_function("createCastStore", CastStore::js_create_cast_store)?;

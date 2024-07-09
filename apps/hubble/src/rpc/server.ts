@@ -22,6 +22,7 @@ import {
   TagAddMessage,
   TagRemoveMessage,
   ObjectAddMessage,
+  RelationshipAddMessage,
   Server as GrpcServer,
   ServerCredentials,
   ServiceError,
@@ -983,6 +984,42 @@ export default class Server {
         });
         castsResult?.match(
           (page: MessagesPage<ObjectAddMessage>) => {
+            callback(null, messagesPageToResponse(page));
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getRelationship: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getRelationship", req: call.request }, `RPC call from ${peer}`);
+
+        const request = call.request;
+
+        const relationshipAddResult = await this.engine?.getRelationship(request.fid, request.hash);
+        relationshipAddResult?.match(
+          (objectAdd: RelationshipAddMessage) => {
+            callback(null, objectAdd);
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getRelationshipsByFid: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getRelationshipsByFid", req: call.request }, `RPC call from ${peer}`);
+
+        const { fid, type, pageSize, pageToken, reverse } = call.request;
+
+        const relationshipsResult = await this.engine?.getRelationshipsByFid(fid, type, {
+          pageSize,
+          pageToken,
+          reverse,
+        });
+        relationshipsResult?.match(
+          (page: MessagesPage<RelationshipAddMessage>) => {
             callback(null, messagesPageToResponse(page));
           },
           (err: HubError) => {

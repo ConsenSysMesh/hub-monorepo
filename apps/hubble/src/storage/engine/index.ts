@@ -42,6 +42,8 @@ import {
   TagRemoveMessage,
   ObjectAddMessage,
   ObjectRemoveMessage,
+  RelationshipAddMessage,
+  RelationshipRemoveMessage,
   UserDataAddMessage,
   UserDataType,
   UserNameProof,
@@ -62,6 +64,7 @@ import LinkStore from "../stores/linkStore.js";
 import ReactionStore from "../stores/reactionStore.js";
 import TagStore from "../stores/tagStore.js";
 import ObjectStore from "../stores/objectStore.js";
+import RelationshipStore from "../stores/relationshipStore.js";
 import StoreEventHandler from "../stores/storeEventHandler.js";
 import {DEFAULT_PAGE_SIZE, MessagesPage, PageOptions} from "../stores/types.js";
 import UserDataStore from "../stores/userDataStore.js";
@@ -130,6 +133,7 @@ class Engine extends TypedEmitter<EngineEvents> {
   private _reactionStore: ReactionStore;
   private _tagStore: TagStore;
   private _objectStore: ObjectStore;
+  private _relationshipStore: RelationshipStore;
   private _castStore: CastStore;
   private _userDataStore: UserDataStore;
   private _verificationStore: VerificationStore;
@@ -168,6 +172,7 @@ class Engine extends TypedEmitter<EngineEvents> {
     this._reactionStore = new ReactionStore(db, this.eventHandler);
     this._tagStore = new TagStore(db, this.eventHandler);
     this._objectStore = new ObjectStore(db, this.eventHandler);
+    this._relationshipStore = new RelationshipStore(db, this.eventHandler);
     this._castStore = new CastStore(db, this.eventHandler);
     this._userDataStore = new UserDataStore(db, this.eventHandler);
     this._verificationStore = new VerificationStore(db, this.eventHandler);
@@ -181,6 +186,7 @@ class Engine extends TypedEmitter<EngineEvents> {
       this._reactionStore.pruneSizeLimit +
       this._tagStore.pruneSizeLimit +
       this._objectStore.pruneSizeLimit +
+      this._relationshipStore.pruneSizeLimit +
       this._castStore.pruneSizeLimit +
       this._userDataStore.pruneSizeLimit +
       this._verificationStore.pruneSizeLimit +
@@ -350,6 +356,7 @@ class Engine extends TypedEmitter<EngineEvents> {
     const reactionMessages: IndexedMessage[] = [];
     const tagMessages: IndexedMessage[] = [];
     const objectMessages: IndexedMessage[] = [];
+    const relationshipMessages: IndexedMessage[] = [];
     const castMessages: IndexedMessage[] = [];
     const userDataMessages: IndexedMessage[] = [];
     const verificationMessages: IndexedMessage[] = [];
@@ -385,6 +392,10 @@ class Engine extends TypedEmitter<EngineEvents> {
           objectMessages.push({ i, message });
           break;
         }
+        case UserPostfix.RelationshipMessage: {
+          relationshipMessages.push({ i, message });
+          break;
+        }
         case UserPostfix.CastMessage: {
           castMessages.push({ i, message });
           break;
@@ -412,6 +423,7 @@ class Engine extends TypedEmitter<EngineEvents> {
       this._reactionStore,
       this._tagStore,
       this._objectStore,
+      this._relationshipStore,
       this._castStore,
       this._userDataStore,
       this._verificationStore,
@@ -422,6 +434,7 @@ class Engine extends TypedEmitter<EngineEvents> {
       reactionMessages,
       tagMessages,
       objectMessages,
+      relationshipMessages,
       castMessages,
       userDataMessages,
       verificationMessages,
@@ -509,6 +522,9 @@ class Engine extends TypedEmitter<EngineEvents> {
         case UserPostfix.ObjectMessage: {
           return this._objectStore.revoke(message.value);
         }
+        case UserPostfix.RelationshipMessage: {
+          return this._relationshipStore.revoke(message.value);
+        }
         case UserPostfix.CastMessage: {
           return this._castStore.revoke(message.value);
         }
@@ -578,6 +594,9 @@ class Engine extends TypedEmitter<EngineEvents> {
     const objectResult = await this._objectStore.pruneMessages(fid);
     totalPruned += logPruneResult(objectResult, "object");
 
+    const relationshipResult = await this._relationshipStore.pruneMessages(fid);
+    totalPruned += logPruneResult(relationshipResult, "relationship");
+
     const verificationResult = await this._verificationStore.pruneMessages(fid);
     totalPruned += logPruneResult(verificationResult, "verification");
 
@@ -614,6 +633,9 @@ class Engine extends TypedEmitter<EngineEvents> {
         }
         case UserPostfix.ObjectMessage: {
           return this._objectStore.revoke(message);
+        }
+        case UserPostfix.RelationshipMessage: {
+          return this._relationshipStore.revoke(message);
         }
         case UserPostfix.CastMessage: {
           return this._castStore.revoke(message);
@@ -836,7 +858,7 @@ class Engine extends TypedEmitter<EngineEvents> {
   }
 
   /* -------------------------------------------------------------------------- */
-  /*                              Object Store Methods                             */
+  /*                              Object Store Methods                          */
   /* -------------------------------------------------------------------------- */
 
   async getObject(fid: number, hash: Uint8Array): HubAsyncResult<ObjectAddMessage> {
@@ -865,6 +887,37 @@ class Engine extends TypedEmitter<EngineEvents> {
   }
 
   // VLAD-TODO: add getAllObjectMessagesByFid ?
+
+  /* ---------------------------------------------------------------------------- */
+  /*                           Relationship Store Methods                         */
+  /* ---------------------------------------------------------------------------- */
+
+  async getRelationship(fid: number, hash: Uint8Array): HubAsyncResult<RelationshipAddMessage> {
+    const validatedFid = validations.validateFid(fid);
+    if (validatedFid.isErr()) {
+      return err(validatedFid.error);
+    }
+
+    return ResultAsync.fromPromise(this._relationshipStore.getRelationshipAdd(fid, hash), (e) => e as HubError);
+  }
+
+  async getRelationshipsByFid(
+    fid: number,
+    type?: string,
+    pageOptions?: PageOptions,
+  ): HubAsyncResult<MessagesPage<RelationshipAddMessage>> {
+    const validatedFid = validations.validateFid(fid);
+    if (validatedFid.isErr()) {
+      return err(validatedFid.error);
+    }
+
+    return ResultAsync.fromPromise(
+      this._relationshipStore.getRelationshipAddsByFid(fid, type, pageOptions),
+      (e) => e as HubError,
+    );
+  }
+
+  // VLAD-TODO: add getAllRelationshipMessagesByFid ?
 
   /* -------------------------------------------------------------------------- */
   /*                          Verification Store Methods                        */

@@ -523,6 +523,46 @@ export class HttpAPIServer {
         this.grpcImpl.getObjectsByFid(call, handleResponse(reply, MessagesResponse));
       },
     );
+
+        //=================Relationships=================
+    // @doc-tag: /relationshipById?fid=...&hash=...
+    this.app.get<{
+      Querystring: { hash: string; fid: string };
+    }>("/v1/relationshipById", (request, reply) => {
+      const { fid, hash } = request.query;
+
+      const call = getCallObject(
+        "getRelationship",
+        {
+          fid: parseInt(fid),
+          hash: hexStringToBytes(hash).unwrapOr([]),
+        },
+        request,
+      );
+
+      this.grpcImpl.getRelationship(call, handleResponse(reply, Message));
+    });
+
+    // @doc-tag: /relationshipsByFid?fid=...&type=...
+    this.app.get<{ Querystring: { type: string; fid: string } & QueryPageParams }>(
+      "/v1/relationshipsByFid",
+      (request, reply) => {
+        const { fid, type } = request.query;
+        const pageOptions = getPageOptions(request.query);
+
+        const call = getCallObject(
+          "getRelationshipsByFid",
+          {
+            fid: parseInt(fid),
+            type,
+            ...pageOptions,
+          },
+          request,
+        );
+
+        this.grpcImpl.getRelationshipsByFid(call, handleResponse(reply, MessagesResponse));
+      },
+    );
     
     //=================Links=================
     // @doc-tag: /linkById?fid=...&target_fid=...&link_type=...

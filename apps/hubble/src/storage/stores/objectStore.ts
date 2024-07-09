@@ -24,7 +24,7 @@ import { messageDecode } from "../../storage/db/message.js";
 
 class ObjectStore extends RustStoreBase<ObjectAddMessage, ObjectRemoveMessage> {
   constructor(db: RocksDB, eventHandler: StoreEventHandler, options: StorePruneOptions = {}) {
-    const pruneSizeLimit = options.pruneSizeLimit ?? getDefaultStoreLimit(StoreType.REACTIONS);
+    const pruneSizeLimit = options.pruneSizeLimit ?? getDefaultStoreLimit(StoreType.OBJECTS);
     const objectsStore = rsCreateObjectStore(db.rustDb, eventHandler.getRustStoreEventHandler(), pruneSizeLimit);
 
     super(db, objectsStore, UserPostfix.ObjectMessage, eventHandler, pruneSizeLimit);

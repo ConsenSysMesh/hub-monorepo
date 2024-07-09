@@ -52,8 +52,12 @@ const STORE_TO_SET: Record<StoreType, UserMessagePostfix> = {
   [StoreType.USER_DATA]: UserPostfix.UserDataMessage,
   [StoreType.VERIFICATIONS]: UserPostfix.VerificationMessage,
   [StoreType.USERNAME_PROOFS]: UserPostfix.UsernameProofMessage,
+  [StoreType.TAGS]: UserPostfix.TagMessage,
+  [StoreType.OBJECTS]: UserPostfix.ObjectMessage,
+  [StoreType.RELATIONSHIPS]: UserPostfix.RelationshipMessage,
 };
 
+// VLAD-TODO: are our new msg types "prunable"?
 type PrunableMessage =
   | CastAddMessage
   | CastRemoveMessage

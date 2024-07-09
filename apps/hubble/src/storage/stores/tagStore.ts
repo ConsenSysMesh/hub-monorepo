@@ -25,7 +25,7 @@ import { messageDecode } from "../../storage/db/message.js";
 
 class TagStore extends RustStoreBase<TagAddMessage, TagRemoveMessage> {
   constructor(db: RocksDB, eventHandler: StoreEventHandler, options: StorePruneOptions = {}) {
-    const pruneSizeLimit = options.pruneSizeLimit ?? getDefaultStoreLimit(StoreType.REACTIONS);
+    const pruneSizeLimit = options.pruneSizeLimit ?? getDefaultStoreLimit(StoreType.TAGS);
     const rustTagStore = rsCreateTagStore(db.rustDb, eventHandler.getRustStoreEventHandler(), pruneSizeLimit);
 
     super(db, rustTagStore, UserPostfix.TagMessage, eventHandler, pruneSizeLimit);

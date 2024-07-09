@@ -111,6 +111,9 @@ export enum UserPostfix {
   /* Generic Object */
   ObjectMessage = 9,
 
+  /* Generic Relationship */
+  RelationshipMessage = 10,
+
   // NOTE: If you add a new message type, make sure that it is only used to store Message protobufs.
   // If you need to store an index, use one of the UserPostfix values below (>86).
 
@@ -154,6 +157,10 @@ export enum UserPostfix {
   /** ObjectStore add and remove sets */
   ObjectAdds = 103,
   ObjectRemoves = 104,
+
+  /** RelationshipStore add and remove sets */
+  RelationshipAdds = 105,
+  RelationshipRemoves = 106,
 }
 
 export enum OnChainEventPostfix {
@@ -180,4 +187,5 @@ export type UserMessagePostfix =
   | UserPostfix.UsernameProofMessage
   | UserPostfix.TagMessage
   | UserPostfix.ObjectMessage
+  | UserPostfix.RelationshipMessage
   | UserPostfix.LinkCompactStateMessage;
