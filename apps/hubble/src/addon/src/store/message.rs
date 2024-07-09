@@ -96,6 +96,9 @@ pub enum UserPostfix {
     /* Tag message */
     TagMessage = 8,
 
+    /* Object message */
+    ObjectMessage = 9,
+
     // NOTE: If you add a new message type, make sure that it is only used to store Message protobufs.
     // If you need to store an index, use one of the UserPostfix values below (>86).
     /** Index records (must be 86-255) */
@@ -133,6 +136,10 @@ pub enum UserPostfix {
     /** TagStore add and remove sets */
     TagAdds = 101,
     TagRemoves = 102,
+
+    /** ObjectStore add and remove sets */
+    ObjectAdds = 103,
+    ObjectRemoves = 104,
 }
 
 impl UserPostfix {
@@ -196,6 +203,10 @@ pub fn type_to_set_postfix(message_type: MessageType) -> UserPostfix {
 
     if message_type == MessageType::TagAdd || message_type == MessageType::TagRemove {
         return UserPostfix::TagMessage;
+    }
+
+    if message_type == MessageType::ObjectAdd || message_type == MessageType::ObjectRemove {
+        return UserPostfix::ObjectMessage;
     }
 
     panic!("invalid type");

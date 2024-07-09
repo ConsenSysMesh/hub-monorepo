@@ -21,6 +21,7 @@ import {
   ReactionRemoveMessage,
   TagAddMessage,
   TagRemoveMessage,
+  ObjectAddMessage,
   Server as GrpcServer,
   ServerCredentials,
   ServiceError,
@@ -947,6 +948,42 @@ export default class Server {
         userDataResult?.match(
           (userData: UserDataAddMessage) => {
             callback(null, userData);
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getObject: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getObject", req: call.request }, `RPC call from ${peer}`);
+
+        const request = call.request;
+
+        const objectAddResult = await this.engine?.getObject(request.fid, request.hash);
+        objectAddResult?.match(
+          (objectAdd: ObjectAddMessage) => {
+            callback(null, objectAdd);
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getObjectsByFid: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getObjectsByFid", req: call.request }, `RPC call from ${peer}`);
+
+        const { fid, type, pageSize, pageToken, reverse } = call.request;
+
+        const castsResult = await this.engine?.getObjectsByFid(fid, type, {
+          pageSize,
+          pageToken,
+          reverse,
+        });
+        castsResult?.match(
+          (page: MessagesPage<ObjectAddMessage>) => {
+            callback(null, messagesPageToResponse(page));
           },
           (err: HubError) => {
             callback(toServiceError(err));

@@ -14,7 +14,7 @@ import {
   UntypedServiceImplementation,
 } from "@grpc/grpc-js";
 import { HubEvent } from "./hub_event";
-import { CastId, Message } from "./message";
+import { CastId, Message, ObjectId } from "./message";
 import { OnChainEvent } from "./onchain_event";
 import {
   CastsByParentRequest,
@@ -31,6 +31,7 @@ import {
   LinksByFidRequest,
   LinksByTargetRequest,
   MessagesResponse,
+  ObjectsByFidRequest,
   OnChainEventRequest,
   OnChainEventResponse,
   ReactionRequest,
@@ -220,6 +221,28 @@ export const HubServiceService = {
     responseStream: false,
     requestSerialize: (value: TagsByTargetRequest) => Buffer.from(TagsByTargetRequest.encode(value).finish()),
     requestDeserialize: (value: Buffer) => TagsByTargetRequest.decode(value),
+    responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
+  },
+  /**
+   * Objects
+   * @http-api: tagById
+   */
+  getObject: {
+    path: "/HubService/GetObject",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: ObjectId) => Buffer.from(ObjectId.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => ObjectId.decode(value),
+    responseSerialize: (value: Message) => Buffer.from(Message.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => Message.decode(value),
+  },
+  getObjectsByFid: {
+    path: "/HubService/GetObjectsByFid",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: ObjectsByFidRequest) => Buffer.from(ObjectsByFidRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => ObjectsByFidRequest.decode(value),
     responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
     responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
   },
@@ -570,6 +593,12 @@ export interface HubServiceServer extends UntypedServiceImplementation {
   getTagsByCast: handleUnaryCall<TagsByTargetRequest, MessagesResponse>;
   getTagsByTarget: handleUnaryCall<TagsByTargetRequest, MessagesResponse>;
   /**
+   * Objects
+   * @http-api: tagById
+   */
+  getObject: handleUnaryCall<ObjectId, Message>;
+  getObjectsByFid: handleUnaryCall<ObjectsByFidRequest, MessagesResponse>;
+  /**
    * User Data
    * @http-api: none
    */
@@ -879,6 +908,37 @@ export interface HubServiceClient extends Client {
   ): ClientUnaryCall;
   getTagsByTarget(
     request: TagsByTargetRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  /**
+   * Objects
+   * @http-api: tagById
+   */
+  getObject(request: ObjectId, callback: (error: ServiceError | null, response: Message) => void): ClientUnaryCall;
+  getObject(
+    request: ObjectId,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: Message) => void,
+  ): ClientUnaryCall;
+  getObject(
+    request: ObjectId,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: Message) => void,
+  ): ClientUnaryCall;
+  getObjectsByFid(
+    request: ObjectsByFidRequest,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getObjectsByFid(
+    request: ObjectsByFidRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getObjectsByFid(
+    request: ObjectsByFidRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: MessagesResponse) => void,

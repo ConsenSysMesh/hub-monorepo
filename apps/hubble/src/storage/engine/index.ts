@@ -41,6 +41,8 @@ import {
   StoreType,
   TagAddMessage,
   TagRemoveMessage,
+  ObjectAddMessage,
+  ObjectRemoveMessage,
   UserDataAddMessage,
   UserDataType,
   UserNameProof,
@@ -60,6 +62,7 @@ import CastStore from "../stores/castStore.js";
 import LinkStore from "../stores/linkStore.js";
 import ReactionStore from "../stores/reactionStore.js";
 import TagStore from "../stores/tagStore.js";
+import ObjectStore from "../stores/objectStore.js";
 import StoreEventHandler from "../stores/storeEventHandler.js";
 import {DEFAULT_PAGE_SIZE, MessagesPage, PageOptions} from "../stores/types.js";
 import UserDataStore from "../stores/userDataStore.js";
@@ -127,6 +130,7 @@ class Engine extends TypedEmitter<EngineEvents> {
   private _linkStore: LinkStore;
   private _reactionStore: ReactionStore;
   private _tagStore: TagStore;
+  private _objectStore: ObjectStore;
   private _castStore: CastStore;
   private _userDataStore: UserDataStore;
   private _verificationStore: VerificationStore;
@@ -164,6 +168,7 @@ class Engine extends TypedEmitter<EngineEvents> {
     this._linkStore = new LinkStore(db, this.eventHandler);
     this._reactionStore = new ReactionStore(db, this.eventHandler);
     this._tagStore = new TagStore(db, this.eventHandler);
+    this._objectStore = new ObjectStore(db, this.eventHandler);
     this._castStore = new CastStore(db, this.eventHandler);
     this._userDataStore = new UserDataStore(db, this.eventHandler);
     this._verificationStore = new VerificationStore(db, this.eventHandler);
@@ -176,6 +181,7 @@ class Engine extends TypedEmitter<EngineEvents> {
       this._linkStore.pruneSizeLimit +
       this._reactionStore.pruneSizeLimit +
       this._tagStore.pruneSizeLimit +
+      this._objectStore.pruneSizeLimit +
       this._castStore.pruneSizeLimit +
       this._userDataStore.pruneSizeLimit +
       this._verificationStore.pruneSizeLimit +
@@ -344,6 +350,7 @@ class Engine extends TypedEmitter<EngineEvents> {
     const linkMessages: IndexedMessage[] = [];
     const reactionMessages: IndexedMessage[] = [];
     const tagMessages: IndexedMessage[] = [];
+    const objectMessages: IndexedMessage[] = [];
     const castMessages: IndexedMessage[] = [];
     const userDataMessages: IndexedMessage[] = [];
     const verificationMessages: IndexedMessage[] = [];
@@ -375,6 +382,10 @@ class Engine extends TypedEmitter<EngineEvents> {
           tagMessages.push({ i, message });
           break;
         }
+        case UserPostfix.ObjectMessage: {
+          objectMessages.push({ i, message });
+          break;
+        }
         case UserPostfix.CastMessage: {
           castMessages.push({ i, message });
           break;
@@ -401,6 +412,7 @@ class Engine extends TypedEmitter<EngineEvents> {
       this._linkStore,
       this._reactionStore,
       this._tagStore,
+      this._objectStore,
       this._castStore,
       this._userDataStore,
       this._verificationStore,
@@ -410,6 +422,7 @@ class Engine extends TypedEmitter<EngineEvents> {
       linkMessages,
       reactionMessages,
       tagMessages,
+      objectMessages,
       castMessages,
       userDataMessages,
       verificationMessages,
@@ -494,6 +507,9 @@ class Engine extends TypedEmitter<EngineEvents> {
         case UserPostfix.TagMessage: {
           return this._tagStore.revoke(message.value);
         }
+        case UserPostfix.ObjectMessage: {
+          return this._objectStore.revoke(message.value);
+        }
         case UserPostfix.CastMessage: {
           return this._castStore.revoke(message.value);
         }
@@ -560,6 +576,9 @@ class Engine extends TypedEmitter<EngineEvents> {
     const tagResult = await this._tagStore.pruneMessages(fid);
     totalPruned += logPruneResult(tagResult, "tag");
 
+    const objectResult = await this._objectStore.pruneMessages(fid);
+    totalPruned += logPruneResult(objectResult, "object");
+
     const verificationResult = await this._verificationStore.pruneMessages(fid);
     totalPruned += logPruneResult(verificationResult, "verification");
 
@@ -593,6 +612,9 @@ class Engine extends TypedEmitter<EngineEvents> {
         }
         case UserPostfix.TagMessage: {
           return this._tagStore.revoke(message);
+        }
+        case UserPostfix.ObjectMessage: {
+          return this._objectStore.revoke(message);
         }
         case UserPostfix.CastMessage: {
           return this._castStore.revoke(message);
@@ -812,6 +834,37 @@ class Engine extends TypedEmitter<EngineEvents> {
       (e) => e as HubError,
     );
   }
+
+  /* -------------------------------------------------------------------------- */
+  /*                              Object Store Methods                             */
+  /* -------------------------------------------------------------------------- */
+
+  async getObject(fid: number, hash: Uint8Array): HubAsyncResult<ObjectAddMessage> {
+    const validatedFid = validations.validateFid(fid);
+    if (validatedFid.isErr()) {
+      return err(validatedFid.error);
+    }
+
+    return ResultAsync.fromPromise(this._objectStore.getObjectAdd(fid, hash), (e) => e as HubError);
+  }
+
+  async getObjectsByFid(
+    fid: number,
+    type?: string,
+    pageOptions?: PageOptions,
+  ): HubAsyncResult<MessagesPage<ObjectAddMessage>> {
+    const validatedFid = validations.validateFid(fid);
+    if (validatedFid.isErr()) {
+      return err(validatedFid.error);
+    }
+
+    return ResultAsync.fromPromise(
+      this._objectStore.getObjectAddsByFid(fid, type, pageOptions),
+      (e) => e as HubError,
+    );
+  }
+
+  // VLAD-TODO: add getAllObjectMessagesByFid ?
 
   /* -------------------------------------------------------------------------- */
   /*                          Verification Store Methods                        */

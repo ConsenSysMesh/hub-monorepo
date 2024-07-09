@@ -171,6 +171,14 @@ message TagsByTargetRequest {
   optional bool reverse = 5;
 }
 
+message ObjectsByFidRequest {
+  uint64 fid = 1;
+  optional string type = 2;
+  optional uint32 page_size = 3;
+  optional bytes page_token = 4;
+  optional bool reverse = 5;
+}
+
 message UserDataRequest {
   uint64 fid = 1;
   UserDataType user_data_type = 2;
@@ -202,6 +210,7 @@ message StorageLimitsResponse {
   uint32 units = 2;
 }
 
+// VLAD-TODO: feels like something that our new object types should be hooked into?
 enum StoreType {
   STORE_TYPE_NONE = 0;
   STORE_TYPE_CASTS = 1;

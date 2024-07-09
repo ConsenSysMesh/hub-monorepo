@@ -41,7 +41,9 @@ message MessageData {
     LinkCompactStateBody link_compact_state_body = 17;
 
     TagBody tag_body = 18;
-    ObjectBody object_body = 19;
+
+    ObjectAddBody object_add_body = 19;
+    ObjectRemoveBody object_remove_body = 20;
 
   } // Properties specific to the MessageType
 }
@@ -79,6 +81,8 @@ enum MessageType {
   MESSAGE_TYPE_LINK_COMPACT_STATE = 14; // Link Compaction State Message
   MESSAGE_TYPE_TAG_ADD = 15; // Add a Tag to a Cast
   MESSAGE_TYPE_TAG_REMOVE = 16; // Remove a Tag from a Cast
+  MESSAGE_TYPE_OBJECT_ADD = 17; // Add a Tag to a Cast
+  MESSAGE_TYPE_OBJECT_REMOVE = 18; // Remove a Tag from a Cast
 }
 
 /** Farcaster network the message is intended for */
@@ -148,7 +152,7 @@ message ReactionBody {
 /* Generic reference to an H1/H2 object */
 message ObjectKey {
   FarcasterNetwork network = 1;
-  string key = 2; // TODO: figure out the type
+  string key = 2; // Key to look up the object with within RocksDB
 }
 
 message ObjectRef {
@@ -162,15 +166,26 @@ message ObjectRef {
 message TagBody {
   string name = 1; // Tag value
   optional string content = 2;
-  ObjectRef target = 3;
+  ObjectRef target = 3;  
+}
+
+/** Identifier used to look up an H2 Object (equivalent to CastId atm) */
+message ObjectId {
+  uint64 fid = 1; // Fid of the user who created the object
+  bytes hash = 2; // Hash of the object
 }
 
 /* Generic object at H2 */
-message ObjectBody {
-  string type = 1;
+message ObjectAddBody {
+  string type = 1; // Type of object (completely user-defined, thus a string)
   optional string displayName = 2;
-  optional string avatar = 3;
+  optional string avatar = 3; // base64 encoded image or a URL?
 	optional string description = 4;
+}
+
+/** Removes an existing Cast */
+message ObjectRemoveBody {
+  bytes target_hash = 1; // Hash of the object to remove
 }
 
 /** Type of Reaction */

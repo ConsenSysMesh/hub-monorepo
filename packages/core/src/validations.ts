@@ -360,6 +360,10 @@ export const validateMessageData = async <T extends protobufs.MessageData>(
     !!data.tagBody
   ) {
     bodyResult = validateTagBody(data.tagBody);
+  } else if (validType.value === protobufs.MessageType.OBJECT_ADD && !!data.objectAddBody) {
+    bodyResult = validateObjectAddBody(data.objectAddBody);
+  } else if (validType.value === protobufs.MessageType.OBJECT_REMOVE && !!data.objectRemoveBody) {
+    bodyResult = validateObjectRemoveBody(data.objectRemoveBody);
   } else {
     return err(new HubError("bad_request.invalid_param", "bodyType is invalid"));
   }
@@ -644,6 +648,15 @@ export const validateTagNameAndContent = (name: string, content?: string): HubRe
   return ok(true);
 };
 
+// VLAD-TODO: determine reasonable max object type size (1-64 chars for now)
+export const validateObjectType = (type: string): HubResult<string> => {
+  if (type.length === 0 || type.length > 64) {
+    return err(new HubError("bad_request.validation_failure", "invalid object type (must be 1-64 characters)"));
+  }
+
+  return ok(type);
+};
+
 export const validateTarget = (
   target: protobufs.CastId | string | number,
 ): HubResult<protobufs.CastId | string | number> => {
@@ -767,6 +780,21 @@ export const validateTagBody = (body: protobufs.TagBody): HubResult<protobufs.Ta
   }
 
   return validateObjectRef(targetObj).map(() => body);
+};
+
+export const validateObjectAddBody = (body: protobufs.ObjectAddBody): HubResult<protobufs.ObjectAddBody> => {
+  const validatedType = validateObjectType(body.type);
+  if (validatedType.isErr()) {
+    return err(validatedType.error);
+  }
+
+  // VLAD-TODO: validate length of displayName, avatar and description fields?
+
+  return ok(body);
+};
+
+export const validateObjectRemoveBody = (body: protobufs.ObjectRemoveBody): HubResult<protobufs.ObjectRemoveBody> => {
+  return validateMessageHash(body.targetHash).map(() => body);
 };
 
 export const validateVerificationAddAddressBody = async (
