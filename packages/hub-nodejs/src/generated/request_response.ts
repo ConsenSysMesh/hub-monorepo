@@ -6,6 +6,7 @@ import { HubEventType, hubEventTypeFromJSON, hubEventTypeToJSON } from "./hub_ev
 import {
   CastId,
   Message,
+  ObjectRef,
   ReactionType,
   reactionTypeFromJSON,
   reactionTypeToJSON,
@@ -226,9 +227,8 @@ export interface TagsByFidRequest {
 }
 
 export interface TagsByTargetRequest {
-  targetCastId?: CastId | undefined;
-  targetUrl?: string | undefined;
-  value?: string | undefined;
+  target: ObjectRef | undefined;
+  name?: string | undefined;
   pageSize?: number | undefined;
   pageToken?: Uint8Array | undefined;
   reverse?: boolean | undefined;
@@ -2502,26 +2502,16 @@ export const TagsByFidRequest = {
 };
 
 function createBaseTagsByTargetRequest(): TagsByTargetRequest {
-  return {
-    targetCastId: undefined,
-    targetUrl: undefined,
-    value: undefined,
-    pageSize: undefined,
-    pageToken: undefined,
-    reverse: undefined,
-  };
+  return { target: undefined, name: undefined, pageSize: undefined, pageToken: undefined, reverse: undefined };
 }
 
 export const TagsByTargetRequest = {
   encode(message: TagsByTargetRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.targetCastId !== undefined) {
-      CastId.encode(message.targetCastId, writer.uint32(10).fork()).ldelim();
+    if (message.target !== undefined) {
+      ObjectRef.encode(message.target, writer.uint32(10).fork()).ldelim();
     }
-    if (message.targetUrl !== undefined) {
-      writer.uint32(50).string(message.targetUrl);
-    }
-    if (message.value !== undefined) {
-      writer.uint32(18).string(message.value);
+    if (message.name !== undefined) {
+      writer.uint32(18).string(message.name);
     }
     if (message.pageSize !== undefined) {
       writer.uint32(24).uint32(message.pageSize);
@@ -2547,21 +2537,14 @@ export const TagsByTargetRequest = {
             break;
           }
 
-          message.targetCastId = CastId.decode(reader, reader.uint32());
-          continue;
-        case 6:
-          if (tag != 50) {
-            break;
-          }
-
-          message.targetUrl = reader.string();
+          message.target = ObjectRef.decode(reader, reader.uint32());
           continue;
         case 2:
           if (tag != 18) {
             break;
           }
 
-          message.value = reader.string();
+          message.name = reader.string();
           continue;
         case 3:
           if (tag != 24) {
@@ -2595,9 +2578,8 @@ export const TagsByTargetRequest = {
 
   fromJSON(object: any): TagsByTargetRequest {
     return {
-      targetCastId: isSet(object.targetCastId) ? CastId.fromJSON(object.targetCastId) : undefined,
-      targetUrl: isSet(object.targetUrl) ? String(object.targetUrl) : undefined,
-      value: isSet(object.value) ? String(object.value) : undefined,
+      target: isSet(object.target) ? ObjectRef.fromJSON(object.target) : undefined,
+      name: isSet(object.name) ? String(object.name) : undefined,
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : undefined,
       pageToken: isSet(object.pageToken) ? bytesFromBase64(object.pageToken) : undefined,
       reverse: isSet(object.reverse) ? Boolean(object.reverse) : undefined,
@@ -2606,10 +2588,8 @@ export const TagsByTargetRequest = {
 
   toJSON(message: TagsByTargetRequest): unknown {
     const obj: any = {};
-    message.targetCastId !== undefined &&
-      (obj.targetCastId = message.targetCastId ? CastId.toJSON(message.targetCastId) : undefined);
-    message.targetUrl !== undefined && (obj.targetUrl = message.targetUrl);
-    message.value !== undefined && (obj.value = message.value);
+    message.target !== undefined && (obj.target = message.target ? ObjectRef.toJSON(message.target) : undefined);
+    message.name !== undefined && (obj.name = message.name);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined &&
       (obj.pageToken = message.pageToken !== undefined ? base64FromBytes(message.pageToken) : undefined);
@@ -2623,11 +2603,10 @@ export const TagsByTargetRequest = {
 
   fromPartial<I extends Exact<DeepPartial<TagsByTargetRequest>, I>>(object: I): TagsByTargetRequest {
     const message = createBaseTagsByTargetRequest();
-    message.targetCastId = (object.targetCastId !== undefined && object.targetCastId !== null)
-      ? CastId.fromPartial(object.targetCastId)
+    message.target = (object.target !== undefined && object.target !== null)
+      ? ObjectRef.fromPartial(object.target)
       : undefined;
-    message.targetUrl = object.targetUrl ?? undefined;
-    message.value = object.value ?? undefined;
+    message.name = object.name ?? undefined;
     message.pageSize = object.pageSize ?? undefined;
     message.pageToken = object.pageToken ?? undefined;
     message.reverse = object.reverse ?? undefined;

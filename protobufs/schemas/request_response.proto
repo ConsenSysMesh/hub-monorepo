@@ -164,11 +164,8 @@ message TagsByFidRequest {
 }
 
 message TagsByTargetRequest {
-  oneof target {
-    CastId target_cast_id = 1;
-    string target_url = 6;
-  }
-  optional string value = 2;
+  ObjectRef target = 1;
+  optional string name = 2;
   optional uint32 page_size = 3;
   optional bytes page_token = 4;
   optional bool reverse = 5;

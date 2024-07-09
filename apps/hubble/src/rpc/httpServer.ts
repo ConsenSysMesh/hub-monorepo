@@ -442,38 +442,41 @@ export class HttpAPIServer {
     );
 
     // @doc-tag: /reactionsByCast?target_fid=...&target_hash=...&value=...
-    this.app.get<{
-      Querystring: { target_fid: string; target_hash: string; value: string } & QueryPageParams;
-    }>("/v1/tagsByCast", (request, reply) => {
-      const { target_fid, target_hash } = request.query;
-      const pageOptions = getPageOptions(request.query);
+    // this.app.get<{
+    //   Querystring: { target_fid: string; target_hash: string; value: string } & QueryPageParams;
+    // }>("/v1/tagsByCast", (request, reply) => {
+    //   const { target_fid, target_hash } = request.query;
+    //   const pageOptions = getPageOptions(request.query);
 
-      const call = getCallObject(
-        "getTagsByCast",
-        {
-          targetCastId: { fid: parseInt(target_fid), hash: hexStringToBytes(target_hash).unwrapOr([]) },
-          value: request.query.value,
-          ...pageOptions,
-        },
-        request,
-      );
+    //   const call = getCallObject(
+    //     "getTagsByCast",
+    //     {
+    //       target: {
+    //         fid: 301932,
+    //       },
+    //       name: request.query.name,
+    //       ...pageOptions,
+    //     },
+    //     request,
+    //   );
 
-      this.grpcImpl.getTagsByCast(call, handleResponse(reply, MessagesResponse));
-    });
+    //   this.grpcImpl.getTagsByCast(call, handleResponse(reply, MessagesResponse));
+    // });
 
-    // @doc-tag: /tagsByTarget?url=...&reaction_type=...
-    this.app.get<{ Querystring: { url: string; value: string } & QueryPageParams }>(
+    // @doc-tag: /tagsByTarget?type=...&target=...&name=...
+    this.app.get<{ Querystring: { targetType: string; targetValue: string; name: string } & QueryPageParams }>(
       "/v1/tagsByTarget",
       (request, reply) => {
-        const { url } = request.query;
         const pageOptions = getPageOptions(request.query);
 
-        const decodedUrl = decodeURIComponent(url);
+        // TODO: Fix this
         const call = getCallObject(
           "getTagsByTarget",
           {
-            targetUrl: decodedUrl,
-            value: request.query.value,
+            target: {
+              fid: 301932,
+            },
+            name: request.query.name,
             ...pageOptions,
           },
           request,
