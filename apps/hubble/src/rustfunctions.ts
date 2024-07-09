@@ -303,6 +303,17 @@ export const rsCreateReactionStore = (
   return store as RustDynStore;
 };
 
+/** Create a tag Store */
+export const rsCreateTagStore = (
+  db: RustDb,
+  eventHandler: RustStoreEventHandler,
+  pruneSizeLimit: number,
+): RustDynStore => {
+  const store = lib.createTagStore(db, eventHandler, pruneSizeLimit);
+
+  return store as RustDynStore;
+};
+
 /** Create a cast Store */
 export const rsCreateCastStore = (
   db: RustDb,
@@ -471,6 +482,57 @@ export const rsGetReactionsByTarget = async (
 ): Promise<RustMessagesPage> => {
   return await lib.getReactionsByTarget.call(store, targetCastIdBytes, targetUrl, type, pageOptions);
 };
+
+/** Tags **/
+
+export const rsGetTagAdd = async (
+  store: RustDynStore,
+  fid: number,
+  value: string,
+  targetCastIdBytes: Buffer,
+  targetUrl: string,
+): Promise<Buffer> => {
+  return await lib.getTagAdd.call(store, fid, value, targetCastIdBytes, targetUrl);
+};
+
+export const rsGetTagRemove = async (
+  store: RustDynStore,
+  fid: number,
+  value: string,
+  targetCastIdBytes: Buffer,
+  targetUrl: string,
+): Promise<Buffer> => {
+  return await lib.getTagRemove.call(store, fid, value, targetCastIdBytes, targetUrl);
+};
+
+export const rsGetTagAddsByFid = async (
+  store: RustDynStore,
+  fid: number,
+  value: string,
+  pageOptions: PageOptions,
+): Promise<RustMessagesPage> => {
+  return await lib.getTagAddsByFid.call(store, fid, value, pageOptions);
+};
+
+export const rsGetTagRemovesByFid = async (
+  store: RustDynStore,
+  fid: number,
+  value: string,
+  pageOptions: PageOptions,
+): Promise<RustMessagesPage> => {
+  return await lib.getTagRemovesByFid.call(store, fid, value, pageOptions);
+};
+
+export const rsGetTagsByTarget = async (
+  store: RustDynStore,
+  targetCastIdBytes: Buffer,
+  targetUrl: string,
+  value: string,
+  pageOptions: PageOptions,
+): Promise<RustMessagesPage> => {
+  return await lib.getTagsByTarget.call(store, targetCastIdBytes, targetUrl, value, pageOptions);
+};
+
 
 /** UserData Store */
 export const rsCreateUserDataStore = (

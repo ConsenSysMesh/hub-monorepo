@@ -6,7 +6,7 @@ use db::RocksDB;
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey, EXPANDED_SECRET_KEY_LENGTH};
 use neon::{prelude::*, types::buffer::TypedArray};
 use std::{convert::TryInto, sync::Mutex};
-use store::{LinkStore, ReactionStore, Store, UserDataStore};
+use store::{LinkStore, ReactionStore, TagStore, Store, UserDataStore};
 use threadpool::ThreadPool;
 
 mod db;
@@ -169,6 +169,23 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function(
         "getReactionsByTarget",
         ReactionStore::js_get_reactions_by_target,
+    )?;
+
+    // TagStore methods
+    cx.export_function("createTagStore", TagStore::create_tag_store)?;
+    cx.export_function("getTagAdd", TagStore::js_get_tag_add)?;
+    cx.export_function("getTagRemove", TagStore::js_get_tag_remove)?;
+    cx.export_function(
+        "getTagAddsByFid",
+        TagStore::js_get_tag_adds_by_fid,
+    )?;
+    cx.export_function(
+        "getTagRemovesByFid",
+        TagStore::js_get_tag_removes_by_fid,
+    )?;
+    cx.export_function(
+        "getTagByTarget",
+        TagStore::js_get_tags_by_target,
     )?;
 
     // CastStore methods

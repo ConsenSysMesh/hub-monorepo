@@ -8,6 +8,7 @@ pub use self::user_data_store::*;
 pub use self::username_proof_store::*;
 pub use self::utils::*;
 pub use self::verification_store::*;
+pub use self::tag_store::*;
 
 mod cast_store;
 mod link_store;
@@ -20,3 +21,4 @@ mod user_data_store;
 mod username_proof_store;
 mod utils;
 mod verification_store;
+mod tag_store;

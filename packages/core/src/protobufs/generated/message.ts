@@ -499,7 +499,7 @@ export interface ReactionBody {
 /** Adds or removes a Tag from a Cast */
 export interface TagBody {
   /** Tag value */
-  value: string;
+  type: string;
   /** CastId of the Cast to react to */
   targetCastId?:
     | CastId
@@ -1570,13 +1570,13 @@ export const ReactionBody = {
 };
 
 function createBaseTagBody(): TagBody {
-  return { value: "", targetCastId: undefined, targetUrl: undefined };
+  return { type: "", targetCastId: undefined, targetUrl: undefined };
 }
 
 export const TagBody = {
   encode(message: TagBody, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.value !== "") {
-      writer.uint32(10).string(message.value);
+    if (message.type !== "") {
+      writer.uint32(10).string(message.type);
     }
     if (message.targetCastId !== undefined) {
       CastId.encode(message.targetCastId, writer.uint32(18).fork()).ldelim();
@@ -1599,7 +1599,7 @@ export const TagBody = {
             break;
           }
 
-          message.value = reader.string();
+          message.type = reader.string();
           continue;
         case 2:
           if (tag != 18) {
@@ -1626,7 +1626,7 @@ export const TagBody = {
 
   fromJSON(object: any): TagBody {
     return {
-      value: isSet(object.value) ? String(object.value) : "",
+      type: isSet(object.type) ? String(object.type) : "",
       targetCastId: isSet(object.targetCastId) ? CastId.fromJSON(object.targetCastId) : undefined,
       targetUrl: isSet(object.targetUrl) ? String(object.targetUrl) : undefined,
     };
@@ -1634,7 +1634,7 @@ export const TagBody = {
 
   toJSON(message: TagBody): unknown {
     const obj: any = {};
-    message.value !== undefined && (obj.value = message.value);
+    message.type !== undefined && (obj.type = message.type);
     message.targetCastId !== undefined &&
       (obj.targetCastId = message.targetCastId ? CastId.toJSON(message.targetCastId) : undefined);
     message.targetUrl !== undefined && (obj.targetUrl = message.targetUrl);
@@ -1647,7 +1647,7 @@ export const TagBody = {
 
   fromPartial<I extends Exact<DeepPartial<TagBody>, I>>(object: I): TagBody {
     const message = createBaseTagBody();
-    message.value = object.value ?? "";
+    message.type = object.type ?? "";
     message.targetCastId = (object.targetCastId !== undefined && object.targetCastId !== null)
       ? CastId.fromPartial(object.targetCastId)
       : undefined;
