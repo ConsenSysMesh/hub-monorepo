@@ -276,7 +276,7 @@ pub fn make_object_key_key(object_key: &ObjectKey) -> Vec<u8> {
         // Should we have a specific network for H2
         key.push(TargetTypePrefix::H2Object as u8);
     }
-    key.extend_from_slice(&object_key.key.as_bytes().to_vec());
+    key.extend_from_slice(&object_key.hash);
 
     key
 }
@@ -290,8 +290,10 @@ pub fn make_object_ref_fid_key(fid: u32) -> Vec<u8> {
 
 pub fn make_ref_key(object_ref: &Ref) -> Vec<u8> {
     match object_ref {
-        Ref::ObjectKey(obj_key) => make_object_key_key(obj_key), 
         Ref::Fid(fid) => make_object_ref_fid_key(*fid as u32),
+        Ref::CastKey(cast_key) => make_object_key_key(cast_key),
+        Ref::ObjectKey(obj_key) => make_object_key_key(obj_key), 
+        Ref::RelationshipKey(relationship_key) => make_object_key_key(relationship_key),
     }
 }
 
