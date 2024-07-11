@@ -76,6 +76,10 @@ pub enum RootPrefix {
 
     /* Used to index tags by target  */
     TagsByTarget = 28,
+
+    /* Used to index relationships by source and target object refs  */
+    RelationshipsBySource = 29,
+    RelationshipsByTarget = 30,
 }
 
 /** Copied from the JS code */

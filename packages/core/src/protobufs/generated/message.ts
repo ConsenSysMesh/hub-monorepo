@@ -330,6 +330,47 @@ export function userDataTypeToJSON(object: UserDataType): string {
   }
 }
 
+export enum ObjectRefTypes {
+  FID = 0,
+  CAST = 1,
+  OBJECT = 2,
+  RELATIONSHIP = 3,
+}
+
+export function objectRefTypesFromJSON(object: any): ObjectRefTypes {
+  switch (object) {
+    case 0:
+    case "FID":
+      return ObjectRefTypes.FID;
+    case 1:
+    case "CAST":
+      return ObjectRefTypes.CAST;
+    case 2:
+    case "OBJECT":
+      return ObjectRefTypes.OBJECT;
+    case 3:
+    case "RELATIONSHIP":
+      return ObjectRefTypes.RELATIONSHIP;
+    default:
+      throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum ObjectRefTypes");
+  }
+}
+
+export function objectRefTypesToJSON(object: ObjectRefTypes): string {
+  switch (object) {
+    case ObjectRefTypes.FID:
+      return "FID";
+    case ObjectRefTypes.CAST:
+      return "CAST";
+    case ObjectRefTypes.OBJECT:
+      return "OBJECT";
+    case ObjectRefTypes.RELATIONSHIP:
+      return "RELATIONSHIP";
+    default:
+      throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum ObjectRefTypes");
+  }
+}
+
 /** Type of Reaction */
 export enum ReactionType {
   NONE = 0,
@@ -528,28 +569,11 @@ export interface ReactionBody {
   targetUrl?: string | undefined;
 }
 
-/** Generic reference to an H1/H2 object */
-export interface ObjectKey {
-  network: FarcasterNetwork;
-  hash: Uint8Array;
-  fid: number;
-}
-
 export interface ObjectRef {
-  /** Add CID later */
-  fid?:
-    | number
-    | undefined;
-  /** ref to an H1 cast */
-  castKey?:
-    | ObjectKey
-    | undefined;
-  /** ref to an H2 object */
-  objectKey?:
-    | ObjectKey
-    | undefined;
-  /** ref to an H2 relationship */
-  relationshipKey?: ObjectKey | undefined;
+  type: ObjectRefTypes;
+  fid: number;
+  network?: FarcasterNetwork | undefined;
+  hash?: Uint8Array | undefined;
 }
 
 /** Adds or removes a Tag from a Cast */
@@ -1737,108 +1761,23 @@ export const ReactionBody = {
   },
 };
 
-function createBaseObjectKey(): ObjectKey {
-  return { network: 0, hash: new Uint8Array(), fid: 0 };
-}
-
-export const ObjectKey = {
-  encode(message: ObjectKey, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.network !== 0) {
-      writer.uint32(8).int32(message.network);
-    }
-    if (message.hash.length !== 0) {
-      writer.uint32(26).bytes(message.hash);
-    }
-    if (message.fid !== 0) {
-      writer.uint32(32).uint64(message.fid);
-    }
-    return writer;
-  },
-
-  decode(input: _m0.Reader | Uint8Array, length?: number): ObjectKey {
-    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
-    let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseObjectKey();
-    while (reader.pos < end) {
-      const tag = reader.uint32();
-      switch (tag >>> 3) {
-        case 1:
-          if (tag != 8) {
-            break;
-          }
-
-          message.network = reader.int32() as any;
-          continue;
-        case 3:
-          if (tag != 26) {
-            break;
-          }
-
-          message.hash = reader.bytes();
-          continue;
-        case 4:
-          if (tag != 32) {
-            break;
-          }
-
-          message.fid = longToNumber(reader.uint64() as Long);
-          continue;
-      }
-      if ((tag & 7) == 4 || tag == 0) {
-        break;
-      }
-      reader.skipType(tag & 7);
-    }
-    return message;
-  },
-
-  fromJSON(object: any): ObjectKey {
-    return {
-      network: isSet(object.network) ? farcasterNetworkFromJSON(object.network) : 0,
-      hash: isSet(object.hash) ? bytesFromBase64(object.hash) : new Uint8Array(),
-      fid: isSet(object.fid) ? Number(object.fid) : 0,
-    };
-  },
-
-  toJSON(message: ObjectKey): unknown {
-    const obj: any = {};
-    message.network !== undefined && (obj.network = farcasterNetworkToJSON(message.network));
-    message.hash !== undefined &&
-      (obj.hash = base64FromBytes(message.hash !== undefined ? message.hash : new Uint8Array()));
-    message.fid !== undefined && (obj.fid = Math.round(message.fid));
-    return obj;
-  },
-
-  create<I extends Exact<DeepPartial<ObjectKey>, I>>(base?: I): ObjectKey {
-    return ObjectKey.fromPartial(base ?? {});
-  },
-
-  fromPartial<I extends Exact<DeepPartial<ObjectKey>, I>>(object: I): ObjectKey {
-    const message = createBaseObjectKey();
-    message.network = object.network ?? 0;
-    message.hash = object.hash ?? new Uint8Array();
-    message.fid = object.fid ?? 0;
-    return message;
-  },
-};
-
 function createBaseObjectRef(): ObjectRef {
-  return { fid: undefined, castKey: undefined, objectKey: undefined, relationshipKey: undefined };
+  return { type: 0, fid: 0, network: undefined, hash: undefined };
 }
 
 export const ObjectRef = {
   encode(message: ObjectRef, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.fid !== undefined) {
-      writer.uint32(8).uint64(message.fid);
+    if (message.type !== 0) {
+      writer.uint32(8).int32(message.type);
     }
-    if (message.castKey !== undefined) {
-      ObjectKey.encode(message.castKey, writer.uint32(18).fork()).ldelim();
+    if (message.fid !== 0) {
+      writer.uint32(16).uint64(message.fid);
     }
-    if (message.objectKey !== undefined) {
-      ObjectKey.encode(message.objectKey, writer.uint32(26).fork()).ldelim();
+    if (message.network !== undefined) {
+      writer.uint32(24).int32(message.network);
     }
-    if (message.relationshipKey !== undefined) {
-      ObjectKey.encode(message.relationshipKey, writer.uint32(34).fork()).ldelim();
+    if (message.hash !== undefined) {
+      writer.uint32(34).bytes(message.hash);
     }
     return writer;
   },
@@ -1855,28 +1794,28 @@ export const ObjectRef = {
             break;
           }
 
-          message.fid = longToNumber(reader.uint64() as Long);
+          message.type = reader.int32() as any;
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag != 16) {
             break;
           }
 
-          message.castKey = ObjectKey.decode(reader, reader.uint32());
+          message.fid = longToNumber(reader.uint64() as Long);
           continue;
         case 3:
-          if (tag != 26) {
+          if (tag != 24) {
             break;
           }
 
-          message.objectKey = ObjectKey.decode(reader, reader.uint32());
+          message.network = reader.int32() as any;
           continue;
         case 4:
           if (tag != 34) {
             break;
           }
 
-          message.relationshipKey = ObjectKey.decode(reader, reader.uint32());
+          message.hash = reader.bytes();
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -1889,21 +1828,20 @@ export const ObjectRef = {
 
   fromJSON(object: any): ObjectRef {
     return {
-      fid: isSet(object.fid) ? Number(object.fid) : undefined,
-      castKey: isSet(object.castKey) ? ObjectKey.fromJSON(object.castKey) : undefined,
-      objectKey: isSet(object.objectKey) ? ObjectKey.fromJSON(object.objectKey) : undefined,
-      relationshipKey: isSet(object.relationshipKey) ? ObjectKey.fromJSON(object.relationshipKey) : undefined,
+      type: isSet(object.type) ? objectRefTypesFromJSON(object.type) : 0,
+      fid: isSet(object.fid) ? Number(object.fid) : 0,
+      network: isSet(object.network) ? farcasterNetworkFromJSON(object.network) : undefined,
+      hash: isSet(object.hash) ? bytesFromBase64(object.hash) : undefined,
     };
   },
 
   toJSON(message: ObjectRef): unknown {
     const obj: any = {};
+    message.type !== undefined && (obj.type = objectRefTypesToJSON(message.type));
     message.fid !== undefined && (obj.fid = Math.round(message.fid));
-    message.castKey !== undefined && (obj.castKey = message.castKey ? ObjectKey.toJSON(message.castKey) : undefined);
-    message.objectKey !== undefined &&
-      (obj.objectKey = message.objectKey ? ObjectKey.toJSON(message.objectKey) : undefined);
-    message.relationshipKey !== undefined &&
-      (obj.relationshipKey = message.relationshipKey ? ObjectKey.toJSON(message.relationshipKey) : undefined);
+    message.network !== undefined &&
+      (obj.network = message.network !== undefined ? farcasterNetworkToJSON(message.network) : undefined);
+    message.hash !== undefined && (obj.hash = message.hash !== undefined ? base64FromBytes(message.hash) : undefined);
     return obj;
   },
 
@@ -1913,16 +1851,10 @@ export const ObjectRef = {
 
   fromPartial<I extends Exact<DeepPartial<ObjectRef>, I>>(object: I): ObjectRef {
     const message = createBaseObjectRef();
-    message.fid = object.fid ?? undefined;
-    message.castKey = (object.castKey !== undefined && object.castKey !== null)
-      ? ObjectKey.fromPartial(object.castKey)
-      : undefined;
-    message.objectKey = (object.objectKey !== undefined && object.objectKey !== null)
-      ? ObjectKey.fromPartial(object.objectKey)
-      : undefined;
-    message.relationshipKey = (object.relationshipKey !== undefined && object.relationshipKey !== null)
-      ? ObjectKey.fromPartial(object.relationshipKey)
-      : undefined;
+    message.type = object.type ?? 0;
+    message.fid = object.fid ?? 0;
+    message.network = object.network ?? undefined;
+    message.hash = object.hash ?? undefined;
     return message;
   },
 };

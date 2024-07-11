@@ -28,6 +28,7 @@ import {
   ReactionsByFidRequest,
   ReactionsByTargetRequest,
   RelationshipsByFidRequest,
+  RelationshipsBySourceRequest,
   SignerRequest,
   StorageLimitsResponse,
   SubscribeRequest,
@@ -105,6 +106,10 @@ export interface HubService {
   getRelationship(request: DeepPartial<ObjectId>, metadata?: grpc.Metadata): Promise<Message>;
   getRelationshipsByFid(
     request: DeepPartial<RelationshipsByFidRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<MessagesResponse>;
+  getRelationshipsBySource(
+    request: DeepPartial<RelationshipsBySourceRequest>,
     metadata?: grpc.Metadata,
   ): Promise<MessagesResponse>;
   /**
@@ -220,6 +225,7 @@ export class HubServiceClientImpl implements HubService {
     this.getObjectsByFid = this.getObjectsByFid.bind(this);
     this.getRelationship = this.getRelationship.bind(this);
     this.getRelationshipsByFid = this.getRelationshipsByFid.bind(this);
+    this.getRelationshipsBySource = this.getRelationshipsBySource.bind(this);
     this.getUserData = this.getUserData.bind(this);
     this.getUserDataByFid = this.getUserDataByFid.bind(this);
     this.getUsernameProof = this.getUsernameProof.bind(this);
@@ -340,6 +346,17 @@ export class HubServiceClientImpl implements HubService {
     return this.rpc.unary(
       HubServiceGetRelationshipsByFidDesc,
       RelationshipsByFidRequest.fromPartial(request),
+      metadata,
+    );
+  }
+
+  getRelationshipsBySource(
+    request: DeepPartial<RelationshipsBySourceRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<MessagesResponse> {
+    return this.rpc.unary(
+      HubServiceGetRelationshipsBySourceDesc,
+      RelationshipsBySourceRequest.fromPartial(request),
       metadata,
     );
   }
@@ -927,6 +944,29 @@ export const HubServiceGetRelationshipsByFidDesc: UnaryMethodDefinitionish = {
   requestType: {
     serializeBinary() {
       return RelationshipsByFidRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = MessagesResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const HubServiceGetRelationshipsBySourceDesc: UnaryMethodDefinitionish = {
+  methodName: "GetRelationshipsBySource",
+  service: HubServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return RelationshipsBySourceRequest.encode(this).finish();
     },
   } as any,
   responseType: {

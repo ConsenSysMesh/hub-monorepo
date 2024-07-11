@@ -1027,6 +1027,26 @@ export default class Server {
           },
         );
       },
+      getRelationshipsBySource: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getRelationshipsBySource", req: call.request }, `RPC call from ${peer}`);
+
+        const { source, type, pageSize, pageToken, reverse } = call.request;
+
+        const relationshipsResult = await this.engine?.getRelationshipsBySource(source, type, {
+          pageSize,
+          pageToken,
+          reverse,
+        });
+        relationshipsResult?.match(
+          (page: MessagesPage<RelationshipAddMessage>) => {
+            callback(null, messagesPageToResponse(page));
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
       getUserDataByFid: async (call, callback) => {
         const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
         log.debug({ method: "getUserDataByFid", req: call.request }, `RPC call from ${peer}`);

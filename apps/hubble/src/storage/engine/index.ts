@@ -917,6 +917,26 @@ class Engine extends TypedEmitter<EngineEvents> {
     );
   }
 
+  async getRelationshipsBySource(
+    source?: ObjectRef,
+    type?: string,
+    pageOptions?: PageOptions,
+  ): HubAsyncResult<MessagesPage<RelationshipAddMessage>> {
+    if (!source) {
+      return err(new HubError('bad_request', 'Source is undefined'))
+    }
+  
+    const validatedObjectRef = validations.validateObjectRef(source);
+    if (validatedObjectRef.isErr()) {
+      return err(validatedObjectRef.error);
+    }
+
+    return ResultAsync.fromPromise(
+      this._relationshipStore.getRelationshipsBySource(source, type, pageOptions),
+      (e) => e as HubError,
+    );
+  }
+
   // VLAD-TODO: add getAllRelationshipMessagesByFid ?
 
   /* -------------------------------------------------------------------------- */

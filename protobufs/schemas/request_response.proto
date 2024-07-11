@@ -187,6 +187,14 @@ message RelationshipsByFidRequest {
   optional bool reverse = 5;
 }
 
+message RelationshipsBySourceRequest {
+  ObjectRef source = 1;
+  optional string type = 2;
+  optional uint32 page_size = 3;
+  optional bytes page_token = 4;
+  optional bool reverse = 5;
+}
+
 message UserDataRequest {
   uint64 fid = 1;
   UserDataType user_data_type = 2;

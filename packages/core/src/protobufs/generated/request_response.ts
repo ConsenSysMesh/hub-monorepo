@@ -269,6 +269,14 @@ export interface RelationshipsByFidRequest {
   reverse?: boolean | undefined;
 }
 
+export interface RelationshipsBySourceRequest {
+  source: ObjectRef | undefined;
+  type?: string | undefined;
+  pageSize?: number | undefined;
+  pageToken?: Uint8Array | undefined;
+  reverse?: boolean | undefined;
+}
+
 export interface UserDataRequest {
   fid: number;
   userDataType: UserDataType;
@@ -2863,6 +2871,119 @@ export const RelationshipsByFidRequest = {
   fromPartial<I extends Exact<DeepPartial<RelationshipsByFidRequest>, I>>(object: I): RelationshipsByFidRequest {
     const message = createBaseRelationshipsByFidRequest();
     message.fid = object.fid ?? 0;
+    message.type = object.type ?? undefined;
+    message.pageSize = object.pageSize ?? undefined;
+    message.pageToken = object.pageToken ?? undefined;
+    message.reverse = object.reverse ?? undefined;
+    return message;
+  },
+};
+
+function createBaseRelationshipsBySourceRequest(): RelationshipsBySourceRequest {
+  return { source: undefined, type: undefined, pageSize: undefined, pageToken: undefined, reverse: undefined };
+}
+
+export const RelationshipsBySourceRequest = {
+  encode(message: RelationshipsBySourceRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.source !== undefined) {
+      ObjectRef.encode(message.source, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.type !== undefined) {
+      writer.uint32(18).string(message.type);
+    }
+    if (message.pageSize !== undefined) {
+      writer.uint32(24).uint32(message.pageSize);
+    }
+    if (message.pageToken !== undefined) {
+      writer.uint32(34).bytes(message.pageToken);
+    }
+    if (message.reverse !== undefined) {
+      writer.uint32(40).bool(message.reverse);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): RelationshipsBySourceRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseRelationshipsBySourceRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.source = ObjectRef.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.type = reader.string();
+          continue;
+        case 3:
+          if (tag != 24) {
+            break;
+          }
+
+          message.pageSize = reader.uint32();
+          continue;
+        case 4:
+          if (tag != 34) {
+            break;
+          }
+
+          message.pageToken = reader.bytes();
+          continue;
+        case 5:
+          if (tag != 40) {
+            break;
+          }
+
+          message.reverse = reader.bool();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): RelationshipsBySourceRequest {
+    return {
+      source: isSet(object.source) ? ObjectRef.fromJSON(object.source) : undefined,
+      type: isSet(object.type) ? String(object.type) : undefined,
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : undefined,
+      pageToken: isSet(object.pageToken) ? bytesFromBase64(object.pageToken) : undefined,
+      reverse: isSet(object.reverse) ? Boolean(object.reverse) : undefined,
+    };
+  },
+
+  toJSON(message: RelationshipsBySourceRequest): unknown {
+    const obj: any = {};
+    message.source !== undefined && (obj.source = message.source ? ObjectRef.toJSON(message.source) : undefined);
+    message.type !== undefined && (obj.type = message.type);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.pageToken !== undefined &&
+      (obj.pageToken = message.pageToken !== undefined ? base64FromBytes(message.pageToken) : undefined);
+    message.reverse !== undefined && (obj.reverse = message.reverse);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<RelationshipsBySourceRequest>, I>>(base?: I): RelationshipsBySourceRequest {
+    return RelationshipsBySourceRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<RelationshipsBySourceRequest>, I>>(object: I): RelationshipsBySourceRequest {
+    const message = createBaseRelationshipsBySourceRequest();
+    message.source = (object.source !== undefined && object.source !== null)
+      ? ObjectRef.fromPartial(object.source)
+      : undefined;
     message.type = object.type ?? undefined;
     message.pageSize = object.pageSize ?? undefined;
     message.pageToken = object.pageToken ?? undefined;

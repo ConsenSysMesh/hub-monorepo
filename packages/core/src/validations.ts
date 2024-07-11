@@ -1,5 +1,5 @@
 import * as protobufs from "./protobufs";
-import { Protocol, UserNameType } from "./protobufs";
+import { Protocol, UserNameType, ObjectRefTypes } from "./protobufs";
 import { blake3 } from "@noble/hashes/blake3";
 import { err, ok, Result } from "neverthrow";
 import { bytesCompare, bytesToUtf8String, utf8StringToBytes } from "./bytes";
@@ -682,43 +682,50 @@ export const validateTarget = (
   }
 };
 
-export const validateObjectKey = (objectKey: protobufs.ObjectKey): HubResult<protobufs.ObjectKey> => {
-  const validatedNetwork = validateNetwork(objectKey.network);
+export const validateObjectKey = (objectRef: protobufs.ObjectRef): HubResult<protobufs.ObjectRef> => {
+  const validateTypeResult = validateType(objectRef.type as number);
+  if (validateTypeResult.isErr()) {
+    return err(new HubError("bad_request.validation_failure", "invalid network"));
+  }
+  const validatedNetwork = validateNetwork(objectRef.network as number);
   if (validatedNetwork.isErr()) {
     return err(new HubError("bad_request.validation_failure", "invalid network"));
   }
-  const hashResult = validateMessageHash(objectKey.hash);
+  const hashResult = validateMessageHash(objectRef.hash);
   if (hashResult.isErr()) {
     return err(new HubError("bad_request.validation_failure", "invalid object key message hash"));
   }
 
-  const fidResult = validateFid(objectKey.fid);
+  const fidResult = validateFid(objectRef.fid);
   if (fidResult.isErr()) {
     return err(new HubError("bad_request.validation_failure", "invalid object key fid"));
   }
 
-  return ok(objectKey);
+  return ok(objectRef);
 }
 
 export const validateObjectRef = (
   target: protobufs.ObjectRef
-): HubResult<protobufs.ObjectKey | number> => {
-  const targetObj = target.castKey || target.objectKey || target.relationshipKey || target.fid;
-  if (targetObj === undefined) {
-    return err(new HubError("bad_request.validation_failure", "target is missing"));
-  }
-
-  if (typeof targetObj === "number") {
+): HubResult<protobufs.ObjectRef | number> => {
+  if (target.type === ObjectRefTypes.FID) {
     // JERRY-TODO: What to do about CIDs
-    return validateFid(targetObj);
+    return validateFid(target.fid);
   } else {
-    return validateObjectKey(targetObj);
+    return validateObjectKey(target);
   }
 };
 
 export const validateMessageType = (type: number): HubResult<protobufs.MessageType> => {
   if (!Object.values(protobufs.MessageType).includes(type)) {
     return err(new HubError("bad_request.validation_failure", "invalid message type"));
+  }
+
+  return ok(type);
+};
+
+export const validateType = (type: number): HubResult<protobufs.ObjectRefTypes> => {
+  if (!Object.values(protobufs.ObjectRefTypes).includes(type)) {
+    return err(new HubError("bad_request.validation_failure", "invalid object ref type"));
   }
 
   return ok(type);

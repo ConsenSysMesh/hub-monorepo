@@ -3,6 +3,7 @@ import {
   RelationshipRemoveMessage,
   StoreType,
   getDefaultStoreLimit,
+  ObjectRef,
 } from "@farcaster/hub-nodejs";
 import {
   rsCreateRelationshipStore,
@@ -10,6 +11,7 @@ import {
   rsGetRelationshipAddsByFid,
   rsGetRelationshipRemove,
   rsGetRelationshipRemovesByFid,
+  rsGetRelationshipsBySource,
   rustErrorToHubError,
 } from "../../rustfunctions.js";
 import StoreEventHandler from "./storeEventHandler.js";
@@ -89,11 +91,31 @@ class RelationshipStore extends RustStoreBase<RelationshipAddMessage, Relationsh
     return { messages, nextPageToken: message_page.nextPageToken };
   }
 
-  async getAllTagMessagesByFid(
+  async getAllRelationshipMessagesByFid(
     fid: number,
     pageOptions: PageOptions = {},
   ): Promise<MessagesPage<RelationshipAddMessage | RelationshipRemoveMessage>> {
     return await this.getAllMessagesByFid(fid, pageOptions);
+  }
+
+  async getRelationshipsBySource(
+    source: ObjectRef,
+    type?: string,
+    pageOptions?: PageOptions,
+  ): Promise<MessagesPage<RelationshipAddMessage>> {
+    const messages_page = await rsGetRelationshipsBySource(
+      this._rustStore,
+      source,
+      type ?? "",
+      pageOptions ?? {},
+    );
+
+    const messages =
+      messages_page.messageBytes?.map((message_bytes) => {
+        return messageDecode(new Uint8Array(message_bytes)) as RelationshipAddMessage;
+      }) ?? [];
+
+    return { messages, nextPageToken: messages_page.nextPageToken };
   }
 }
 

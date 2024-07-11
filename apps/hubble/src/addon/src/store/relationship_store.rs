@@ -1,13 +1,13 @@
 use super::{
-    deferred_settle_messages, hub_error_to_js_throw, make_user_key,
+    deferred_settle_messages, hub_error_to_js_throw, make_fid_key, make_user_key, message,
     store::{Store, StoreDef},
-    utils::{get_page_options, get_store},
-    HubError, IntoU8, MessagesPage, PageOptions, StoreEventHandler, UserPostfix,
-    HASH_LENGTH, TS_HASH_LENGTH,
+    utils::{get_page_options, get_store, make_ref_key},
+    HubError, IntoU8, MessagesPage, PageOptions, RootPrefix, StoreEventHandler, UserPostfix,
+    PAGE_SIZE_MAX, HASH_LENGTH, TS_HASH_LENGTH,
 };
 use crate::{
     db::{RocksDB, RocksDbTransactionBatch},
-    protos::{self, Message, MessageType, RelationshipAddBody, RelationshipRemoveBody},
+    protos::{self, ObjectRef, Message, MessageType, RelationshipAddBody, RelationshipRemoveBody},
 };
 use crate::{protos::message_data, THREAD_POOL};
 use neon::{
@@ -59,29 +59,29 @@ impl StoreDef for RelationshipStoreDef {
 
     fn build_secondary_indices(
         &self,
-        _txn: &mut RocksDbTransactionBatch,
-        _ts_hash: &[u8; TS_HASH_LENGTH],
-        _message: &Message,
+        txn: &mut RocksDbTransactionBatch,
+        ts_hash: &[u8; TS_HASH_LENGTH],
+        message: &Message,
     ) -> Result<(), HubError> {
-        // VLAD-TODO: figure out if we need secondary indexes for relationships
-        // let (by_target_key, rtype) = self.secondary_index_key(ts_hash, message)?;
+        let (by_source_key, by_target_key, name) = self.secondary_index_key(ts_hash, message)?;
 
-        // this is saving the key,value pair
-        // txn.put(by_target_key, rtype);
+        // this is saving the relationship type against both the source and target object ref index
+        txn.put(by_source_key, name.clone());
+        txn.put(by_target_key, name.clone());
 
         Ok(())
     }
 
     fn delete_secondary_indices(
         &self,
-        _txn: &mut RocksDbTransactionBatch,
-        _ts_hash: &[u8; TS_HASH_LENGTH],
-        _message: &Message,
+        txn: &mut RocksDbTransactionBatch,
+        ts_hash: &[u8; TS_HASH_LENGTH],
+        message: &Message,
     ) -> Result<(), HubError> {
-        // VLAD-TODO: figure out if we need secondary indexes for relationships
-        // let (by_target_key, _) = self.secondary_index_key(ts_hash, message)?;
+        let (by_source_key, by_target_key, _) = self.secondary_index_key(ts_hash, message)?;
 
-        // txn.delete(by_target_key);
+        txn.delete(by_source_key);
+        txn.delete(by_target_key);
 
         Ok(())
     }
@@ -167,33 +167,82 @@ impl StoreDef for RelationshipStoreDef {
 }
 
 impl RelationshipStoreDef {
-    // VIC-TODO: convert from u8 as part of key to hash of type
-    // fn secondary_index_key(
-    //     &self,
-    //     ts_hash: &[u8; TS_HASH_LENGTH],
-    //     message: &protos::Message,
-    // ) -> Result<(Vec<u8>, Vec<u8>), HubError> {
-    //     // Make sure at least one of targetCastId or targetUrl is set
-    //     let relationship_body = match message.data.as_ref().unwrap().body.as_ref().unwrap() {
-    //         message_data::Body::RelationshipBody(relationship_body) => relationship_body,
-    //         _ => Err(HubError {
-    //             code: "bad_request.validation_failure".to_string(),
-    //             message: "Invalid relationship body".to_string(),
-    //         })?,
-    //     };
+    fn secondary_index_key(
+        &self,
+        ts_hash: &[u8; TS_HASH_LENGTH],
+        message: &protos::Message,
+    ) -> Result<(Vec<u8>, Vec<u8>, Vec<u8>), HubError> {
+        let relationship_body = match message.data.as_ref().unwrap().body.as_ref().unwrap() {
+            message_data::Body::RelationshipAddBody(relationship_body) => relationship_body,
+            _ => Err(HubError {
+                code: "bad_request.validation_failure".to_string(),
+                message: "Invalid relationship body".to_string(),
+            })?,
+        };
 
-    //     let by_target_key = RelationshipStoreDef::make_tags_by_target_key(
-    //         target,
-    //         message.data.as_ref().unwrap().fid as u32,
-    //         Some(ts_hash),
-    //     );
+        let source = relationship_body.source.as_ref().ok_or(HubError {
+            code: "bad_request.validation_failure".to_string(),
+            message: "Invalid source body".to_string(),
+        })?;
+    
+        let target = relationship_body.target.as_ref().ok_or(HubError {
+            code: "bad_request.validation_failure".to_string(),
+            message: "Invalid target body".to_string(),
+        })?;
 
-    //     // VIC-TODO: blake3_20 hash here?
-    //     // Ok((by_target_key, tag_body.r#type as u8))
-    //     Ok((by_target_key, relationship_body.r#type.as_bytes().to_vec()))
-    // }
+        let by_source_key = RelationshipStoreDef::make_relationship_by_source_key(
+            source,
+            message.data.as_ref().unwrap().fid as u32,
+            Some(ts_hash),
+        );
 
-    // VIC-TODO: fix the key here
+        let by_target_key = RelationshipStoreDef::make_relationship_by_target_key(
+            target,
+            message.data.as_ref().unwrap().fid as u32,
+            Some(ts_hash),
+        );
+
+        Ok((by_source_key, by_target_key, relationship_body.r#type.as_bytes().to_vec()))
+    }
+
+    pub fn make_relationship_by_source_key(
+        source: &ObjectRef,
+        fid: u32,
+        ts_hash: Option<&[u8; TS_HASH_LENGTH]>,
+    ) -> Vec<u8> {
+        let key = Self::make_relationship_by_related_object_key(RootPrefix::RelationshipsBySource, source, fid, ts_hash);
+        key
+    }
+
+    pub fn make_relationship_by_target_key(
+        target: &ObjectRef,
+        fid: u32,
+        ts_hash: Option<&[u8; TS_HASH_LENGTH]>,
+    ) -> Vec<u8> {
+        let key = Self::make_relationship_by_related_object_key(RootPrefix::RelationshipsByTarget, target, fid, ts_hash);
+        key
+    }
+
+    fn make_relationship_by_related_object_key(
+        root_prefix: RootPrefix,
+        object_ref: &ObjectRef,
+        fid: u32,
+        ts_hash: Option<&[u8; TS_HASH_LENGTH]>,
+    ) -> Vec<u8> {
+        let mut key = Vec::with_capacity(1 + 22 + 24 + 4);
+
+        key.push(root_prefix as u8); // 1 byte
+        key.extend_from_slice(&make_ref_key(object_ref)); // at most 22 bytes if object ref isn't an fid
+        if ts_hash.is_some() && ts_hash.unwrap().len() == TS_HASH_LENGTH {
+            key.extend_from_slice(ts_hash.unwrap());
+        }
+        if fid > 0 {
+            key.extend_from_slice(&make_fid_key(fid));
+        }
+
+        key
+    }
+
     pub fn make_relationship_adds_key(
         fid: u32,
         hash: &Vec<u8>,
@@ -208,7 +257,6 @@ impl RelationshipStoreDef {
         key
     }
 
-    // VIC-TODO: fix the key here
     pub fn make_relationship_removes_key(
         fid: u32,
         hash: &Vec<u8>,
@@ -448,112 +496,92 @@ impl RelationshipStore {
         Ok(promise)
     }
 
-    // pub fn get_relationships_by_target(
-    //     store: &Store,
-    //     target: &Target,
-    //     r#type: String,
-    //     page_options: &PageOptions,
-    // ) -> Result<MessagesPage, HubError> {
-    //     let prefix = TagStoreDef::make_tags_by_target_key(target, 0, None);
+    pub fn get_relationships_by_source(
+        store: &Store,
+        source: &ObjectRef,
+        name: String,
+        page_options: &PageOptions,
+    ) -> Result<MessagesPage, HubError> {
+        let prefix = RelationshipStoreDef::make_relationship_by_source_key(source, 0, None);
 
-    //     let mut message_keys = vec![];
-    //     let mut last_key = vec![];
+        let mut message_keys = vec![];
+        let mut last_key = vec![];
 
-    //     store
-    //         .db()
-    //         .for_each_iterator_by_prefix(&prefix, page_options, |key, value| {
-    //             if r#type.is_empty() || value.eq(r#type.as_bytes())
-    //             {
-    //                 let ts_hash_offset = prefix.len();
-    //                 let fid_offset = ts_hash_offset + TS_HASH_LENGTH;
+        store
+            .db()
+            .for_each_iterator_by_prefix(&prefix, page_options, |key, value| {
+                if name.is_empty() || value.eq(name.as_bytes())
+                {
+                    let ts_hash_offset = prefix.len();
+                    let fid_offset = ts_hash_offset + TS_HASH_LENGTH;
 
-    //                 let fid =
-    //                     u32::from_be_bytes(key[fid_offset..fid_offset + 4].try_into().unwrap());
-    //                 let ts_hash = key[ts_hash_offset..ts_hash_offset + TS_HASH_LENGTH]
-    //                     .try_into()
-    //                     .unwrap();
-    //                 let message_primary_key = crate::store::message::make_message_primary_key(
-    //                     fid,
-    //                     store.postfix(),
-    //                     Some(&ts_hash),
-    //                 );
+                    let fid =
+                        u32::from_be_bytes(key[fid_offset..fid_offset + 4].try_into().unwrap());
+                    let ts_hash = key[ts_hash_offset..ts_hash_offset + TS_HASH_LENGTH]
+                        .try_into()
+                        .unwrap();
+                    let message_primary_key = crate::store::message::make_message_primary_key(
+                        fid,
+                        store.postfix(),
+                        Some(&ts_hash),
+                    );
 
-    //                 message_keys.push(message_primary_key.to_vec());
-    //                 if message_keys.len() >= page_options.page_size.unwrap_or(PAGE_SIZE_MAX) {
-    //                     last_key = key.to_vec();
-    //                     return Ok(true); // Stop iterating
-    //                 }
-    //             }
+                    message_keys.push(message_primary_key.to_vec());
+                    if message_keys.len() >= page_options.page_size.unwrap_or(PAGE_SIZE_MAX) {
+                        last_key = key.to_vec();
+                        return Ok(true); // Stop iterating
+                    }
+                }
 
-    //             Ok(false) // Continue iterating
-    //         })?;
+                Ok(false) // Continue iterating
+            })?;
 
-    //     let messages_bytes =
-    //         message::get_many_messages_as_bytes(store.db().borrow(), message_keys)?;
-    //     let next_page_token = if last_key.len() > 0 {
-    //         Some(last_key[prefix.len()..].to_vec())
-    //     } else {
-    //         None
-    //     };
+        let messages_bytes =
+            message::get_many_messages_as_bytes(store.db().borrow(), message_keys)?;
+        let next_page_token = if last_key.len() > 0 {
+            Some(last_key[prefix.len()..].to_vec())
+        } else {
+            None
+        };
 
-    //     Ok(MessagesPage {
-    //         messages_bytes,
-    //         next_page_token,
-    //     })
-    // }
+        Ok(MessagesPage {
+            messages_bytes,
+            next_page_token,
+        })
+    }
 
-    // pub fn js_get_relationships_by_target(mut cx: FunctionContext) -> JsResult<JsPromise> {
-    //     let store = get_store(&mut cx)?;
+    pub fn js_get_relationships_by_source(mut cx: FunctionContext) -> JsResult<JsPromise> {
+        let store = get_store(&mut cx)?;
 
-    //     let target_cast_id_buffer = cx.argument::<JsBuffer>(0)?;
-    //     let target_cast_id_bytes = target_cast_id_buffer.as_slice(&cx);
-    //     let target_cast_id = if target_cast_id_bytes.len() > 0 {
-    //         match protos::CastId::decode(target_cast_id_bytes) {
-    //             Ok(cast_id) => Some(cast_id),
-    //             Err(e) => return cx.throw_error(e.to_string()),
-    //         }
-    //     } else {
-    //         None
-    //     };
+        let source_object_ref_buffer = cx.argument::<JsBuffer>(0)?;
+        let source_object_ref_bytes = source_object_ref_buffer.as_slice(&cx);
+        let source_object_ref = if source_object_ref_bytes.len() > 0 {
+            match protos::ObjectRef::decode(source_object_ref_bytes) {
+                Ok(object_ref) => Some(object_ref),
+                Err(e) => return cx.throw_error(e.to_string()),
+            }
+        } else {
+            return cx.throw_error("source_object_ref is required");
+        };
+    
+        let name = cx.argument::<JsString>(2).map(|s| s.value(&mut cx))?;
 
-    //     let target_url = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
+        let page_options = get_page_options(&mut cx, 3)?;
 
-    //     // We need at least one of target_cast_id or target_url
-    //     if target_cast_id.is_none() && target_url.is_empty() {
-    //         return cx.throw_error("target_cast_id or target_url is required");
-    //     }
+        let channel = cx.channel();
+        let (deferred, promise) = cx.promise();
 
-    //     let target = if target_cast_id.is_some() {
-    //         Target::TargetCastId(target_cast_id.unwrap())
-    //     } else {
-    //         Target::TargetUrl(target_url)
-    //     };
+        THREAD_POOL.lock().unwrap().execute(move || {
+            let messages = RelationshipStore::get_relationships_by_source(
+                &store,
+                &source_object_ref.unwrap(),
+                name,
+                &page_options,
+            );
 
-    //     // let r#type = match cx.argument_opt(2) {
-    //     //     Some(arg) => match arg.downcast::<JsString, _>(&mut cx) {
-    //     //         Ok(js_string) => js_string.value(&mut cx),
-    //     //         Err(_) => "".to_string(),  // Handle the case where the argument is not a JsString
-    //     //     },
-    //     //     None => "".to_string(),  // Default to an empty string if the argument is not provided
-    //     // };
-    //     let r#type = cx.argument::<JsString>(2).map(|s| s.value(&mut cx))?;
+            deferred_settle_messages(deferred, &channel, messages);
+        });
 
-    //     let page_options = get_page_options(&mut cx, 3)?;
-
-    //     let channel = cx.channel();
-    //     let (deferred, promise) = cx.promise();
-
-    //     THREAD_POOL.lock().unwrap().execute(move || {
-    //         let messages = TagStore::get_tags_by_target(
-    //             &store,
-    //             &target,
-    //             r#type,
-    //             &page_options,
-    //         );
-
-    //         deferred_settle_messages(deferred, &channel, messages);
-    //     });
-
-    //     Ok(promise)
-    // }
+        Ok(promise)
+    }
 }

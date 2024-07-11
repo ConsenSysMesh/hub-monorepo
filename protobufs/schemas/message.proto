@@ -154,20 +154,18 @@ message ReactionBody {
   }
 }
 
-/* Generic reference to an H1/H2 object */
-message ObjectKey {
-  FarcasterNetwork network = 1;
-  bytes hash = 3;
-  uint64 fid = 4;
+enum ObjectRefTypes {
+  FID = 0;
+  CAST = 1;
+  OBJECT = 2;
+  RELATIONSHIP = 3;
 }
 
 message ObjectRef {
-  oneof ref {
-    uint64 fid = 1; // Add CID later
-    ObjectKey cast_key = 2; // ref to an H1 cast
-    ObjectKey object_key = 3; // ref to an H2 object
-    ObjectKey relationship_key = 4; // ref to an H2 relationship
-  }
+  ObjectRefTypes type = 1;
+  uint64 fid = 2;
+  optional FarcasterNetwork network = 3;
+  optional bytes hash = 4;
 }
 
 /** Adds or removes a Tag from a Cast */
