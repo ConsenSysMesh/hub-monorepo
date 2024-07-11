@@ -879,7 +879,7 @@ class Engine extends TypedEmitter<EngineEvents> {
     if (includeTags) {
       const tagRes = await ResultAsync.fromPromise(this._tagStore.getTagsByTarget({
         castKey: {
-          network: 3, // Current Network?
+          network: 3, // H1 network ID?
           hash,
           fid,
         },
