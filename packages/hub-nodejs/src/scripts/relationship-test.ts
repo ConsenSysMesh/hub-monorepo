@@ -7,6 +7,7 @@ import {
   ObjectRef,
   ObjectRefTypes,
   bytesToHexString,
+  RelationshipsBySourceRequest,
 } from "@farcaster/hub-nodejs";
 import { hexToBytes } from "@noble/hashes/utils";
 
@@ -94,19 +95,21 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
     console.log('ERROR', objectsByFid.error);
   }
 
+  const sourceObjRef = ObjectRef.create({
+    fid: FID,
+    type: ObjectRefTypes.OBJECT,
+    network: NETWORK,
+    hash: sourceObjMsg.hash,
+  });
+
   const rel = await makeRelationshipAdd({
     type: RelType,
-    source: ObjectRef.create({
-      fid: FID,
-      type: ObjectRefTypes.OBJECT,
-      network: NETWORK,
-      hash: bytesToHexString(sourceObjMsg.hash).value,
-    }),
+    source: sourceObjRef,
     target: ObjectRef.create({
       fid: FID,
       type: ObjectRefTypes.OBJECT,
       network: NETWORK,
-      hash: bytesToHexString(targetObjMsg.hash).value,
+      hash: targetObjMsg.hash,
     }),
   },
   dataOptions,
@@ -116,12 +119,15 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
   const relationshipResult = await client.submitMessage(rel._unsafeUnwrap());
   console.log(relationshipResult._unsafeUnwrap().data?.relationshipAddBody);
 
-  const relationshipsByFid = await client.getRelationshipsByFid({ fid: FID, type: RelType });
+  const request = RelationshipsBySourceRequest.create({ source: sourceObjRef, type: RelType });
 
-  if (relationshipsByFid.isOk()) {
-    console.log(relationshipsByFid._unsafeUnwrap().messages.map(m => JSON.stringify(m.data.relationshipAddBody)));
-  } else if (relationshipsByFid.isErr()) {
-    console.log('ERROR', relationshipsByFid.error);
+  // const relationshipsByFid = await client.getRelationshipsByFid({ fid: FID, type: RelType });
+  const relationshipsBySource = await client.getRelationshipsBySource(request);
+
+  if (relationshipsBySource.isOk()) {
+    console.log(relationshipsBySource._unsafeUnwrap().messages.map(m => JSON.stringify(m.data.relationshipAddBody)));
+  } else if (relationshipsBySource.isErr()) {
+    console.log('ERROR', relationshipsBySource.error);
   }
 
   client.close();
