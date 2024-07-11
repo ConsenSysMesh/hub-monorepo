@@ -175,10 +175,15 @@ export interface SyncIds {
   syncIds: Uint8Array[];
 }
 
+export interface ObjectTagRequest {
+  includeTags?: boolean | undefined;
+  creatorTagsOnly?: boolean | undefined;
+}
+
 export interface ObjectRequest {
   fid: number;
   hash: Uint8Array;
-  includeTags?: boolean | undefined;
+  tagOptions?: ObjectTagRequest | undefined;
 }
 
 export interface FidRequest {
@@ -258,6 +263,7 @@ export interface TagsByFidRequest {
 
 export interface TagsByTargetRequest {
   target: ObjectRef | undefined;
+  fid?: number | undefined;
   name?: string | undefined;
   pageSize?: number | undefined;
   pageToken?: Uint8Array | undefined;
@@ -1523,8 +1529,79 @@ export const SyncIds = {
   },
 };
 
+function createBaseObjectTagRequest(): ObjectTagRequest {
+  return { includeTags: undefined, creatorTagsOnly: undefined };
+}
+
+export const ObjectTagRequest = {
+  encode(message: ObjectTagRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.includeTags !== undefined) {
+      writer.uint32(8).bool(message.includeTags);
+    }
+    if (message.creatorTagsOnly !== undefined) {
+      writer.uint32(16).bool(message.creatorTagsOnly);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ObjectTagRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObjectTagRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 8) {
+            break;
+          }
+
+          message.includeTags = reader.bool();
+          continue;
+        case 2:
+          if (tag != 16) {
+            break;
+          }
+
+          message.creatorTagsOnly = reader.bool();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ObjectTagRequest {
+    return {
+      includeTags: isSet(object.includeTags) ? Boolean(object.includeTags) : undefined,
+      creatorTagsOnly: isSet(object.creatorTagsOnly) ? Boolean(object.creatorTagsOnly) : undefined,
+    };
+  },
+
+  toJSON(message: ObjectTagRequest): unknown {
+    const obj: any = {};
+    message.includeTags !== undefined && (obj.includeTags = message.includeTags);
+    message.creatorTagsOnly !== undefined && (obj.creatorTagsOnly = message.creatorTagsOnly);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ObjectTagRequest>, I>>(base?: I): ObjectTagRequest {
+    return ObjectTagRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ObjectTagRequest>, I>>(object: I): ObjectTagRequest {
+    const message = createBaseObjectTagRequest();
+    message.includeTags = object.includeTags ?? undefined;
+    message.creatorTagsOnly = object.creatorTagsOnly ?? undefined;
+    return message;
+  },
+};
+
 function createBaseObjectRequest(): ObjectRequest {
-  return { fid: 0, hash: new Uint8Array(), includeTags: undefined };
+  return { fid: 0, hash: new Uint8Array(), tagOptions: undefined };
 }
 
 export const ObjectRequest = {
@@ -1535,8 +1612,8 @@ export const ObjectRequest = {
     if (message.hash.length !== 0) {
       writer.uint32(18).bytes(message.hash);
     }
-    if (message.includeTags !== undefined) {
-      writer.uint32(24).bool(message.includeTags);
+    if (message.tagOptions !== undefined) {
+      ObjectTagRequest.encode(message.tagOptions, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -1563,11 +1640,11 @@ export const ObjectRequest = {
           message.hash = reader.bytes();
           continue;
         case 3:
-          if (tag != 24) {
+          if (tag != 26) {
             break;
           }
 
-          message.includeTags = reader.bool();
+          message.tagOptions = ObjectTagRequest.decode(reader, reader.uint32());
           continue;
       }
       if ((tag & 7) == 4 || tag == 0) {
@@ -1582,7 +1659,7 @@ export const ObjectRequest = {
     return {
       fid: isSet(object.fid) ? Number(object.fid) : 0,
       hash: isSet(object.hash) ? bytesFromBase64(object.hash) : new Uint8Array(),
-      includeTags: isSet(object.includeTags) ? Boolean(object.includeTags) : undefined,
+      tagOptions: isSet(object.tagOptions) ? ObjectTagRequest.fromJSON(object.tagOptions) : undefined,
     };
   },
 
@@ -1591,7 +1668,8 @@ export const ObjectRequest = {
     message.fid !== undefined && (obj.fid = Math.round(message.fid));
     message.hash !== undefined &&
       (obj.hash = base64FromBytes(message.hash !== undefined ? message.hash : new Uint8Array()));
-    message.includeTags !== undefined && (obj.includeTags = message.includeTags);
+    message.tagOptions !== undefined &&
+      (obj.tagOptions = message.tagOptions ? ObjectTagRequest.toJSON(message.tagOptions) : undefined);
     return obj;
   },
 
@@ -1603,7 +1681,9 @@ export const ObjectRequest = {
     const message = createBaseObjectRequest();
     message.fid = object.fid ?? 0;
     message.hash = object.hash ?? new Uint8Array();
-    message.includeTags = object.includeTags ?? undefined;
+    message.tagOptions = (object.tagOptions !== undefined && object.tagOptions !== null)
+      ? ObjectTagRequest.fromPartial(object.tagOptions)
+      : undefined;
     return message;
   },
 };
@@ -2710,7 +2790,14 @@ export const TagsByFidRequest = {
 };
 
 function createBaseTagsByTargetRequest(): TagsByTargetRequest {
-  return { target: undefined, name: undefined, pageSize: undefined, pageToken: undefined, reverse: undefined };
+  return {
+    target: undefined,
+    fid: undefined,
+    name: undefined,
+    pageSize: undefined,
+    pageToken: undefined,
+    reverse: undefined,
+  };
 }
 
 export const TagsByTargetRequest = {
@@ -2718,17 +2805,20 @@ export const TagsByTargetRequest = {
     if (message.target !== undefined) {
       ObjectRef.encode(message.target, writer.uint32(10).fork()).ldelim();
     }
+    if (message.fid !== undefined) {
+      writer.uint32(16).uint64(message.fid);
+    }
     if (message.name !== undefined) {
-      writer.uint32(18).string(message.name);
+      writer.uint32(26).string(message.name);
     }
     if (message.pageSize !== undefined) {
-      writer.uint32(24).uint32(message.pageSize);
+      writer.uint32(32).uint32(message.pageSize);
     }
     if (message.pageToken !== undefined) {
-      writer.uint32(34).bytes(message.pageToken);
+      writer.uint32(42).bytes(message.pageToken);
     }
     if (message.reverse !== undefined) {
-      writer.uint32(40).bool(message.reverse);
+      writer.uint32(48).bool(message.reverse);
     }
     return writer;
   },
@@ -2748,28 +2838,35 @@ export const TagsByTargetRequest = {
           message.target = ObjectRef.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag != 16) {
+            break;
+          }
+
+          message.fid = longToNumber(reader.uint64() as Long);
+          continue;
+        case 3:
+          if (tag != 26) {
             break;
           }
 
           message.name = reader.string();
           continue;
-        case 3:
-          if (tag != 24) {
+        case 4:
+          if (tag != 32) {
             break;
           }
 
           message.pageSize = reader.uint32();
           continue;
-        case 4:
-          if (tag != 34) {
+        case 5:
+          if (tag != 42) {
             break;
           }
 
           message.pageToken = reader.bytes();
           continue;
-        case 5:
-          if (tag != 40) {
+        case 6:
+          if (tag != 48) {
             break;
           }
 
@@ -2787,6 +2884,7 @@ export const TagsByTargetRequest = {
   fromJSON(object: any): TagsByTargetRequest {
     return {
       target: isSet(object.target) ? ObjectRef.fromJSON(object.target) : undefined,
+      fid: isSet(object.fid) ? Number(object.fid) : undefined,
       name: isSet(object.name) ? String(object.name) : undefined,
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : undefined,
       pageToken: isSet(object.pageToken) ? bytesFromBase64(object.pageToken) : undefined,
@@ -2797,6 +2895,7 @@ export const TagsByTargetRequest = {
   toJSON(message: TagsByTargetRequest): unknown {
     const obj: any = {};
     message.target !== undefined && (obj.target = message.target ? ObjectRef.toJSON(message.target) : undefined);
+    message.fid !== undefined && (obj.fid = Math.round(message.fid));
     message.name !== undefined && (obj.name = message.name);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined &&
@@ -2814,6 +2913,7 @@ export const TagsByTargetRequest = {
     message.target = (object.target !== undefined && object.target !== null)
       ? ObjectRef.fromPartial(object.target)
       : undefined;
+    message.fid = object.fid ?? undefined;
     message.name = object.name ?? undefined;
     message.pageSize = object.pageSize ?? undefined;
     message.pageToken = object.pageToken ?? undefined;

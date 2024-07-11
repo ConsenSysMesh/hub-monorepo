@@ -197,13 +197,12 @@ impl TagStoreDef {
 
         key.push(RootPrefix::TagsByTarget as u8); // TagsByTarget prefix, 1 byte
         key.extend_from_slice(&make_ref_key(target));
-        if ts_hash.is_some() && ts_hash.unwrap().len() == TS_HASH_LENGTH {
-            key.extend_from_slice(ts_hash.unwrap());
-        }
         if fid > 0 {
             key.extend_from_slice(&make_fid_key(fid));
         }
-
+        if ts_hash.is_some() && ts_hash.unwrap().len() == TS_HASH_LENGTH {
+            key.extend_from_slice(ts_hash.unwrap());
+        }
         key
     }
 
@@ -534,10 +533,11 @@ impl TagStore {
     pub fn get_tags_by_target(
         store: &Store,
         target: &Ref,
+        fid: u32,
         name: String,
         page_options: &PageOptions,
     ) -> Result<MessagesPage, HubError> {
-        let prefix = TagStoreDef::make_tags_by_target_key(target, 0, None);
+        let prefix = TagStoreDef::make_tags_by_target_key(target, fid, None);
 
         let mut message_keys = vec![];
         let mut last_key = vec![];
@@ -547,11 +547,15 @@ impl TagStore {
             .for_each_iterator_by_prefix(&prefix, page_options, |key, value| {
                 if name.is_empty() || value.eq(name.as_bytes())
                 {
-                    let ts_hash_offset = prefix.len();
-                    let fid_offset = ts_hash_offset + TS_HASH_LENGTH;
+                    let (fid_offset, ts_hash_offset) = if fid > 0 {
+                        (prefix.len() - 4, prefix.len())
+                    } else {
+                        // Set the default values
+                        (prefix.len(), prefix.len() + 4)
+                    };
 
                     let fid =
-                        u32::from_be_bytes(key[fid_offset..fid_offset + 4].try_into().unwrap());
+                        u32::from_be_bytes(key[fid_offset..ts_hash_offset].try_into().unwrap());
                     let ts_hash = key[ts_hash_offset..ts_hash_offset + TS_HASH_LENGTH]
                         .try_into()
                         .unwrap();
@@ -603,9 +607,11 @@ impl TagStore {
             return cx.throw_error("target_cast_id is required");
         }
 
-        let name = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
+        let fid = cx.argument::<JsNumber>(1).unwrap().value(&mut cx) as u32;
 
-        let page_options = get_page_options(&mut cx, 2)?;
+        let name = cx.argument::<JsString>(2).map(|s| s.value(&mut cx))?;
+
+        let page_options = get_page_options(&mut cx, 3)?;
 
         let channel = cx.channel();
         let (deferred, promise) = cx.promise();
@@ -614,6 +620,7 @@ impl TagStore {
             let messages = TagStore::get_tags_by_target(
                 &store,
                 target.unwrap().r#ref.as_ref().unwrap(),
+                fid,
                 name,
                 &page_options,
             );

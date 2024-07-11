@@ -36,6 +36,9 @@ const SIGNER = "0xb4c47a7b5729e7eed5120a127984acf068684496ff3dda99259056164b42a5
 // Fid owned by the custody address
 const FID = 773349; // <REQUIRED>
 
+const SIGNER2 = "0xc5dfbd819106c7c0a4ee8d2a4a54aa76957a8bf0a9f1029be6683b0e1ed5d6d5";
+const FID2 = 784578;
+
 // Testnet Configuration
 const HUB_URL = "127.0.0.1:2283"; // URL + Port of the Hub
 const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
@@ -48,6 +51,15 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
 
   const dataOptions = {
     fid: FID,
+    network: NETWORK,
+  };
+
+  const privateKeyBytes2 = hexToBytes(SIGNER2.slice(2));
+  const ed25519Signer2 = new NobleEd25519Signer(privateKeyBytes2);
+  // const signerPublicKey = (await ed25519Signer.getSignerKey())._unsafeUnwrap();
+
+  const dataOptions2 = {
+    fid: FID2,
     network: NETWORK,
   };
 
@@ -68,7 +80,7 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
   const object = await client.submitMessage(objectAdd._unsafeUnwrap());
 
   const tagAdd = await makeTagAdd({
-    name: 'bestTag',
+    name: 'newtagg',
     content: 'the best',
     target: {
       castKey: {
@@ -83,11 +95,30 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
 
   const tag = await client.submitMessage(tagAdd._unsafeUnwrap());
 
+  const tagAdd2 = await makeTagAdd({
+    name: 'newtag2',
+    content: 'the best 2',
+    target: {
+      castKey: {
+        network: 3,
+        hash: objectAdd._unsafeUnwrap().hash,
+        fid: FID,
+      },
+    }
+  },
+  dataOptions2,
+  ed25519Signer2);
 
-  const y = await client.getObject({ fid: FID, hash: objectAdd._unsafeUnwrap().hash, includeTags: true });
+  const tag2 = await client.submitMessage(tagAdd2._unsafeUnwrap());
+
+
+  const y = await client.getObject({ fid: FID, hash: objectAdd._unsafeUnwrap().hash, tagOptions: { includeTags: true, creatorTagsOnly: false } });
 
   if (y.isOk()) {
-    console.log(y._unsafeUnwrap());
+    console.log(y._unsafeUnwrap().object?.data?.objectAddBody);
+    y._unsafeUnwrap().tags.forEach(t => {
+      console.log(t.data);
+    })
   } else if (y.isErr()) {
     console.log('ERROR', y.error);
   }

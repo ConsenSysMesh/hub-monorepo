@@ -5,6 +5,7 @@ import {
   CastAddMessage,
   CastId,
   ObjectResponse,
+  ObjectTagRequest,
   CastRemoveMessage,
   FarcasterNetwork,
   getDefaultStoreLimit,
@@ -828,6 +829,7 @@ class Engine extends TypedEmitter<EngineEvents> {
 
   async getTagsByTarget(
     target?: ObjectRef,
+    fid?: number,
     value?: string,
     pageOptions: PageOptions = {},
   ): HubAsyncResult<MessagesPage<TagAddMessage>> {
@@ -838,7 +840,7 @@ class Engine extends TypedEmitter<EngineEvents> {
     }
 
     return ResultAsync.fromPromise(
-      this._tagStore.getTagsByTarget(target, value, pageOptions),
+      this._tagStore.getTagsByTarget(target, fid, value, pageOptions),
       (e) => e as HubError,
     );
   }
@@ -862,11 +864,13 @@ class Engine extends TypedEmitter<EngineEvents> {
   /*                              Object Store Methods                          */
   /* -------------------------------------------------------------------------- */
 
-  async getObject(fid: number, hash: Uint8Array, includeTags = false): HubAsyncResult<ObjectResponse> {
+  async getObject(fid: number, hash: Uint8Array, tagOptions: ObjectTagRequest): HubAsyncResult<ObjectResponse> {
     const validatedFid = validations.validateFid(fid);
     if (validatedFid.isErr()) {
       return err(validatedFid.error);
     }
+
+    const { includeTags = false, creatorTagsOnly = true } = tagOptions;
 
     let object: Message;
     const objectRes = await ResultAsync.fromPromise(this._objectStore.getObjectAdd(fid, hash), (e) => e as HubError);
@@ -883,7 +887,7 @@ class Engine extends TypedEmitter<EngineEvents> {
           hash,
           fid,
         },
-      }), (e) => e as HubError);
+      }, creatorTagsOnly ? fid : 0), (e) => e as HubError);
       if (objectRes.isErr()) {
         return err(new HubError('bad_request', 'failed to fetch object tags'));
       }

@@ -125,6 +125,7 @@ class TagStore extends RustStoreBase<TagAddMessage, TagRemoveMessage> {
     const message_page = await rsGetTagsByTarget(
       this._rustStore,
       targetCastId,
+      0,
       value,
       pageOptions,
     );

@@ -491,16 +491,19 @@ export class HttpAPIServer {
     //=================Objects=================
     // @doc-tag: /objectById?fid=...&hash=...
     this.app.get<{
-      Querystring: { hash: string; fid: string, includeTags: string };
+      Querystring: { hash: string; fid: string, includeTags: string, creatorTagsOnly: string };
     }>("/v1/objectById", (request, reply) => {
-      const { fid, hash, includeTags } = request.query;
+      const { fid, hash, includeTags, creatorTagsOnly} = request.query;
 
       const call = getCallObject(
         "getObject",
         {
           fid: parseInt(fid),
           hash: hexStringToBytes(hash).unwrapOr([]),
-          includeTags: (includeTags === "true"),
+          tagOptions: {
+            includeTags: includeTags === "true",
+            creatorTagsOnly: creatorTagsOnly === "true",
+          },
         },
         request,
       );
