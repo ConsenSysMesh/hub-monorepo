@@ -4,6 +4,7 @@ import {
   bytesToUtf8String,
   CastAddMessage,
   CastId,
+  ObjectResponse,
   CastRemoveMessage,
   FarcasterNetwork,
   getDefaultStoreLimit,
@@ -861,13 +862,40 @@ class Engine extends TypedEmitter<EngineEvents> {
   /*                              Object Store Methods                          */
   /* -------------------------------------------------------------------------- */
 
-  async getObject(fid: number, hash: Uint8Array): HubAsyncResult<ObjectAddMessage> {
+  async getObject(fid: number, hash: Uint8Array, includeTags = false): HubAsyncResult<ObjectResponse> {
     const validatedFid = validations.validateFid(fid);
     if (validatedFid.isErr()) {
       return err(validatedFid.error);
     }
 
-    return ResultAsync.fromPromise(this._objectStore.getObjectAdd(fid, hash), (e) => e as HubError);
+    let object: Message;
+    const objectRes = await ResultAsync.fromPromise(this._objectStore.getObjectAdd(fid, hash), (e) => e as HubError);
+    if (objectRes.isErr()) {
+      return err(new HubError('bad_request', 'failed to fetch object'));
+    }
+    object = objectRes._unsafeUnwrap();
+
+    let tags: Message[] = [];
+    if (includeTags) {
+      const tagRes = await ResultAsync.fromPromise(this._tagStore.getTagsByTarget({
+        castKey: {
+          network: 3, // Current Network?
+          hash,
+          fid,
+        },
+      }), (e) => e as HubError);
+      if (objectRes.isErr()) {
+        return err(new HubError('bad_request', 'failed to fetch object tags'));
+      }
+      tags = tagRes._unsafeUnwrap().messages;
+    }
+
+    const res: ObjectResponse = {
+      object,
+      tags,
+    }
+
+    return ok(res);
   }
 
   async getObjectsByFid(

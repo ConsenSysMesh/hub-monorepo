@@ -32,9 +32,9 @@ import { hexToBytes } from "@noble/hashes/utils";
 //   }
 // }
 
-const SIGNER = "0xe3bfdf6f5d5f0a807aa873c82d6fbf331249a33d51f14441baacf5b76b7c8708";
+const SIGNER = "0xb4c47a7b5729e7eed5120a127984acf068684496ff3dda99259056164b42a5a8";
 // Fid owned by the custody address
-const FID = 691017; // <REQUIRED>
+const FID = 773349; // <REQUIRED>
 
 // Testnet Configuration
 const HUB_URL = "127.0.0.1:2283"; // URL + Port of the Hub
@@ -65,13 +65,29 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
   ed25519Signer);
 
   console.log('ObjectAdd message', objectAdd);
-  const tag = await client.submitMessage(objectAdd._unsafeUnwrap());
-  console.log(tag._unsafeUnwrap().data?.objectAddBody);
+  const object = await client.submitMessage(objectAdd._unsafeUnwrap());
 
-  const y = await client.getObjectsByFid({ fid: FID, type: ObjType });
+  const tagAdd = await makeTagAdd({
+    name: 'bestTag',
+    content: 'the best',
+    target: {
+      castKey: {
+        network: 3,
+        hash: objectAdd._unsafeUnwrap().hash,
+        fid: FID,
+      },
+    }
+  },
+  dataOptions,
+  ed25519Signer);
+
+  const tag = await client.submitMessage(tagAdd._unsafeUnwrap());
+
+
+  const y = await client.getObject({ fid: FID, hash: objectAdd._unsafeUnwrap().hash, includeTags: true });
 
   if (y.isOk()) {
-    console.log(y._unsafeUnwrap().messages.map(m => m.data));
+    console.log(y._unsafeUnwrap());
   } else if (y.isErr()) {
     console.log('ERROR', y.error);
   }

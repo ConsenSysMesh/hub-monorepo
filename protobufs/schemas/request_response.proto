@@ -85,6 +85,12 @@ message SyncIds {
   repeated bytes sync_ids = 1;
 }
 
+message ObjectRequest {
+  uint64 fid = 1;
+  bytes hash = 2;
+  optional bool include_tags = 3;
+}
+
 message FidRequest {
   uint64 fid = 1;
   optional uint32 page_size = 2;
@@ -101,6 +107,11 @@ message FidsRequest {
 message FidsResponse {
   repeated uint64 fids = 1;
   optional bytes next_page_token = 2;
+}
+
+message ObjectResponse {
+  Message object = 1;
+  repeated Message tags = 2;
 }
 
 message MessagesResponse {

@@ -7,6 +7,7 @@ import {
   HubResult,
   HubServiceServer,
   Message,
+  ObjectResponse,
   MessagesResponse,
   OnChainEvent,
   OnChainEventResponse,
@@ -490,20 +491,21 @@ export class HttpAPIServer {
     //=================Objects=================
     // @doc-tag: /objectById?fid=...&hash=...
     this.app.get<{
-      Querystring: { hash: string; fid: string };
+      Querystring: { hash: string; fid: string, includeTags: string };
     }>("/v1/objectById", (request, reply) => {
-      const { fid, hash } = request.query;
+      const { fid, hash, includeTags } = request.query;
 
       const call = getCallObject(
         "getObject",
         {
           fid: parseInt(fid),
           hash: hexStringToBytes(hash).unwrapOr([]),
+          includeTags: (includeTags === "true"),
         },
         request,
       );
 
-      this.grpcImpl.getObject(call, handleResponse(reply, Message));
+      this.grpcImpl.getObject(call, handleResponse(reply, ObjectResponse));
     });
 
     // @doc-tag: /objectsByFid?fid=...&type=...

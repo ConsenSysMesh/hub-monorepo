@@ -4,6 +4,7 @@ import {
   CastRemoveMessage,
   ContactInfoResponse,
   DbStats,
+  ObjectResponse,
   FidsResponse,
   getServer,
   HubError,
@@ -961,10 +962,10 @@ export default class Server {
 
         const request = call.request;
 
-        const objectAddResult = await this.engine?.getObject(request.fid, request.hash);
+        const objectAddResult = await this.engine?.getObject(request.fid, request.hash, request.includeTags);
         objectAddResult?.match(
-          (objectAdd: ObjectAddMessage) => {
-            callback(null, objectAdd);
+          (objectResponse: ObjectResponse) => {
+            callback(null, objectResponse);
           },
           (err: HubError) => {
             callback(toServiceError(err));

@@ -175,6 +175,12 @@ export interface SyncIds {
   syncIds: Uint8Array[];
 }
 
+export interface ObjectRequest {
+  fid: number;
+  hash: Uint8Array;
+  includeTags?: boolean | undefined;
+}
+
 export interface FidRequest {
   fid: number;
   pageSize?: number | undefined;
@@ -191,6 +197,11 @@ export interface FidsRequest {
 export interface FidsResponse {
   fids: number[];
   nextPageToken?: Uint8Array | undefined;
+}
+
+export interface ObjectResponse {
+  object: Message | undefined;
+  tags: Message[];
 }
 
 export interface MessagesResponse {
@@ -1512,6 +1523,91 @@ export const SyncIds = {
   },
 };
 
+function createBaseObjectRequest(): ObjectRequest {
+  return { fid: 0, hash: new Uint8Array(), includeTags: undefined };
+}
+
+export const ObjectRequest = {
+  encode(message: ObjectRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.fid !== 0) {
+      writer.uint32(8).uint64(message.fid);
+    }
+    if (message.hash.length !== 0) {
+      writer.uint32(18).bytes(message.hash);
+    }
+    if (message.includeTags !== undefined) {
+      writer.uint32(24).bool(message.includeTags);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ObjectRequest {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObjectRequest();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 8) {
+            break;
+          }
+
+          message.fid = longToNumber(reader.uint64() as Long);
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.hash = reader.bytes();
+          continue;
+        case 3:
+          if (tag != 24) {
+            break;
+          }
+
+          message.includeTags = reader.bool();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ObjectRequest {
+    return {
+      fid: isSet(object.fid) ? Number(object.fid) : 0,
+      hash: isSet(object.hash) ? bytesFromBase64(object.hash) : new Uint8Array(),
+      includeTags: isSet(object.includeTags) ? Boolean(object.includeTags) : undefined,
+    };
+  },
+
+  toJSON(message: ObjectRequest): unknown {
+    const obj: any = {};
+    message.fid !== undefined && (obj.fid = Math.round(message.fid));
+    message.hash !== undefined &&
+      (obj.hash = base64FromBytes(message.hash !== undefined ? message.hash : new Uint8Array()));
+    message.includeTags !== undefined && (obj.includeTags = message.includeTags);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ObjectRequest>, I>>(base?: I): ObjectRequest {
+    return ObjectRequest.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ObjectRequest>, I>>(object: I): ObjectRequest {
+    const message = createBaseObjectRequest();
+    message.fid = object.fid ?? 0;
+    message.hash = object.hash ?? new Uint8Array();
+    message.includeTags = object.includeTags ?? undefined;
+    return message;
+  },
+};
+
 function createBaseFidRequest(): FidRequest {
   return { fid: 0, pageSize: undefined, pageToken: undefined, reverse: undefined };
 }
@@ -1778,6 +1874,83 @@ export const FidsResponse = {
     const message = createBaseFidsResponse();
     message.fids = object.fids?.map((e) => e) || [];
     message.nextPageToken = object.nextPageToken ?? undefined;
+    return message;
+  },
+};
+
+function createBaseObjectResponse(): ObjectResponse {
+  return { object: undefined, tags: [] };
+}
+
+export const ObjectResponse = {
+  encode(message: ObjectResponse, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.object !== undefined) {
+      Message.encode(message.object, writer.uint32(10).fork()).ldelim();
+    }
+    for (const v of message.tags) {
+      Message.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ObjectResponse {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObjectResponse();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.object = Message.decode(reader, reader.uint32());
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.tags.push(Message.decode(reader, reader.uint32()));
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ObjectResponse {
+    return {
+      object: isSet(object.object) ? Message.fromJSON(object.object) : undefined,
+      tags: Array.isArray(object?.tags) ? object.tags.map((e: any) => Message.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ObjectResponse): unknown {
+    const obj: any = {};
+    message.object !== undefined && (obj.object = message.object ? Message.toJSON(message.object) : undefined);
+    if (message.tags) {
+      obj.tags = message.tags.map((e) => e ? Message.toJSON(e) : undefined);
+    } else {
+      obj.tags = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ObjectResponse>, I>>(base?: I): ObjectResponse {
+    return ObjectResponse.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ObjectResponse>, I>>(object: I): ObjectResponse {
+    const message = createBaseObjectResponse();
+    message.object = (object.object !== undefined && object.object !== null)
+      ? Message.fromPartial(object.object)
+      : undefined;
+    message.tags = object.tags?.map((e) => Message.fromPartial(e)) || [];
     return message;
   },
 };

@@ -21,6 +21,8 @@ import {
   LinksByFidRequest,
   LinksByTargetRequest,
   MessagesResponse,
+  ObjectRequest,
+  ObjectResponse,
   ObjectsByFidRequest,
   OnChainEventRequest,
   OnChainEventResponse,
@@ -96,7 +98,7 @@ export interface HubService {
    * Objects
    * @http-api: objectById
    */
-  getObject(request: DeepPartial<ObjectId>, metadata?: grpc.Metadata): Promise<Message>;
+  getObject(request: DeepPartial<ObjectRequest>, metadata?: grpc.Metadata): Promise<ObjectResponse>;
   getObjectsByFid(request: DeepPartial<ObjectsByFidRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse>;
   /**
    * Relationships
@@ -321,8 +323,8 @@ export class HubServiceClientImpl implements HubService {
     return this.rpc.unary(HubServiceGetTagsByTargetDesc, TagsByTargetRequest.fromPartial(request), metadata);
   }
 
-  getObject(request: DeepPartial<ObjectId>, metadata?: grpc.Metadata): Promise<Message> {
-    return this.rpc.unary(HubServiceGetObjectDesc, ObjectId.fromPartial(request), metadata);
+  getObject(request: DeepPartial<ObjectRequest>, metadata?: grpc.Metadata): Promise<ObjectResponse> {
+    return this.rpc.unary(HubServiceGetObjectDesc, ObjectRequest.fromPartial(request), metadata);
   }
 
   getObjectsByFid(request: DeepPartial<ObjectsByFidRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse> {
@@ -857,12 +859,12 @@ export const HubServiceGetObjectDesc: UnaryMethodDefinitionish = {
   responseStream: false,
   requestType: {
     serializeBinary() {
-      return ObjectId.encode(this).finish();
+      return ObjectRequest.encode(this).finish();
     },
   } as any,
   responseType: {
     deserializeBinary(data: Uint8Array) {
-      const value = Message.decode(data);
+      const value = ObjectResponse.decode(data);
       return {
         ...value,
         toObject() {
