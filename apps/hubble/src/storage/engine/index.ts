@@ -55,6 +55,7 @@ import {
   validations,
   VerificationAddAddressMessage,
   VerificationRemoveMessage,
+  ObjectRefTypes,
 } from "@farcaster/hub-nodejs";
 import {err, ok, ResultAsync} from "neverthrow";
 import fs from "fs";
@@ -882,11 +883,10 @@ class Engine extends TypedEmitter<EngineEvents> {
     let tags: Message[] = [];
     if (includeTags) {
       const tagRes = await ResultAsync.fromPromise(this._tagStore.getTagsByTarget({
-        castKey: {
-          network: 3, // H1 network ID?
-          hash,
-          fid,
-        },
+        type: ObjectRefTypes.CAST,
+        network: FarcasterNetwork.DEVNET, // H1 network ID?
+        hash,
+        fid,
       }, creatorTagsOnly ? fid : 0), (e) => e as HubError);
       if (objectRes.isErr()) {
         return err(new HubError('bad_request', 'failed to fetch object tags'));
