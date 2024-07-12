@@ -4,6 +4,10 @@ import {
   makeObjectAdd,
   makeRelationshipAdd,
   NobleEd25519Signer,
+  ObjectRef,
+  ObjectRefTypes,
+  bytesToHexString,
+  RelationshipsBySourceRequest,
 } from "@farcaster/hub-nodejs";
 import { hexToBytes } from "@noble/hashes/utils";
 
@@ -55,63 +59,75 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
   // If your client does not use SSL.
   const client = getInsecureHubRpcClient(HUB_URL);
 
-  // const sourceObj = await makeObjectAdd({
-  //   type: ObjType,
-  //   displayName: "Vlad",
-  //   avatar: "https://vlad.io/avatar.png",
-  //   description: "A cool guy"
-  // },
-  // dataOptions,
-  // ed25519Signer);
+  const sourceObj = await makeObjectAdd({
+    type: ObjType,
+    displayName: "Vlad",
+    avatar: "https://vlad.io/avatar.png",
+    description: "A cool guy"
+  },
+  dataOptions,
+  ed25519Signer);
 
-  // console.log('ObjectAdd message', sourceObj);
-  // const sourceObjResult = await client.submitMessage(sourceObj._unsafeUnwrap());
-  // console.log(sourceObjResult._unsafeUnwrap().data?.objectAddBody);
+  console.log('ObjectAdd message', sourceObj);
+  const sourceObjResult = await client.submitMessage(sourceObj._unsafeUnwrap());
+  const sourceObjMsg = sourceObjResult._unsafeUnwrap();
+  console.log(sourceObjMsg.data?.objectAddBody);
 
-  // const targetObj = await makeObjectAdd({
-  //   type: ObjType,
-  //   displayName: "Jerry",
-  //   avatar: "https://jerry.net/avatar.png",
-  //   description: "Another cool guy"
-  // },
-  // dataOptions,
-  // ed25519Signer);
+  const targetObj = await makeObjectAdd({
+    type: ObjType,
+    displayName: "Jerry",
+    avatar: "https://jerry.net/avatar.png",
+    description: "Another cool guy"
+  },
+  dataOptions,
+  ed25519Signer);
 
-  // console.log('ObjectAdd message', targetObj);
-  // const targetObjResult = await client.submitMessage(targetObj._unsafeUnwrap());
-  // console.log(targetObjResult._unsafeUnwrap().data?.objectAddBody);
+  console.log('ObjectAdd message', targetObj);
+  const targetObjResult = await client.submitMessage(targetObj._unsafeUnwrap());
+  const targetObjMsg = targetObjResult._unsafeUnwrap();
+  console.log(targetObjMsg.data?.objectAddBody);
+  
+  const objectsByFid = await client.getObjectsByFid({ fid: FID, type: ObjType });
 
-  // const y = await client.getObjectsByFid({ fid: FID, type: ObjType });
+  if (objectsByFid.isOk()) {
+    console.log(objectsByFid._unsafeUnwrap().messages.map(m => JSON.stringify(m.data.relationshipAddBody)));
+  } else if (objectsByFid.isErr()) {
+    console.log('ERROR', objectsByFid.error);
+  }
 
-  // TODO: figure out how to construct 'keys' to objects created
+  const sourceObjRef = ObjectRef.create({
+    fid: FID,
+    type: ObjectRefTypes.OBJECT,
+    network: NETWORK,
+    hash: sourceObjMsg.hash,
+  });
+
   const rel = await makeRelationshipAdd({
     type: RelType,
-    source: {
-      objectKey: {
-        network: NETWORK,
-        key: "0xVlad",
-      }
-    },
-    target: {
-      objectKey: {
-        network: NETWORK,
-        key: "0xJerry",
-      }
-    },
+    source: sourceObjRef,
+    target: ObjectRef.create({
+      fid: FID,
+      type: ObjectRefTypes.OBJECT,
+      network: NETWORK,
+      hash: targetObjMsg.hash,
+    }),
   },
   dataOptions,
   ed25519Signer);
 
   console.log('RelationshipAdd message', rel);
-  const targetObjResult = await client.submitMessage(rel._unsafeUnwrap());
-  console.log(targetObjResult._unsafeUnwrap().data?.relationshipAddBody);
+  const relationshipResult = await client.submitMessage(rel._unsafeUnwrap());
+  console.log(relationshipResult._unsafeUnwrap().data?.relationshipAddBody);
 
-  const y = await client.getRelationshipsByFid({ fid: FID, type: RelType });
+  const request = RelationshipsBySourceRequest.create({ source: sourceObjRef, type: RelType });
 
-  if (y.isOk()) {
-    console.log(y._unsafeUnwrap().messages.map(m => JSON.stringify(m.data.relationshipAddBody)));
-  } else if (y.isErr()) {
-    console.log('ERROR', y.error);
+  // const relationshipsByFid = await client.getRelationshipsByFid({ fid: FID, type: RelType });
+  const relationshipsBySource = await client.getRelationshipsBySource(request);
+
+  if (relationshipsBySource.isOk()) {
+    console.log(relationshipsBySource._unsafeUnwrap().messages.map(m => JSON.stringify(m.data.relationshipAddBody)));
+  } else if (relationshipsBySource.isErr()) {
+    console.log('ERROR', relationshipsBySource.error);
   }
 
   client.close();

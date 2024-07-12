@@ -24,6 +24,9 @@ import {
   ValidationResponse,
   base58ToBytes,
   bytesToBase58,
+  ObjectRef,
+  ObjectRefTypes,
+  FarcasterNetwork,
 } from "@farcaster/hub-nodejs";
 import { Metadata, ServerUnaryCall } from "@grpc/grpc-js";
 import fastify from "fastify";
@@ -532,7 +535,7 @@ export class HttpAPIServer {
       },
     );
 
-        //=================Relationships=================
+    //=================Relationships=================
     // @doc-tag: /relationshipById?fid=...&hash=...
     this.app.get<{
       Querystring: { hash: string; fid: string };
@@ -571,7 +574,52 @@ export class HttpAPIServer {
         this.grpcImpl.getRelationshipsByFid(call, handleResponse(reply, MessagesResponse));
       },
     );
-    
+
+    // @doc-tag: /relationshipsBySource?ref_type=Cast/Object/Fid,source_fid=...&source_object_network=...&source_object_fid=...&source_object_hash=...&type=...
+    this.app.get<{ Querystring: {
+      type: string,
+      ref_type: number,
+      source_network: number, source_fid: number, source_hash: string,
+    } & QueryPageParams }>(
+      "/v1/relationshipsBySource",
+      (request, reply) => {
+        const {
+          ref_type,
+          source_network, source_fid, source_hash,
+          type,
+        } = request.query;
+        const pageOptions = getPageOptions(request.query);
+
+        let source;
+        if (ref_type == ObjectRefTypes.FID) {
+          source = ObjectRef.create({ fid: source_fid });
+        } else if (source_network && source_fid && source_hash) {
+          source = ObjectRef.create({
+            network: source_network as FarcasterNetwork,
+            fid: source_fid,
+            hash: hexStringToBytes(source_hash).unwrapOr(new Uint8Array()),
+          });
+        } else {
+          reply.code(400).send({
+            error: "Invalid URL params",
+            errorDetail: `For ${ref_type} object reference type, source_network, source_fid and source_hash are required`,
+          });
+          return;
+        }
+        const call = getCallObject(
+          "getRelationshipsBySource",
+          {
+            source,
+            type,
+            ...pageOptions,
+          },
+          request,
+        );
+
+        this.grpcImpl.getRelationshipsBySource(call, handleResponse(reply, MessagesResponse));
+      },
+    );
+  
     //=================Links=================
     // @doc-tag: /linkById?fid=...&target_fid=...&link_type=...
     this.app.get<{ Querystring: { link_type: string; fid: string; target_fid: string } }>(

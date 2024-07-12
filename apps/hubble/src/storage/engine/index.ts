@@ -55,6 +55,7 @@ import {
   validations,
   VerificationAddAddressMessage,
   VerificationRemoveMessage,
+  ObjectRefTypes,
 } from "@farcaster/hub-nodejs";
 import {err, ok, ResultAsync} from "neverthrow";
 import fs from "fs";
@@ -882,11 +883,10 @@ class Engine extends TypedEmitter<EngineEvents> {
     let tags: Message[] = [];
     if (includeTags) {
       const tagRes = await ResultAsync.fromPromise(this._tagStore.getTagsByTarget({
-        castKey: {
-          network: 3, // H1 network ID?
-          hash,
-          fid,
-        },
+        type: ObjectRefTypes.CAST,
+        network: FarcasterNetwork.DEVNET, // H1 network ID?
+        hash,
+        fid,
       }, creatorTagsOnly ? fid : 0), (e) => e as HubError);
       if (objectRes.isErr()) {
         return err(new HubError('bad_request', 'failed to fetch object tags'));
@@ -945,6 +945,26 @@ class Engine extends TypedEmitter<EngineEvents> {
 
     return ResultAsync.fromPromise(
       this._relationshipStore.getRelationshipAddsByFid(fid, type, pageOptions),
+      (e) => e as HubError,
+    );
+  }
+
+  async getRelationshipsBySource(
+    source?: ObjectRef,
+    type?: string,
+    pageOptions?: PageOptions,
+  ): HubAsyncResult<MessagesPage<RelationshipAddMessage>> {
+    if (!source) {
+      return err(new HubError('bad_request', 'Source is undefined'))
+    }
+  
+    const validatedObjectRef = validations.validateObjectRef(source);
+    if (validatedObjectRef.isErr()) {
+      return err(validatedObjectRef.error);
+    }
+
+    return ResultAsync.fromPromise(
+      this._relationshipStore.getRelationshipsBySource(source, type, pageOptions),
       (e) => e as HubError,
     );
   }

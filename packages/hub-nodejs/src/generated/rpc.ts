@@ -40,6 +40,7 @@ import {
   ReactionsByFidRequest,
   ReactionsByTargetRequest,
   RelationshipsByFidRequest,
+  RelationshipsBySourceRequest,
   SignerRequest,
   StorageLimitsResponse,
   SubscribeRequest,
@@ -269,6 +270,16 @@ export const HubServiceService = {
     requestSerialize: (value: RelationshipsByFidRequest) =>
       Buffer.from(RelationshipsByFidRequest.encode(value).finish()),
     requestDeserialize: (value: Buffer) => RelationshipsByFidRequest.decode(value),
+    responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
+  },
+  getRelationshipsBySource: {
+    path: "/HubService/GetRelationshipsBySource",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: RelationshipsBySourceRequest) =>
+      Buffer.from(RelationshipsBySourceRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => RelationshipsBySourceRequest.decode(value),
     responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
     responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
   },
@@ -630,6 +641,7 @@ export interface HubServiceServer extends UntypedServiceImplementation {
    */
   getRelationship: handleUnaryCall<ObjectId, Message>;
   getRelationshipsByFid: handleUnaryCall<RelationshipsByFidRequest, MessagesResponse>;
+  getRelationshipsBySource: handleUnaryCall<RelationshipsBySourceRequest, MessagesResponse>;
   /**
    * User Data
    * @http-api: none
@@ -1008,6 +1020,21 @@ export interface HubServiceClient extends Client {
   ): ClientUnaryCall;
   getRelationshipsByFid(
     request: RelationshipsByFidRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getRelationshipsBySource(
+    request: RelationshipsBySourceRequest,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getRelationshipsBySource(
+    request: RelationshipsBySourceRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getRelationshipsBySource(
+    request: RelationshipsBySourceRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: MessagesResponse) => void,

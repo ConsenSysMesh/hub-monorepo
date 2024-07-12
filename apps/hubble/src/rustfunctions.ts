@@ -7,7 +7,7 @@ import { createRequire } from "module";
 const require = createRequire(import.meta.url);
 const lib = require("./addon/index.node");
 
-import { HubError, HubErrorCode, HubResult, validations } from "@farcaster/hub-nodejs";
+import { HubError, HubErrorCode, HubResult, validations, ObjectRef } from "@farcaster/hub-nodejs";
 import { PAGE_SIZE_MAX, PageOptions } from "./storage/stores/types.js";
 import { UserMessagePostfix } from "./storage/db/types.js";
 import { DbKeyValue, RocksDbIteratorOptions } from "./storage/db/rocksdb.js";
@@ -622,6 +622,15 @@ export const rsGetRelationshipRemovesByFid = async (
   pageOptions: PageOptions = {},
 ): Promise<RustMessagesPage> => {
   return await lib.getRelationshipRemovesByFid.call(store, fid, type, pageOptions);
+};
+
+export const rsGetRelationshipsBySource = async (
+  store: RustDynStore,
+  source: Buffer,
+  type?: string,
+  pageOptions: PageOptions = {},
+): Promise<RustMessagesPage> => {
+  return await lib.getRelationshipsBySource.call(store, source, type, pageOptions);
 };
 
 /** UserData Store */

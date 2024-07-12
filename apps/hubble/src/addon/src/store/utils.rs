@@ -2,7 +2,7 @@ use super::{HubError, MessagesPage, PageOptions, Store, FARCASTER_EPOCH, make_fi
 use crate::{
     db::{JsIteratorOptions, RocksDB},
     trie::merkle_trie::{MerkleTrie, NodeMetadata},
-    protos::{object_ref::Ref, ObjectKey, FarcasterNetwork},
+    protos::{ObjectRef, ObjectRefTypes, FarcasterNetwork},
 
 };
 use neon::{
@@ -266,18 +266,19 @@ pub enum TargetTypePrefix {
     Fid = 3,
 }
 
-// TODO: Figure out what the object key key is
-pub fn make_object_key_key(object_key: &ObjectKey, set: UserPostfix) -> Vec<u8> {
-    // What is the max length for a key? (for now its 24) (it should be 30? based on primary key length)
-    let mut key = Vec::with_capacity(1 + 30);
-    if object_key.network == FarcasterNetwork::Mainnet as i32 {
+fn make_object_ref_key(object_key: &ObjectRef, set: UserPostfix) -> Vec<u8> {
+    let mut key = Vec::with_capacity(1 + 1 + 20);
+    if object_key.network.is_some()
+        && object_key.network.unwrap() == FarcasterNetwork::Mainnet as i32 {
         key.push(TargetTypePrefix::H1Object as u8);
     } else {
         // Should we have a specific network for H2
         key.push(TargetTypePrefix::H2Object as u8);
     }
     key.push(set as u8);
-    key.extend_from_slice(&object_key.hash);
+    if object_key.hash.is_some() {
+        key.extend_from_slice(&object_key.hash.as_ref().unwrap());
+    }
 
     key
 }
@@ -289,13 +290,22 @@ pub fn make_object_ref_fid_key(fid: u32) -> Vec<u8> {
     key
 }
 
-pub fn make_ref_key(object_ref: &Ref) -> Vec<u8> {
-    match object_ref {
-        Ref::Fid(fid) => make_object_ref_fid_key(*fid as u32),
-        Ref::CastKey(cast_key) => make_object_key_key(cast_key, UserPostfix::CastMessage),
-        Ref::ObjectKey(obj_key) => make_object_key_key(obj_key, UserPostfix::ObjectMessage), 
-        Ref::RelationshipKey(relationship_key) => make_object_key_key(relationship_key, UserPostfix::RelationshipMessage),
+pub fn make_ref_key(object_ref: &ObjectRef) -> Vec<u8> {
+    if object_ref.r#type == ObjectRefTypes::Fid as i32 {
+        make_object_ref_fid_key(object_ref.fid as u32)
+    } else if object_ref.r#type == ObjectRefTypes::Cast as i32 {
+        make_object_ref_key(object_ref, UserPostfix::CastMessage)
+    } else if object_ref.r#type == ObjectRefTypes::Object as i32 {
+        make_object_ref_key(object_ref, UserPostfix::ObjectMessage)
+    } else { // assume Relationship type
+        make_object_ref_key(object_ref, UserPostfix::RelationshipMessage)
     }
+    // match object_ref {
+    //     Ref::Fid(fid) => make_object_ref_fid_key(*fid as u32),
+    //     Ref::CastKey(cast_key) => make_object_key_key(cast_key, UserPostfix::CastMessage),
+    //     Ref::ObjectKey(obj_key) => make_object_key_key(obj_key, UserPostfix::ObjectMessage), 
+    //     Ref::RelationshipKey(relationship_key) => make_object_key_key(relationship_key, UserPostfix::RelationshipMessage),
+    // }
 }
 
 #[allow(dead_code)]

@@ -8,7 +8,7 @@ use super::{
 };
 use crate::{
     db::{RocksDB, RocksDbTransactionBatch},
-    protos::{self, object_ref::Ref, Message, MessageType},
+    protos::{self, ObjectRef, Message, MessageType},
 };
 use crate::{protos::message_data, THREAD_POOL};
 use neon::{
@@ -126,7 +126,7 @@ impl StoreDef for TagStoreDef {
         Self::make_tag_adds_key(
             message.data.as_ref().unwrap().fid as u32,
             tag_body.name.clone(),
-            tag_body.target.as_ref().unwrap().r#ref.as_ref(),
+            tag_body.target.as_ref(),
         )
     }
 
@@ -144,7 +144,7 @@ impl StoreDef for TagStoreDef {
         Self::make_tag_removes_key(
             message.data.as_ref().unwrap().fid as u32,
             tag_body.name.clone(),
-            tag_body.target.as_ref().unwrap().r#ref.as_ref(),
+            tag_body.target.as_ref(),
         )
     }
 
@@ -174,7 +174,7 @@ impl TagStoreDef {
                 message: "Invalid tag body".to_string(),
             })?,
         };
-        let target = tag_body.target.as_ref().unwrap().r#ref.as_ref().ok_or(HubError {
+        let target = tag_body.target.as_ref().ok_or(HubError {
             code: "bad_request.validation_failure".to_string(),
             message: "Invalid tag body".to_string(),
         })?;
@@ -189,7 +189,7 @@ impl TagStoreDef {
     }
 
     pub fn make_tags_by_target_key(
-        target: &Ref,
+        target: &ObjectRef,
         fid: u32,
         ts_hash: Option<&[u8; TS_HASH_LENGTH]>,
     ) -> Vec<u8> {
@@ -209,7 +209,7 @@ impl TagStoreDef {
     pub fn make_tag_adds_key(
         fid: u32,
         name: String,
-        target: Option<&Ref>,
+        target: Option<&ObjectRef>,
     ) -> Result<Vec<u8>, HubError> {
         if !target.is_some() || name.is_empty() {
             return Err(HubError {
@@ -233,7 +233,7 @@ impl TagStoreDef {
     pub fn make_tag_removes_key(
         fid: u32,
         name: String,
-        target: Option<&Ref>,
+        target: Option<&ObjectRef>,
     ) -> Result<Vec<u8>, HubError> {
         if !target.is_some() || name.is_empty() {
             return Err(HubError {
@@ -532,7 +532,7 @@ impl TagStore {
 
     pub fn get_tags_by_target(
         store: &Store,
-        target: &Ref,
+        target: &ObjectRef,
         fid: u32,
         name: String,
         page_options: &PageOptions,
@@ -619,7 +619,7 @@ impl TagStore {
         THREAD_POOL.lock().unwrap().execute(move || {
             let messages = TagStore::get_tags_by_target(
                 &store,
-                target.unwrap().r#ref.as_ref().unwrap(),
+                target.as_ref().unwrap(),
                 fid,
                 name,
                 &page_options,

@@ -213,6 +213,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         "getRelationshipRemovesByFid",
         RelationshipStore::js_get_relationship_removes_by_fid,
     )?;
+    cx.export_function(
+        "getRelationshipsBySource",
+        RelationshipStore::js_get_relationships_by_source,
+    )?;
 
     // CastStore methods
     cx.export_function("createCastStore", CastStore::js_create_cast_store)?;
