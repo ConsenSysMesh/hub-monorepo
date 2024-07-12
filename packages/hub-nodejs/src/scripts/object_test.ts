@@ -5,6 +5,7 @@ import {
   makeTagAdd,
   makeObjectAdd,
   NobleEd25519Signer,
+  ObjectRefTypes,
 } from "@farcaster/hub-nodejs";
 import { hexToBytes } from "@noble/hashes/utils";
 
@@ -83,12 +84,11 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
     name: 'newtagg',
     content: 'the best',
     target: {
-      castKey: {
-        network: 3,
-        hash: objectAdd._unsafeUnwrap().hash,
-        fid: FID,
-      },
-    }
+      type: ObjectRefTypes.CAST,
+      network: NETWORK,
+      hash: objectAdd._unsafeUnwrap().hash,
+      fid: FID,
+    },
   },
   dataOptions,
   ed25519Signer);
@@ -99,11 +99,10 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
     name: 'newtag2',
     content: 'the best 2',
     target: {
-      castKey: {
-        network: 3,
-        hash: objectAdd._unsafeUnwrap().hash,
-        fid: FID,
-      },
+      type: ObjectRefTypes.CAST,
+      network: NETWORK,
+      hash: objectAdd._unsafeUnwrap().hash,
+      fid: FID,
     }
   },
   dataOptions2,

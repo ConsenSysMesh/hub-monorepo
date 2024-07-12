@@ -4,6 +4,7 @@ import {
     makeCastAdd,
     makeTagAdd,
     NobleEd25519Signer,
+    ObjectRefTypes,
   } from "@farcaster/hub-nodejs";
   import { hexToBytes } from "@noble/hashes/utils";
   
@@ -64,12 +65,11 @@ import {
         name: 'bestTag',
         content: 'the best',
         target: {
-          castKey: {
-            network: 3,
-            hash: cast._unsafeUnwrap().hash,
-            fid: FID,
-          },
-        }
+          type: ObjectRefTypes.CAST,
+          network: NETWORK,
+          hash: cast._unsafeUnwrap().hash,
+          fid: FID,
+        },
       },
     dataOptions,
     ed25519Signer);
@@ -94,12 +94,12 @@ import {
   
     const y = await client.getTagsByTarget({ 
       target: {
-        castKey: {
-          network: 3,
-          hash: cast._unsafeUnwrap().hash,
-          fid: FID,
-        },
-      }})
+        type: ObjectRefTypes.CAST,
+        network: NETWORK,
+        hash: cast._unsafeUnwrap().hash,
+        fid: FID,
+      }
+    })
   
     if (y.isOk()) {
       y._unsafeUnwrap().messages.forEach((m) => {
