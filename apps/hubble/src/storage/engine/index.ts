@@ -4,6 +4,8 @@ import {
   bytesToUtf8String,
   CastAddMessage,
   CastId,
+  ObjectResponse,
+  ObjectTagRequest,
   CastRemoveMessage,
   FarcasterNetwork,
   getDefaultStoreLimit,
@@ -827,6 +829,7 @@ class Engine extends TypedEmitter<EngineEvents> {
 
   async getTagsByTarget(
     target?: ObjectRef,
+    fid?: number,
     value?: string,
     pageOptions: PageOptions = {},
   ): HubAsyncResult<MessagesPage<TagAddMessage>> {
@@ -837,7 +840,7 @@ class Engine extends TypedEmitter<EngineEvents> {
     }
 
     return ResultAsync.fromPromise(
-      this._tagStore.getTagsByTarget(target, value, pageOptions),
+      this._tagStore.getTagsByTarget(target, fid, value, pageOptions),
       (e) => e as HubError,
     );
   }
@@ -861,13 +864,42 @@ class Engine extends TypedEmitter<EngineEvents> {
   /*                              Object Store Methods                          */
   /* -------------------------------------------------------------------------- */
 
-  async getObject(fid: number, hash: Uint8Array): HubAsyncResult<ObjectAddMessage> {
+  async getObject(fid: number, hash: Uint8Array, tagOptions: ObjectTagRequest): HubAsyncResult<ObjectResponse> {
     const validatedFid = validations.validateFid(fid);
     if (validatedFid.isErr()) {
       return err(validatedFid.error);
     }
 
-    return ResultAsync.fromPromise(this._objectStore.getObjectAdd(fid, hash), (e) => e as HubError);
+    const { includeTags = false, creatorTagsOnly = true } = tagOptions;
+
+    let object: Message;
+    const objectRes = await ResultAsync.fromPromise(this._objectStore.getObjectAdd(fid, hash), (e) => e as HubError);
+    if (objectRes.isErr()) {
+      return err(new HubError('bad_request', 'failed to fetch object'));
+    }
+    object = objectRes._unsafeUnwrap();
+
+    let tags: Message[] = [];
+    if (includeTags) {
+      const tagRes = await ResultAsync.fromPromise(this._tagStore.getTagsByTarget({
+        castKey: {
+          network: 3, // H1 network ID?
+          hash,
+          fid,
+        },
+      }, creatorTagsOnly ? fid : 0), (e) => e as HubError);
+      if (objectRes.isErr()) {
+        return err(new HubError('bad_request', 'failed to fetch object tags'));
+      }
+      tags = tagRes._unsafeUnwrap().messages;
+    }
+
+    const res: ObjectResponse = {
+      object,
+      tags,
+    }
+
+    return ok(res);
   }
 
   async getObjectsByFid(

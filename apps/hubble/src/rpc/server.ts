@@ -4,6 +4,7 @@ import {
   CastRemoveMessage,
   ContactInfoResponse,
   DbStats,
+  ObjectResponse,
   FidsResponse,
   getServer,
   HubError,
@@ -905,8 +906,8 @@ export default class Server {
         const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
         log.debug({ method: "getTagsByCast", req: call.request }, `RPC call from ${peer}`);
 
-        const { target, name, pageSize, pageToken, reverse } = call.request;
-        const reactionsResult = await this.engine?.getTagsByTarget(target, name, {
+        const { target, fid, name, pageSize, pageToken, reverse } = call.request;
+        const reactionsResult = await this.engine?.getTagsByTarget(target, fid, name, {
           pageSize,
           pageToken,
           reverse,
@@ -924,8 +925,8 @@ export default class Server {
         const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
         log.debug({ method: "getTagsByTarget", req: call.request }, `RPC call from ${peer}`);
 
-        const { target, name, pageSize, pageToken, reverse } = call.request;
-        const reactionsResult = await this.engine?.getTagsByTarget(target, name, {
+        const { target, fid, name, pageSize, pageToken, reverse } = call.request;
+        const reactionsResult = await this.engine?.getTagsByTarget(target, fid, name, {
           pageSize,
           pageToken,
           reverse,
@@ -961,10 +962,15 @@ export default class Server {
 
         const request = call.request;
 
-        const objectAddResult = await this.engine?.getObject(request.fid, request.hash);
+        let tagOptions = request.tagOptions || {
+          includeTags: false,
+          creatorTagsOnly: true,
+        };
+
+        const objectAddResult = await this.engine?.getObject(request.fid, request.hash, tagOptions);
         objectAddResult?.match(
-          (objectAdd: ObjectAddMessage) => {
-            callback(null, objectAdd);
+          (objectResponse: ObjectResponse) => {
+            callback(null, objectResponse);
           },
           (err: HubError) => {
             callback(toServiceError(err));

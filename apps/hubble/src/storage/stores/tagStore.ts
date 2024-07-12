@@ -116,6 +116,7 @@ class TagStore extends RustStoreBase<TagAddMessage, TagRemoveMessage> {
 
   async getTagsByTarget(
     target: ObjectRef,
+    fid?: number,
     value?: string,
     pageOptions: PageOptions = {},
   ): Promise<MessagesPage<TagAddMessage>> {
@@ -125,6 +126,7 @@ class TagStore extends RustStoreBase<TagAddMessage, TagRemoveMessage> {
     const message_page = await rsGetTagsByTarget(
       this._rustStore,
       targetBuffer,
+      fid ?? 0,
       value ?? "",
       pageOptions,
     );
