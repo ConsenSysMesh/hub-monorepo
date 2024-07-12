@@ -687,21 +687,32 @@ export const validateObjectKey = (objectKey: protobufs.ObjectKey): HubResult<pro
   if (validatedNetwork.isErr()) {
     return err(new HubError("bad_request.validation_failure", "invalid network"));
   }
-  // Does this need further validation?
-  if (!objectKey.key) {
-    return err(new HubError("bad_request.validation_failure", "missing object key"));
+  const hashResult = validateMessageHash(objectKey.hash);
+  if (hashResult.isErr()) {
+    return err(new HubError("bad_request.validation_failure", "invalid object key message hash"));
   }
+
+  const fidResult = validateFid(objectKey.fid);
+  if (fidResult.isErr()) {
+    return err(new HubError("bad_request.validation_failure", "invalid object key fid"));
+  }
+
   return ok(objectKey);
 }
 
 export const validateObjectRef = (
-  target: protobufs.ObjectKey | number
+  target: protobufs.ObjectRef
 ): HubResult<protobufs.ObjectKey | number> => {
-  if (typeof target === "number") {
+  const targetObj = target.castKey || target.objectKey || target.relationshipKey || target.fid;
+  if (targetObj === undefined) {
+    return err(new HubError("bad_request.validation_failure", "target is missing"));
+  }
+
+  if (typeof targetObj === "number") {
     // JERRY-TODO: What to do about CIDs
-    return validateFid(target);
+    return validateFid(targetObj);
   } else {
-    return validateObjectKey(target);
+    return validateObjectKey(targetObj);
   }
 };
 
@@ -787,12 +798,7 @@ export const validateTagBody = (body: protobufs.TagBody): HubResult<protobufs.Ta
     return err(new HubError("bad_request.validation_failure", "target is missing"));
   }
 
-  const targetObj = target.objectKey || target.fid;
-  if (targetObj === undefined) {
-    return err(new HubError("bad_request.validation_failure", "target is missing"));
-  }
-
-  return validateObjectRef(targetObj).map(() => body);
+  return validateObjectRef(target).map(() => body);
 };
 
 export const validateObjectAddBody = (body: protobufs.ObjectAddBody): HubResult<protobufs.ObjectAddBody> => {

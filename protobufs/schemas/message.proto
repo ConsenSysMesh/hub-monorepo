@@ -157,13 +157,16 @@ message ReactionBody {
 /* Generic reference to an H1/H2 object */
 message ObjectKey {
   FarcasterNetwork network = 1;
-  string key = 2; // Key to look up the object with within RocksDB
+  bytes hash = 3;
+  uint64 fid = 4;
 }
 
 message ObjectRef {
   oneof ref {
-    ObjectKey object_key = 1; // ref to an object on either H1 or H2
-    uint64 fid = 2; // Add CID later
+    uint64 fid = 1; // Add CID later
+    ObjectKey cast_key = 2; // ref to an H1 cast
+    ObjectKey object_key = 3; // ref to an H2 object
+    ObjectKey relationship_key = 4; // ref to an H2 relationship
   }
 }
 
