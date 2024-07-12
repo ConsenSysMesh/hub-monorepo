@@ -6,7 +6,7 @@ use db::RocksDB;
 use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey, EXPANDED_SECRET_KEY_LENGTH};
 use neon::{prelude::*, types::buffer::TypedArray};
 use std::{convert::TryInto, sync::Mutex};
-use store::{LinkStore, ReactionStore, TagStore, Store, UserDataStore};
+use store::{LinkStore, ReactionStore, TagStore, ObjectStore, RelationshipStore, Store, UserDataStore};
 use threadpool::ThreadPool;
 
 mod db;
@@ -173,8 +173,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 
     // TagStore methods
     cx.export_function("createTagStore", TagStore::create_tag_store)?;
-    cx.export_function("getTagAdd", TagStore::js_get_tag_add)?;
-    cx.export_function("getTagRemove", TagStore::js_get_tag_remove)?;
+    // cx.export_function("getTagAdd", TagStore::js_get_tag_add)?;
+    // cx.export_function("getTagRemove", TagStore::js_get_tag_remove)?;
     cx.export_function(
         "getTagAddsByFid",
         TagStore::js_get_tag_adds_by_fid,
@@ -186,6 +186,32 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function(
         "getTagsByTarget",
         TagStore::js_get_tags_by_target,
+    )?;
+
+    // ObjectStore methods
+    cx.export_function("createObjectStore", ObjectStore::create_object_store)?;
+    cx.export_function("getObjectAdd", ObjectStore::js_get_object_add)?;
+    cx.export_function("getObjectRemove", ObjectStore::js_get_object_remove)?;
+    cx.export_function(
+        "getObjectAddsByFid",
+        ObjectStore::js_get_object_adds_by_fid,
+    )?;
+    cx.export_function(
+        "getObjectRemovesByFid",
+        ObjectStore::js_get_object_removes_by_fid,
+    )?;
+
+    // RelationshipStore methods
+    cx.export_function("createRelationshipStore", RelationshipStore::create_relationship_store)?;
+    cx.export_function("getRelationshipAdd", RelationshipStore::js_get_relationship_add)?;
+    cx.export_function("getRelationshipRemove", RelationshipStore::js_get_relationship_remove)?;
+    cx.export_function(
+        "getRelationshipAddsByFid",
+        RelationshipStore::js_get_relationship_adds_by_fid,
+    )?;
+    cx.export_function(
+        "getRelationshipRemovesByFid",
+        RelationshipStore::js_get_relationship_removes_by_fid,
     )?;
 
     // CastStore methods

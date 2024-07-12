@@ -41,6 +41,13 @@ message MessageData {
     LinkCompactStateBody link_compact_state_body = 17;
 
     TagBody tag_body = 18;
+
+    ObjectAddBody object_add_body = 19;
+    ObjectRemoveBody object_remove_body = 20;
+
+    RelationshipAddBody relationship_add_body = 21;
+    RelationshipRemoveBody relationship_remove_body = 22;
+
   } // Properties specific to the MessageType
 }
 
@@ -77,6 +84,10 @@ enum MessageType {
   MESSAGE_TYPE_LINK_COMPACT_STATE = 14; // Link Compaction State Message
   MESSAGE_TYPE_TAG_ADD = 15; // Add a Tag to a Cast
   MESSAGE_TYPE_TAG_REMOVE = 16; // Remove a Tag from a Cast
+  MESSAGE_TYPE_OBJECT_ADD = 17; // Add a generic Object
+  MESSAGE_TYPE_OBJECT_REMOVE = 18; // Remove a generic Object
+  MESSAGE_TYPE_RELATIONSHIP_ADD = 19; // Add a generic Relationship
+  MESSAGE_TYPE_RELATIONSHIP_REMOVE = 20; // Remove a generic Relationship
 }
 
 /** Farcaster network the message is intended for */
@@ -143,13 +154,56 @@ message ReactionBody {
   }
 }
 
+/* Generic reference to an H1/H2 object */
+message ObjectKey {
+  FarcasterNetwork network = 1;
+  string key = 2; // Key to look up the object with within RocksDB
+}
+
+message ObjectRef {
+  oneof ref {
+    ObjectKey object_key = 1; // ref to an object on either H1 or H2
+    uint64 fid = 2; // Add CID later
+  }
+}
+
 /** Adds or removes a Tag from a Cast */
 message TagBody {
-  string type = 1; // Tag value
-  oneof target {
-    CastId target_cast_id = 2; // CastId of the Cast to react to
-    string target_url = 3; // URL to react to
-  }
+  string name = 1; // Tag value
+  optional string content = 2;
+  ObjectRef target = 3;
+}
+
+/** Identifier used to look up an H2 Object (equivalent to CastId atm) */
+message ObjectId {
+  uint64 fid = 1; // Fid of the user who created the object
+  bytes hash = 2; // Hash of the object
+}
+
+/* Generic object at H2 */
+message ObjectAddBody {
+  string type = 1; // Type of object (completely user-defined, thus a string)
+  optional string displayName = 2;
+  optional string avatar = 3; // base64 encoded image or a URL?
+	optional string description = 4;
+}
+
+/** Removes an existing Cast */
+message ObjectRemoveBody {
+  bytes target_hash = 1; // Hash of the object to remove
+}
+
+/* Generic relationship at H2 */
+message RelationshipAddBody {
+  string type = 1; // Type of relationship (completely user-defined, thus a string)
+  // The implied directionality of the relationship is from source towards the target
+  ObjectRef source = 2;
+  ObjectRef target = 3;
+}
+
+/** Removes an existing Cast */
+message RelationshipRemoveBody {
+  bytes target_hash = 1; // Hash of the relationship to remove
 }
 
 /** Type of Reaction */

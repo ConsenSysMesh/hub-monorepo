@@ -442,38 +442,41 @@ export class HttpAPIServer {
     );
 
     // @doc-tag: /reactionsByCast?target_fid=...&target_hash=...&value=...
-    this.app.get<{
-      Querystring: { target_fid: string; target_hash: string; value: string } & QueryPageParams;
-    }>("/v1/tagsByCast", (request, reply) => {
-      const { target_fid, target_hash } = request.query;
-      const pageOptions = getPageOptions(request.query);
+    // this.app.get<{
+    //   Querystring: { target_fid: string; target_hash: string; value: string } & QueryPageParams;
+    // }>("/v1/tagsByCast", (request, reply) => {
+    //   const { target_fid, target_hash } = request.query;
+    //   const pageOptions = getPageOptions(request.query);
 
-      const call = getCallObject(
-        "getTagsByCast",
-        {
-          targetCastId: { fid: parseInt(target_fid), hash: hexStringToBytes(target_hash).unwrapOr([]) },
-          value: request.query.value,
-          ...pageOptions,
-        },
-        request,
-      );
+    //   const call = getCallObject(
+    //     "getTagsByCast",
+    //     {
+    //       target: {
+    //         fid: 301932,
+    //       },
+    //       name: request.query.name,
+    //       ...pageOptions,
+    //     },
+    //     request,
+    //   );
 
-      this.grpcImpl.getTagsByCast(call, handleResponse(reply, MessagesResponse));
-    });
+    //   this.grpcImpl.getTagsByCast(call, handleResponse(reply, MessagesResponse));
+    // });
 
-    // @doc-tag: /tagsByTarget?url=...&reaction_type=...
-    this.app.get<{ Querystring: { url: string; value: string } & QueryPageParams }>(
+    // @doc-tag: /tagsByTarget?type=...&target=...&name=...
+    this.app.get<{ Querystring: { targetType: string; targetValue: string; name: string } & QueryPageParams }>(
       "/v1/tagsByTarget",
       (request, reply) => {
-        const { url } = request.query;
         const pageOptions = getPageOptions(request.query);
 
-        const decodedUrl = decodeURIComponent(url);
+        // TODO: Fix this
         const call = getCallObject(
           "getTagsByTarget",
           {
-            targetUrl: decodedUrl,
-            value: request.query.value,
+            target: {
+              fid: 301932,
+            },
+            name: request.query.name,
             ...pageOptions,
           },
           request,
@@ -484,6 +487,86 @@ export class HttpAPIServer {
     );
 
 
+    //=================Objects=================
+    // @doc-tag: /objectById?fid=...&hash=...
+    this.app.get<{
+      Querystring: { hash: string; fid: string };
+    }>("/v1/objectById", (request, reply) => {
+      const { fid, hash } = request.query;
+
+      const call = getCallObject(
+        "getObject",
+        {
+          fid: parseInt(fid),
+          hash: hexStringToBytes(hash).unwrapOr([]),
+        },
+        request,
+      );
+
+      this.grpcImpl.getObject(call, handleResponse(reply, Message));
+    });
+
+    // @doc-tag: /objectsByFid?fid=...&type=...
+    this.app.get<{ Querystring: { type: string; fid: string } & QueryPageParams }>(
+      "/v1/objectsByFid",
+      (request, reply) => {
+        const { fid, type } = request.query;
+        const pageOptions = getPageOptions(request.query);
+
+        const call = getCallObject(
+          "getObjectsByFid",
+          {
+            fid: parseInt(fid),
+            type,
+            ...pageOptions,
+          },
+          request,
+        );
+
+        this.grpcImpl.getObjectsByFid(call, handleResponse(reply, MessagesResponse));
+      },
+    );
+
+        //=================Relationships=================
+    // @doc-tag: /relationshipById?fid=...&hash=...
+    this.app.get<{
+      Querystring: { hash: string; fid: string };
+    }>("/v1/relationshipById", (request, reply) => {
+      const { fid, hash } = request.query;
+
+      const call = getCallObject(
+        "getRelationship",
+        {
+          fid: parseInt(fid),
+          hash: hexStringToBytes(hash).unwrapOr([]),
+        },
+        request,
+      );
+
+      this.grpcImpl.getRelationship(call, handleResponse(reply, Message));
+    });
+
+    // @doc-tag: /relationshipsByFid?fid=...&type=...
+    this.app.get<{ Querystring: { type: string; fid: string } & QueryPageParams }>(
+      "/v1/relationshipsByFid",
+      (request, reply) => {
+        const { fid, type } = request.query;
+        const pageOptions = getPageOptions(request.query);
+
+        const call = getCallObject(
+          "getRelationshipsByFid",
+          {
+            fid: parseInt(fid),
+            type,
+            ...pageOptions,
+          },
+          request,
+        );
+
+        this.grpcImpl.getRelationshipsByFid(call, handleResponse(reply, MessagesResponse));
+      },
+    );
+    
     //=================Links=================
     // @doc-tag: /linkById?fid=...&target_fid=...&link_type=...
     this.app.get<{ Querystring: { link_type: string; fid: string; target_fid: string } }>(

@@ -117,6 +117,14 @@ export const typeToSetPostfix = (type: MessageType): UserMessagePostfix => {
     return UserPostfix.TagMessage;
   }
 
+  if (type === MessageType.OBJECT_ADD || type === MessageType.OBJECT_REMOVE) {
+    return UserPostfix.ObjectMessage;
+  }
+
+  if (type === MessageType.RELATIONSHIP_ADD || type === MessageType.RELATIONSHIP_REMOVE) {
+    return UserPostfix.RelationshipMessage;
+  }
+
   throw new Error(`invalid type: ${type}`);
 };
 

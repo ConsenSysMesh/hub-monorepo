@@ -5,6 +5,7 @@ import {
   TagRemoveMessage,
   StoreType,
   getDefaultStoreLimit,
+  ObjectRef,
 } from "@farcaster/hub-nodejs";
 import {
   rsCreateTagStore,
@@ -25,7 +26,7 @@ import { messageDecode } from "../../storage/db/message.js";
 
 class TagStore extends RustStoreBase<TagAddMessage, TagRemoveMessage> {
   constructor(db: RocksDB, eventHandler: StoreEventHandler, options: StorePruneOptions = {}) {
-    const pruneSizeLimit = options.pruneSizeLimit ?? getDefaultStoreLimit(StoreType.REACTIONS);
+    const pruneSizeLimit = options.pruneSizeLimit ?? getDefaultStoreLimit(StoreType.TAGS);
     const rustTagStore = rsCreateTagStore(db.rustDb, eventHandler.getRustStoreEventHandler(), pruneSizeLimit);
 
     super(db, rustTagStore, UserPostfix.TagMessage, eventHandler, pruneSizeLimit);
@@ -114,23 +115,16 @@ class TagStore extends RustStoreBase<TagAddMessage, TagRemoveMessage> {
   }
 
   async getTagsByTarget(
-    target: CastId | string,
+    target: ObjectRef,
     value?: string,
     pageOptions: PageOptions = {},
   ): Promise<MessagesPage<TagAddMessage>> {
-    let targetCastId = Buffer.from([]);
-    let targetUrl = "";
-
-    if (typeof target === "string") {
-      targetUrl = target;
-    } else {
-      targetCastId = Buffer.from(CastId.encode(target).finish());
-    }
+    
+    const targetBuffer = Buffer.from(ObjectRef.encode(target).finish());
 
     const message_page = await rsGetTagsByTarget(
       this._rustStore,
-      targetCastId,
-      targetUrl,
+      targetBuffer,
       value ?? "",
       pageOptions,
     );

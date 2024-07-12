@@ -96,6 +96,47 @@ export type TagRemoveMessage = protobufs.Message & {
   signatureScheme: protobufs.SignatureScheme.ED25519;
 };
 
+export type ObjectAddData = protobufs.MessageData & {
+  type: protobufs.MessageType.OBJECT_ADD;
+  objectAddBody: protobufs.ObjectAddBody;
+};
+
+export type ObjectAddMessage = protobufs.Message & {
+  data: ObjectAddData;
+  signatureScheme: protobufs.SignatureScheme.ED25519;
+};
+
+export type ObjectRemoveData = protobufs.MessageData & {
+  type: protobufs.MessageType.OBJECT_REMOVE;
+  objectRemoveBody: protobufs.ObjectRemoveBody;
+};
+
+export type ObjectRemoveMessage = protobufs.Message & {
+  data: ObjectRemoveData;
+  signatureScheme: protobufs.SignatureScheme.ED25519;
+};
+
+export type RelationshipAddData = protobufs.MessageData & {
+  type: protobufs.MessageType.RELATIONSHIP_ADD;
+  relationshipAddBody: protobufs.RelationshipAddBody;
+};
+
+export type RelationshipAddMessage = protobufs.Message & {
+  data: RelationshipAddData;
+  signatureScheme: protobufs.SignatureScheme.ED25519;
+};
+
+export type RelationshipRemoveData = protobufs.MessageData & {
+  type: protobufs.MessageType.RELATIONSHIP_REMOVE;
+  relationshipRemoveBody: protobufs.RelationshipRemoveBody;
+};
+
+export type RelationshipRemoveMessage = protobufs.Message & {
+  data: RelationshipRemoveData;
+  signatureScheme: protobufs.SignatureScheme.ED25519;
+};
+
+
 export type VerificationAddAddressData = protobufs.MessageData & {
   type: protobufs.MessageType.VERIFICATION_ADD_ETH_ADDRESS;
   verificationAddAddressBody: protobufs.VerificationAddAddressBody;

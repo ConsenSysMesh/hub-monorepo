@@ -4,7 +4,7 @@ import { BrowserHeaders } from "browser-headers";
 import { Observable } from "rxjs";
 import { share } from "rxjs/operators";
 import { HubEvent } from "./hub_event";
-import { CastId, Message } from "./message";
+import { CastId, Message, ObjectId } from "./message";
 import { OnChainEvent } from "./onchain_event";
 import {
   CastsByParentRequest,
@@ -21,11 +21,13 @@ import {
   LinksByFidRequest,
   LinksByTargetRequest,
   MessagesResponse,
+  ObjectsByFidRequest,
   OnChainEventRequest,
   OnChainEventResponse,
   ReactionRequest,
   ReactionsByFidRequest,
   ReactionsByTargetRequest,
+  RelationshipsByFidRequest,
   SignerRequest,
   StorageLimitsResponse,
   SubscribeRequest,
@@ -90,6 +92,21 @@ export interface HubService {
   /** To be deprecated */
   getTagsByCast(request: DeepPartial<TagsByTargetRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse>;
   getTagsByTarget(request: DeepPartial<TagsByTargetRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse>;
+  /**
+   * Objects
+   * @http-api: objectById
+   */
+  getObject(request: DeepPartial<ObjectId>, metadata?: grpc.Metadata): Promise<Message>;
+  getObjectsByFid(request: DeepPartial<ObjectsByFidRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse>;
+  /**
+   * Relationships
+   * @http-api: relationshipById
+   */
+  getRelationship(request: DeepPartial<ObjectId>, metadata?: grpc.Metadata): Promise<Message>;
+  getRelationshipsByFid(
+    request: DeepPartial<RelationshipsByFidRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<MessagesResponse>;
   /**
    * User Data
    * @http-api: none
@@ -199,6 +216,10 @@ export class HubServiceClientImpl implements HubService {
     this.getTagsByFid = this.getTagsByFid.bind(this);
     this.getTagsByCast = this.getTagsByCast.bind(this);
     this.getTagsByTarget = this.getTagsByTarget.bind(this);
+    this.getObject = this.getObject.bind(this);
+    this.getObjectsByFid = this.getObjectsByFid.bind(this);
+    this.getRelationship = this.getRelationship.bind(this);
+    this.getRelationshipsByFid = this.getRelationshipsByFid.bind(this);
     this.getUserData = this.getUserData.bind(this);
     this.getUserDataByFid = this.getUserDataByFid.bind(this);
     this.getUsernameProof = this.getUsernameProof.bind(this);
@@ -298,6 +319,29 @@ export class HubServiceClientImpl implements HubService {
 
   getTagsByTarget(request: DeepPartial<TagsByTargetRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse> {
     return this.rpc.unary(HubServiceGetTagsByTargetDesc, TagsByTargetRequest.fromPartial(request), metadata);
+  }
+
+  getObject(request: DeepPartial<ObjectId>, metadata?: grpc.Metadata): Promise<Message> {
+    return this.rpc.unary(HubServiceGetObjectDesc, ObjectId.fromPartial(request), metadata);
+  }
+
+  getObjectsByFid(request: DeepPartial<ObjectsByFidRequest>, metadata?: grpc.Metadata): Promise<MessagesResponse> {
+    return this.rpc.unary(HubServiceGetObjectsByFidDesc, ObjectsByFidRequest.fromPartial(request), metadata);
+  }
+
+  getRelationship(request: DeepPartial<ObjectId>, metadata?: grpc.Metadata): Promise<Message> {
+    return this.rpc.unary(HubServiceGetRelationshipDesc, ObjectId.fromPartial(request), metadata);
+  }
+
+  getRelationshipsByFid(
+    request: DeepPartial<RelationshipsByFidRequest>,
+    metadata?: grpc.Metadata,
+  ): Promise<MessagesResponse> {
+    return this.rpc.unary(
+      HubServiceGetRelationshipsByFidDesc,
+      RelationshipsByFidRequest.fromPartial(request),
+      metadata,
+    );
   }
 
   getUserData(request: DeepPartial<UserDataRequest>, metadata?: grpc.Metadata): Promise<Message> {
@@ -791,6 +835,98 @@ export const HubServiceGetTagsByTargetDesc: UnaryMethodDefinitionish = {
   requestType: {
     serializeBinary() {
       return TagsByTargetRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = MessagesResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const HubServiceGetObjectDesc: UnaryMethodDefinitionish = {
+  methodName: "GetObject",
+  service: HubServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return ObjectId.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = Message.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const HubServiceGetObjectsByFidDesc: UnaryMethodDefinitionish = {
+  methodName: "GetObjectsByFid",
+  service: HubServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return ObjectsByFidRequest.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = MessagesResponse.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const HubServiceGetRelationshipDesc: UnaryMethodDefinitionish = {
+  methodName: "GetRelationship",
+  service: HubServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return ObjectId.encode(this).finish();
+    },
+  } as any,
+  responseType: {
+    deserializeBinary(data: Uint8Array) {
+      const value = Message.decode(data);
+      return {
+        ...value,
+        toObject() {
+          return value;
+        },
+      };
+    },
+  } as any,
+};
+
+export const HubServiceGetRelationshipsByFidDesc: UnaryMethodDefinitionish = {
+  methodName: "GetRelationshipsByFid",
+  service: HubServiceDesc,
+  requestStream: false,
+  responseStream: false,
+  requestType: {
+    serializeBinary() {
+      return RelationshipsByFidRequest.encode(this).finish();
     },
   } as any,
   responseType: {
