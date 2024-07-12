@@ -31,6 +31,8 @@ import {
   LinksByFidRequest,
   LinksByTargetRequest,
   MessagesResponse,
+  ObjectRequest,
+  ObjectResponse,
   ObjectsByFidRequest,
   OnChainEventRequest,
   OnChainEventResponse,
@@ -233,10 +235,10 @@ export const HubServiceService = {
     path: "/HubService/GetObject",
     requestStream: false,
     responseStream: false,
-    requestSerialize: (value: ObjectId) => Buffer.from(ObjectId.encode(value).finish()),
-    requestDeserialize: (value: Buffer) => ObjectId.decode(value),
-    responseSerialize: (value: Message) => Buffer.from(Message.encode(value).finish()),
-    responseDeserialize: (value: Buffer) => Message.decode(value),
+    requestSerialize: (value: ObjectRequest) => Buffer.from(ObjectRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => ObjectRequest.decode(value),
+    responseSerialize: (value: ObjectResponse) => Buffer.from(ObjectResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => ObjectResponse.decode(value),
   },
   getObjectsByFid: {
     path: "/HubService/GetObjectsByFid",
@@ -620,7 +622,7 @@ export interface HubServiceServer extends UntypedServiceImplementation {
    * Objects
    * @http-api: objectById
    */
-  getObject: handleUnaryCall<ObjectId, Message>;
+  getObject: handleUnaryCall<ObjectRequest, ObjectResponse>;
   getObjectsByFid: handleUnaryCall<ObjectsByFidRequest, MessagesResponse>;
   /**
    * Relationships
@@ -946,17 +948,20 @@ export interface HubServiceClient extends Client {
    * Objects
    * @http-api: objectById
    */
-  getObject(request: ObjectId, callback: (error: ServiceError | null, response: Message) => void): ClientUnaryCall;
   getObject(
-    request: ObjectId,
-    metadata: Metadata,
-    callback: (error: ServiceError | null, response: Message) => void,
+    request: ObjectRequest,
+    callback: (error: ServiceError | null, response: ObjectResponse) => void,
   ): ClientUnaryCall;
   getObject(
-    request: ObjectId,
+    request: ObjectRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ObjectResponse) => void,
+  ): ClientUnaryCall;
+  getObject(
+    request: ObjectRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: Message) => void,
+    callback: (error: ServiceError | null, response: ObjectResponse) => void,
   ): ClientUnaryCall;
   getObjectsByFid(
     request: ObjectsByFidRequest,

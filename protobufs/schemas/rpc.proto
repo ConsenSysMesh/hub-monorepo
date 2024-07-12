@@ -50,7 +50,7 @@ service HubService {
 
  // Objects
   // @http-api: objectById
-  rpc GetObject(ObjectId) returns (Message);
+  rpc GetObject(ObjectRequest) returns (ObjectResponse);
   rpc GetObjectsByFid(ObjectsByFidRequest) returns (MessagesResponse);
 
    // Relationships
