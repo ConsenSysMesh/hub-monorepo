@@ -103,9 +103,10 @@ class RelationshipStore extends RustStoreBase<RelationshipAddMessage, Relationsh
     type?: string,
     pageOptions?: PageOptions,
   ): Promise<MessagesPage<RelationshipAddMessage>> {
+    const sourceBuffer = Buffer.from(ObjectRef.encode(source).finish());
     const messages_page = await rsGetRelationshipsBySource(
       this._rustStore,
-      source,
+      sourceBuffer,
       type ?? "",
       pageOptions ?? {},
     );

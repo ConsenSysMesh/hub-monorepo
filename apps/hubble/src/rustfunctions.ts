@@ -625,7 +625,7 @@ export const rsGetRelationshipRemovesByFid = async (
 
 export const rsGetRelationshipsBySource = async (
   store: RustDynStore,
-  source: ObjectRef,
+  source: Buffer,
   type?: string,
   pageOptions: PageOptions = {},
 ): Promise<RustMessagesPage> => {

@@ -564,9 +564,9 @@ impl RelationshipStore {
             return cx.throw_error("source_object_ref is required");
         };
     
-        let name = cx.argument::<JsString>(2).map(|s| s.value(&mut cx))?;
+        let name = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
 
-        let page_options = get_page_options(&mut cx, 3)?;
+        let page_options = get_page_options(&mut cx, 2)?;
 
         let channel = cx.channel();
         let (deferred, promise) = cx.promise();
