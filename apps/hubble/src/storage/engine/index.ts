@@ -56,6 +56,7 @@ import {
   VerificationAddAddressMessage,
   VerificationRemoveMessage,
   ObjectRefTypes,
+  RelatedObjectTypes,
 } from "@farcaster/hub-nodejs";
 import {err, ok, ResultAsync} from "neverthrow";
 import fs from "fs";
@@ -949,22 +950,23 @@ class Engine extends TypedEmitter<EngineEvents> {
     );
   }
 
-  async getRelationshipsBySource(
-    source?: ObjectRef,
+  async getRelationshipsByRelatedObjectRef(
+    relatedObjectRefType: RelatedObjectTypes,
+    relatedObjectRef?: ObjectRef,
     type?: string,
     pageOptions?: PageOptions,
   ): HubAsyncResult<MessagesPage<RelationshipAddMessage>> {
-    if (!source) {
-      return err(new HubError('bad_request', 'Source is undefined'))
+    if (!relatedObjectRef) {
+      return err(new HubError('bad_request', 'relatedObjectRef is undefined'))
     }
   
-    const validatedObjectRef = validations.validateObjectRef(source);
+    const validatedObjectRef = validations.validateObjectRef(relatedObjectRef);
     if (validatedObjectRef.isErr()) {
       return err(validatedObjectRef.error);
     }
 
     return ResultAsync.fromPromise(
-      this._relationshipStore.getRelationshipsBySource(source, type, pageOptions),
+      this._relationshipStore.getRelationshipsByRelatedObjectRef(relatedObjectRef, relatedObjectRefType, type, pageOptions),
       (e) => e as HubError,
     );
   }

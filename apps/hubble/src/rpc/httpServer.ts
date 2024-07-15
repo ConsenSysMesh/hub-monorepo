@@ -26,6 +26,7 @@ import {
   bytesToBase58,
   ObjectRef,
   ObjectRefTypes,
+  RelatedObjectTypes,
   FarcasterNetwork,
 } from "@farcaster/hub-nodejs";
 import { Metadata, ServerUnaryCall } from "@grpc/grpc-js";
@@ -576,47 +577,95 @@ export class HttpAPIServer {
     );
 
     // @doc-tag: /relationshipsBySource?ref_type=Cast/Object/Fid,source_fid=...&source_object_network=...&source_object_fid=...&source_object_hash=...&type=...
+    // this.app.get<{ Querystring: {
+    //   type: string,
+    //   ref_type: number,
+    //   source_network: number, source_fid: number, source_hash: string,
+    // } & QueryPageParams }>(
+    //   "/v1/relationshipsBySource",
+    //   (request, reply) => {
+    //     const {
+    //       ref_type,
+    //       source_network, source_fid, source_hash,
+    //       type,
+    //     } = request.query;
+    //     const pageOptions = getPageOptions(request.query);
+
+    //     let source;
+    //     if (ref_type == ObjectRefTypes.FID) {
+    //       source = ObjectRef.create({ fid: source_fid });
+    //     } else if (source_network && source_fid && source_hash) {
+    //       source = ObjectRef.create({
+    //         network: source_network as FarcasterNetwork,
+    //         fid: source_fid,
+    //         hash: hexStringToBytes(source_hash).unwrapOr(new Uint8Array()),
+    //       });
+    //     } else {
+    //       reply.code(400).send({
+    //         error: "Invalid URL params",
+    //         errorDetail: `For ${ref_type} object reference type, source_network, source_fid and source_hash are required`,
+    //       });
+    //       return;
+    //     }
+    //     const call = getCallObject(
+    //       "getRelationshipsBySource",
+    //       {
+    //         source,
+    //         type,
+    //         ...pageOptions,
+    //       },
+    //       request,
+    //     );
+
+    //     this.grpcImpl.getRelationshipsBySource(call, handleResponse(reply, MessagesResponse));
+    //   },
+    // );
+
+    // @doc-tag: /relationshipsBySource?ref_type=Cast/Object/Fid,object_ref_network=...&object_ref_fid=...&object_ref_hash=...&type=...
     this.app.get<{ Querystring: {
-      type: string,
       ref_type: number,
-      source_network: number, source_fid: number, source_hash: string,
+      object_ref_network: number, object_ref_fid: number, object_ref_hash: string,
+      related_object_ref_type: number,
+      type: string,
     } & QueryPageParams }>(
-      "/v1/relationshipsBySource",
+      "/v1/relationshipsByRelatedObjectRef",
       (request, reply) => {
         const {
-          ref_type,
-          source_network, source_fid, source_hash,
+          ref_type,          
+          object_ref_network, object_ref_fid, object_ref_hash,
+          related_object_ref_type,
           type,
         } = request.query;
         const pageOptions = getPageOptions(request.query);
 
-        let source;
+        let relatedObjectRef;
         if (ref_type == ObjectRefTypes.FID) {
-          source = ObjectRef.create({ fid: source_fid });
-        } else if (source_network && source_fid && source_hash) {
-          source = ObjectRef.create({
-            network: source_network as FarcasterNetwork,
-            fid: source_fid,
-            hash: hexStringToBytes(source_hash).unwrapOr(new Uint8Array()),
+          relatedObjectRef = ObjectRef.create({ fid: object_ref_fid });
+        } else if (object_ref_network && object_ref_fid && object_ref_hash) {
+          relatedObjectRef = ObjectRef.create({
+            network: object_ref_network as FarcasterNetwork,
+            fid: object_ref_fid,
+            hash: hexStringToBytes(object_ref_hash).unwrapOr(new Uint8Array()),
           });
         } else {
           reply.code(400).send({
             error: "Invalid URL params",
-            errorDetail: `For ${ref_type} object reference type, source_network, source_fid and source_hash are required`,
+            errorDetail: `For ${ref_type} object reference type, object_ref_network, object_ref_hash and object_ref_hash are required`,
           });
           return;
         }
         const call = getCallObject(
-          "getRelationshipsBySource",
+          "getRelationshipsByRelatedObjectRef",
           {
-            source,
+            relatedObjectRef,
+            relatedObjectRefType: related_object_ref_type as RelatedObjectTypes,
             type,
             ...pageOptions,
           },
           request,
         );
 
-        this.grpcImpl.getRelationshipsBySource(call, handleResponse(reply, MessagesResponse));
+        this.grpcImpl.getRelationshipsByRelatedObjectRef(call, handleResponse(reply, MessagesResponse));
       },
     );
   

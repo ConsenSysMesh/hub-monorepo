@@ -330,6 +330,35 @@ export function userDataTypeToJSON(object: UserDataType): string {
   }
 }
 
+export enum RelatedObjectTypes {
+  SOURCE = 0,
+  TARGET = 1,
+}
+
+export function relatedObjectTypesFromJSON(object: any): RelatedObjectTypes {
+  switch (object) {
+    case 0:
+    case "SOURCE":
+      return RelatedObjectTypes.SOURCE;
+    case 1:
+    case "TARGET":
+      return RelatedObjectTypes.TARGET;
+    default:
+      throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum RelatedObjectTypes");
+  }
+}
+
+export function relatedObjectTypesToJSON(object: RelatedObjectTypes): string {
+  switch (object) {
+    case RelatedObjectTypes.SOURCE:
+      return "SOURCE";
+    case RelatedObjectTypes.TARGET:
+      return "TARGET";
+    default:
+      throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum RelatedObjectTypes");
+  }
+}
+
 export enum ObjectRefTypes {
   FID = 0,
   CAST = 1,

@@ -7,7 +7,8 @@ import {
   ObjectRef,
   ObjectRefTypes,
   bytesToHexString,
-  RelationshipsBySourceRequest,
+  RelationshipsByRelatedObjectRefRequest,
+  RelatedObjectTypes,
 } from "@farcaster/hub-nodejs";
 import { hexToBytes } from "@noble/hashes/utils";
 
@@ -102,15 +103,17 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
     hash: sourceObjMsg.hash,
   });
 
+  const targetObjRef = ObjectRef.create({
+    fid: FID,
+    type: ObjectRefTypes.OBJECT,
+    network: NETWORK,
+    hash: targetObjMsg.hash,
+  });
+
   const rel = await makeRelationshipAdd({
     type: RelType,
     source: sourceObjRef,
-    target: ObjectRef.create({
-      fid: FID,
-      type: ObjectRefTypes.OBJECT,
-      network: NETWORK,
-      hash: targetObjMsg.hash,
-    }),
+    target: targetObjRef,
   },
   dataOptions,
   ed25519Signer);
@@ -119,15 +122,21 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
   const relationshipResult = await client.submitMessage(rel._unsafeUnwrap());
   console.log(relationshipResult._unsafeUnwrap().data?.relationshipAddBody);
 
-  const request = RelationshipsBySourceRequest.create({ source: sourceObjRef, type: RelType });
-
   // const relationshipsByFid = await client.getRelationshipsByFid({ fid: FID, type: RelType });
-  const relationshipsBySource = await client.getRelationshipsBySource(request);
+  const relationshipsBySource = await client.getRelationshipsByRelatedObjectRef({ relatedObjectRef: sourceObjRef, relatedObjectRefType: RelatedObjectTypes.SOURCE, type: RelType });
 
   if (relationshipsBySource.isOk()) {
     console.log(relationshipsBySource._unsafeUnwrap().messages.map(m => JSON.stringify(m.data.relationshipAddBody)));
   } else if (relationshipsBySource.isErr()) {
     console.log('ERROR', relationshipsBySource.error);
+  }
+
+  const relationshipsByTarget = await client.getRelationshipsByRelatedObjectRef({ relatedObjectRef: targetObjRef, relatedObjectRefType: RelatedObjectTypes.TARGET, type: RelType });
+
+  if (relationshipsByTarget.isOk()) {
+    console.log(relationshipsByTarget._unsafeUnwrap().messages.map(m => JSON.stringify(m.data.relationshipAddBody)));
+  } else if (relationshipsByTarget.isErr()) {
+    console.log('ERROR', relationshipsByTarget.error);
   }
 
   client.close();

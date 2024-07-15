@@ -154,6 +154,11 @@ message ReactionBody {
   }
 }
 
+enum RelatedObjectTypes {
+  SOURCE = 0;
+  TARGET = 1;
+}
+
 enum ObjectRefTypes {
   FID = 0;
   CAST = 1;

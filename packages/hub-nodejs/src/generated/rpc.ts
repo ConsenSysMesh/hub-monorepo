@@ -40,7 +40,7 @@ import {
   ReactionsByFidRequest,
   ReactionsByTargetRequest,
   RelationshipsByFidRequest,
-  RelationshipsBySourceRequest,
+  RelationshipsByRelatedObjectRefRequest,
   SignerRequest,
   StorageLimitsResponse,
   SubscribeRequest,
@@ -273,13 +273,13 @@ export const HubServiceService = {
     responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
     responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
   },
-  getRelationshipsBySource: {
-    path: "/HubService/GetRelationshipsBySource",
+  getRelationshipsByRelatedObjectRef: {
+    path: "/HubService/GetRelationshipsByRelatedObjectRef",
     requestStream: false,
     responseStream: false,
-    requestSerialize: (value: RelationshipsBySourceRequest) =>
-      Buffer.from(RelationshipsBySourceRequest.encode(value).finish()),
-    requestDeserialize: (value: Buffer) => RelationshipsBySourceRequest.decode(value),
+    requestSerialize: (value: RelationshipsByRelatedObjectRefRequest) =>
+      Buffer.from(RelationshipsByRelatedObjectRefRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => RelationshipsByRelatedObjectRefRequest.decode(value),
     responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
     responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
   },
@@ -641,7 +641,7 @@ export interface HubServiceServer extends UntypedServiceImplementation {
    */
   getRelationship: handleUnaryCall<ObjectId, Message>;
   getRelationshipsByFid: handleUnaryCall<RelationshipsByFidRequest, MessagesResponse>;
-  getRelationshipsBySource: handleUnaryCall<RelationshipsBySourceRequest, MessagesResponse>;
+  getRelationshipsByRelatedObjectRef: handleUnaryCall<RelationshipsByRelatedObjectRefRequest, MessagesResponse>;
   /**
    * User Data
    * @http-api: none
@@ -1024,17 +1024,17 @@ export interface HubServiceClient extends Client {
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: MessagesResponse) => void,
   ): ClientUnaryCall;
-  getRelationshipsBySource(
-    request: RelationshipsBySourceRequest,
+  getRelationshipsByRelatedObjectRef(
+    request: RelationshipsByRelatedObjectRefRequest,
     callback: (error: ServiceError | null, response: MessagesResponse) => void,
   ): ClientUnaryCall;
-  getRelationshipsBySource(
-    request: RelationshipsBySourceRequest,
+  getRelationshipsByRelatedObjectRef(
+    request: RelationshipsByRelatedObjectRefRequest,
     metadata: Metadata,
     callback: (error: ServiceError | null, response: MessagesResponse) => void,
   ): ClientUnaryCall;
-  getRelationshipsBySource(
-    request: RelationshipsBySourceRequest,
+  getRelationshipsByRelatedObjectRef(
+    request: RelationshipsByRelatedObjectRefRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: MessagesResponse) => void,
