@@ -64,7 +64,7 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
     network: NETWORK,
   };
 
-  const ObjType = "VladObj";
+  const ObjType = "REALFIN";
   // If your client does not use SSL.
   const client = getInsecureHubRpcClient(HUB_URL);
 
@@ -77,14 +77,14 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
   dataOptions,
   ed25519Signer);
 
-  console.log('ObjectAdd message', objectAdd);
+  // console.log('ObjectAdd message', objectAdd);
   const object = await client.submitMessage(objectAdd._unsafeUnwrap());
 
   const tagAdd = await makeTagAdd({
     name: 'newtagg',
     content: 'the best',
     target: {
-      type: ObjectRefTypes.CAST,
+      type: ObjectRefTypes.OBJECT,
       network: NETWORK,
       hash: objectAdd._unsafeUnwrap().hash,
       fid: FID,
@@ -99,7 +99,7 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
     name: 'newtag2',
     content: 'the best 2',
     target: {
-      type: ObjectRefTypes.CAST,
+      type: ObjectRefTypes.OBJECT,
       network: NETWORK,
       hash: objectAdd._unsafeUnwrap().hash,
       fid: FID,
@@ -110,14 +110,48 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
 
   const tag2 = await client.submitMessage(tagAdd2._unsafeUnwrap());
 
+  const ObjType2 = "JerryObj";
 
-  const y = await client.getObject({ fid: FID, hash: objectAdd._unsafeUnwrap().hash, tagOptions: { includeTags: true, creatorTagsOnly: false } });
+  const objectAdd2 = await makeObjectAdd({
+    type: ObjType,
+    displayName: "Jerry Obj",
+    avatar: "https://i.pinimg.com/474x/36/f3/89/36f38906aa7073156b19e445a74d03f2.jpg",
+    description: "better than vlad obj"
+  },
+  dataOptions,
+  ed25519Signer);
+
+  // console.log('ObjectAdd message', objectAdd);
+  const object2 = await client.submitMessage(objectAdd2._unsafeUnwrap());
+
+  const tagAdd3 = await makeTagAdd({
+    name: 'newtag3',
+    content: 'tag on jerry obj',
+    target: {
+      type: ObjectRefTypes.OBJECT,
+      network: NETWORK,
+      hash: objectAdd2._unsafeUnwrap().hash,
+      fid: FID,
+    },
+  },
+  dataOptions,
+  ed25519Signer);
+
+  const tag3 = await client.submitMessage(tagAdd3._unsafeUnwrap());
+
+  const y = await client.getObjectsByFid({ fid: FID, type: ObjType, tagOptions: { includeTags: true, creatorTagsOnly: true }});
+
+  // const y = await client.getObject({ fid: FID, hash: objectAdd._unsafeUnwrap().hash, tagOptions: { includeTags: true, creatorTagsOnly: true } });
 
   if (y.isOk()) {
-    console.log(y._unsafeUnwrap().object?.data?.objectAddBody);
-    y._unsafeUnwrap().tags.forEach(t => {
-      console.log(t.data);
+    console.log(y._unsafeUnwrap().objects.length);
+    y._unsafeUnwrap().objects.forEach((o) => {
+      console.log(o.object);
+      o.tags.forEach((t) => {
+        console.log(t);
+      })
     })
+
   } else if (y.isErr()) {
     console.log('ERROR', y.error);
   }
