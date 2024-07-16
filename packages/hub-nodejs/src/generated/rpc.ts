@@ -33,6 +33,7 @@ import {
   MessagesResponse,
   ObjectRequest,
   ObjectResponse,
+  ObjectResponseList,
   ObjectsByFidRequest,
   OnChainEventRequest,
   OnChainEventResponse,
@@ -247,8 +248,8 @@ export const HubServiceService = {
     responseStream: false,
     requestSerialize: (value: ObjectsByFidRequest) => Buffer.from(ObjectsByFidRequest.encode(value).finish()),
     requestDeserialize: (value: Buffer) => ObjectsByFidRequest.decode(value),
-    responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
-    responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
+    responseSerialize: (value: ObjectResponseList) => Buffer.from(ObjectResponseList.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => ObjectResponseList.decode(value),
   },
   /**
    * Relationships
@@ -634,7 +635,7 @@ export interface HubServiceServer extends UntypedServiceImplementation {
    * @http-api: objectById
    */
   getObject: handleUnaryCall<ObjectRequest, ObjectResponse>;
-  getObjectsByFid: handleUnaryCall<ObjectsByFidRequest, MessagesResponse>;
+  getObjectsByFid: handleUnaryCall<ObjectsByFidRequest, ObjectResponseList>;
   /**
    * Relationships
    * @http-api: relationshipById
@@ -977,18 +978,18 @@ export interface HubServiceClient extends Client {
   ): ClientUnaryCall;
   getObjectsByFid(
     request: ObjectsByFidRequest,
-    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+    callback: (error: ServiceError | null, response: ObjectResponseList) => void,
   ): ClientUnaryCall;
   getObjectsByFid(
     request: ObjectsByFidRequest,
     metadata: Metadata,
-    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+    callback: (error: ServiceError | null, response: ObjectResponseList) => void,
   ): ClientUnaryCall;
   getObjectsByFid(
     request: ObjectsByFidRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
-    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+    callback: (error: ServiceError | null, response: ObjectResponseList) => void,
   ): ClientUnaryCall;
   /**
    * Relationships

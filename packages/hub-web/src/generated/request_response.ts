@@ -212,6 +212,11 @@ export interface ObjectResponse {
   tags: Message[];
 }
 
+export interface ObjectResponseList {
+  objects: ObjectResponse[];
+  nextPageToken?: Uint8Array | undefined;
+}
+
 export interface MessagesResponse {
   messages: Message[];
   nextPageToken?: Uint8Array | undefined;
@@ -276,6 +281,7 @@ export interface TagsByTargetRequest {
 export interface ObjectsByFidRequest {
   fid: number;
   type?: string | undefined;
+  tagOptions?: ObjectTagRequest | undefined;
   pageSize?: number | undefined;
   pageToken?: Uint8Array | undefined;
   reverse?: boolean | undefined;
@@ -2047,6 +2053,82 @@ export const ObjectResponse = {
   },
 };
 
+function createBaseObjectResponseList(): ObjectResponseList {
+  return { objects: [], nextPageToken: undefined };
+}
+
+export const ObjectResponseList = {
+  encode(message: ObjectResponseList, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.objects) {
+      ObjectResponse.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.nextPageToken !== undefined) {
+      writer.uint32(18).bytes(message.nextPageToken);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ObjectResponseList {
+    const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseObjectResponseList();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          if (tag != 10) {
+            break;
+          }
+
+          message.objects.push(ObjectResponse.decode(reader, reader.uint32()));
+          continue;
+        case 2:
+          if (tag != 18) {
+            break;
+          }
+
+          message.nextPageToken = reader.bytes();
+          continue;
+      }
+      if ((tag & 7) == 4 || tag == 0) {
+        break;
+      }
+      reader.skipType(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ObjectResponseList {
+    return {
+      objects: Array.isArray(object?.objects) ? object.objects.map((e: any) => ObjectResponse.fromJSON(e)) : [],
+      nextPageToken: isSet(object.nextPageToken) ? bytesFromBase64(object.nextPageToken) : undefined,
+    };
+  },
+
+  toJSON(message: ObjectResponseList): unknown {
+    const obj: any = {};
+    if (message.objects) {
+      obj.objects = message.objects.map((e) => e ? ObjectResponse.toJSON(e) : undefined);
+    } else {
+      obj.objects = [];
+    }
+    message.nextPageToken !== undefined &&
+      (obj.nextPageToken = message.nextPageToken !== undefined ? base64FromBytes(message.nextPageToken) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ObjectResponseList>, I>>(base?: I): ObjectResponseList {
+    return ObjectResponseList.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ObjectResponseList>, I>>(object: I): ObjectResponseList {
+    const message = createBaseObjectResponseList();
+    message.objects = object.objects?.map((e) => ObjectResponse.fromPartial(e)) || [];
+    message.nextPageToken = object.nextPageToken ?? undefined;
+    return message;
+  },
+};
+
 function createBaseMessagesResponse(): MessagesResponse {
   return { messages: [], nextPageToken: undefined };
 }
@@ -2935,7 +3017,14 @@ export const TagsByTargetRequest = {
 };
 
 function createBaseObjectsByFidRequest(): ObjectsByFidRequest {
-  return { fid: 0, type: undefined, pageSize: undefined, pageToken: undefined, reverse: undefined };
+  return {
+    fid: 0,
+    type: undefined,
+    tagOptions: undefined,
+    pageSize: undefined,
+    pageToken: undefined,
+    reverse: undefined,
+  };
 }
 
 export const ObjectsByFidRequest = {
@@ -2946,14 +3035,17 @@ export const ObjectsByFidRequest = {
     if (message.type !== undefined) {
       writer.uint32(18).string(message.type);
     }
+    if (message.tagOptions !== undefined) {
+      ObjectTagRequest.encode(message.tagOptions, writer.uint32(26).fork()).ldelim();
+    }
     if (message.pageSize !== undefined) {
-      writer.uint32(24).uint32(message.pageSize);
+      writer.uint32(32).uint32(message.pageSize);
     }
     if (message.pageToken !== undefined) {
-      writer.uint32(34).bytes(message.pageToken);
+      writer.uint32(42).bytes(message.pageToken);
     }
     if (message.reverse !== undefined) {
-      writer.uint32(40).bool(message.reverse);
+      writer.uint32(48).bool(message.reverse);
     }
     return writer;
   },
@@ -2980,21 +3072,28 @@ export const ObjectsByFidRequest = {
           message.type = reader.string();
           continue;
         case 3:
-          if (tag != 24) {
+          if (tag != 26) {
+            break;
+          }
+
+          message.tagOptions = ObjectTagRequest.decode(reader, reader.uint32());
+          continue;
+        case 4:
+          if (tag != 32) {
             break;
           }
 
           message.pageSize = reader.uint32();
           continue;
-        case 4:
-          if (tag != 34) {
+        case 5:
+          if (tag != 42) {
             break;
           }
 
           message.pageToken = reader.bytes();
           continue;
-        case 5:
-          if (tag != 40) {
+        case 6:
+          if (tag != 48) {
             break;
           }
 
@@ -3013,6 +3112,7 @@ export const ObjectsByFidRequest = {
     return {
       fid: isSet(object.fid) ? Number(object.fid) : 0,
       type: isSet(object.type) ? String(object.type) : undefined,
+      tagOptions: isSet(object.tagOptions) ? ObjectTagRequest.fromJSON(object.tagOptions) : undefined,
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : undefined,
       pageToken: isSet(object.pageToken) ? bytesFromBase64(object.pageToken) : undefined,
       reverse: isSet(object.reverse) ? Boolean(object.reverse) : undefined,
@@ -3023,6 +3123,8 @@ export const ObjectsByFidRequest = {
     const obj: any = {};
     message.fid !== undefined && (obj.fid = Math.round(message.fid));
     message.type !== undefined && (obj.type = message.type);
+    message.tagOptions !== undefined &&
+      (obj.tagOptions = message.tagOptions ? ObjectTagRequest.toJSON(message.tagOptions) : undefined);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined &&
       (obj.pageToken = message.pageToken !== undefined ? base64FromBytes(message.pageToken) : undefined);
@@ -3038,6 +3140,9 @@ export const ObjectsByFidRequest = {
     const message = createBaseObjectsByFidRequest();
     message.fid = object.fid ?? 0;
     message.type = object.type ?? undefined;
+    message.tagOptions = (object.tagOptions !== undefined && object.tagOptions !== null)
+      ? ObjectTagRequest.fromPartial(object.tagOptions)
+      : undefined;
     message.pageSize = object.pageSize ?? undefined;
     message.pageToken = object.pageToken ?? undefined;
     message.reverse = object.reverse ?? undefined;

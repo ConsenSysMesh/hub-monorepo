@@ -28,6 +28,7 @@ import {
   ObjectRefTypes,
   RelatedObjectTypes,
   FarcasterNetwork,
+  ObjectResponseList,
 } from "@farcaster/hub-nodejs";
 import { Metadata, ServerUnaryCall } from "@grpc/grpc-js";
 import fastify from "fastify";
@@ -531,8 +532,7 @@ export class HttpAPIServer {
           },
           request,
         );
-
-        this.grpcImpl.getObjectsByFid(call, handleResponse(reply, MessagesResponse));
+        this.grpcImpl.getObjectsByFid(call, handleResponse(reply, ObjectResponseList));
       },
     );
 
