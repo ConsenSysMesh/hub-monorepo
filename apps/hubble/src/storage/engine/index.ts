@@ -56,7 +56,7 @@ import {
   VerificationAddAddressMessage,
   VerificationRemoveMessage,
   ObjectRefTypes,
-  RelatedObjectTypes,
+  RefDirection,
   ObjectResponseList,
 } from "@farcaster/hub-nodejs";
 import {err, ok, ResultAsync} from "neverthrow";
@@ -987,7 +987,7 @@ class Engine extends TypedEmitter<EngineEvents> {
   }
 
   async getRelationshipsByRelatedObjectRef(
-    relatedObjectRefType: RelatedObjectTypes,
+    refDirection: RefDirection,
     relatedObjectRef?: ObjectRef,
     type?: string,
     pageOptions?: PageOptions,
@@ -1002,7 +1002,7 @@ class Engine extends TypedEmitter<EngineEvents> {
     }
 
     return ResultAsync.fromPromise(
-      this._relationshipStore.getRelationshipsByRelatedObjectRef(relatedObjectRef, relatedObjectRefType, type, pageOptions),
+      this._relationshipStore.getRelationshipsByRelatedObjectRef(relatedObjectRef, refDirection, type, pageOptions),
       (e) => e as HubError,
     );
   }

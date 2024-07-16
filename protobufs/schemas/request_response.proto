@@ -211,8 +211,8 @@ message RelationshipsByFidRequest {
 }
 
 message RelationshipsByRelatedObjectRefRequest {
-  ObjectRef relatedObjectRef = 1;
-  RelatedObjectTypes relatedObjectRefType = 2;
+  ObjectRef related_object_ref = 1;
+  RefDirection ref_direction = 2;
   optional string type = 3;
   optional uint32 page_size = 4;
   optional bytes page_token = 5;

@@ -627,11 +627,11 @@ export const rsGetRelationshipRemovesByFid = async (
 export const rsGetRelationshipsByRelatedObjectRef = async (
   store: RustDynStore,
   relatedObjectRef: Buffer,
-  relatedObjectType: number,
+  refDirection: number,
   type?: string,
   pageOptions: PageOptions = {},
 ): Promise<RustMessagesPage> => {
-  return await lib.getRelationshipsByRelatedObjectRef.call(store, relatedObjectRef, relatedObjectType, type, pageOptions);
+  return await lib.getRelationshipsByRelatedObjectRef.call(store, relatedObjectRef, refDirection, type, pageOptions);
 };
 
 /** UserData Store */

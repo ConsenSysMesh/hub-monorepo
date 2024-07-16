@@ -7,7 +7,7 @@ use super::{
 };
 use crate::{
     db::{RocksDB, RocksDbTransactionBatch},
-    protos::{self, ObjectRef, RelatedObjectTypes, Message, MessageType, RelationshipAddBody, RelationshipRemoveBody},
+    protos::{self, ObjectRef, RefDirection, Message, MessageType, RelationshipAddBody, RelationshipRemoveBody},
 };
 use crate::{protos::message_data, THREAD_POOL};
 use neon::{
@@ -499,11 +499,11 @@ impl RelationshipStore {
     pub fn get_relationships_by_related_object_ref(
         store: &Store,
         related_object_ref: &ObjectRef,
-        related_object_type: i32,
+        ref_direction: i32,
         name: String,
         page_options: &PageOptions,
     ) -> Result<MessagesPage, HubError> {
-        let prefix = if related_object_type == RelatedObjectTypes::Source as i32 {
+        let prefix = if ref_direction == RefDirection::Source as i32 {
             RelationshipStoreDef::make_relationship_by_source_key(related_object_ref, 0, None)
         } else {
             RelationshipStoreDef::make_relationship_by_target_key(related_object_ref, 0, None)
@@ -568,7 +568,7 @@ impl RelationshipStore {
         } else {
             return cx.throw_error("source_object_ref is required");
         };
-        let related_object_type = cx.argument::<JsNumber>(1).map(|s| s.value(&mut cx) as i32)?;
+        let ref_direction = cx.argument::<JsNumber>(1).map(|s| s.value(&mut cx) as i32)?;
     
         let name = cx.argument::<JsString>(2).map(|s| s.value(&mut cx))?;
 
@@ -581,7 +581,7 @@ impl RelationshipStore {
             let messages = RelationshipStore::get_relationships_by_related_object_ref(
                 &store,
                 &related_object_ref.unwrap(),
-                related_object_type,
+                ref_direction,
                 name,
                 &page_options,
             );

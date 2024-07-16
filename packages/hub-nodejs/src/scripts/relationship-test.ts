@@ -8,7 +8,7 @@ import {
   ObjectRefTypes,
   bytesToHexString,
   RelationshipsByRelatedObjectRefRequest,
-  RelatedObjectTypes,
+  RefDirection,
 } from "@farcaster/hub-nodejs";
 import { hexToBytes } from "@noble/hashes/utils";
 
@@ -91,7 +91,7 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
   const objectsByFid = await client.getObjectsByFid({ fid: FID, type: ObjType });
 
   if (objectsByFid.isOk()) {
-    console.log(objectsByFid._unsafeUnwrap().messages.map(m => JSON.stringify(m.data.relationshipAddBody)));
+    console.log(objectsByFid._unsafeUnwrap().objects.map(m => JSON.stringify(m.object)));
   } else if (objectsByFid.isErr()) {
     console.log('ERROR', objectsByFid.error);
   }
@@ -123,7 +123,7 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
   console.log(relationshipResult._unsafeUnwrap().data?.relationshipAddBody);
 
   // const relationshipsByFid = await client.getRelationshipsByFid({ fid: FID, type: RelType });
-  const relationshipsBySource = await client.getRelationshipsByRelatedObjectRef({ relatedObjectRef: sourceObjRef, relatedObjectRefType: RelatedObjectTypes.SOURCE, type: RelType });
+  const relationshipsBySource = await client.getRelationshipsByRelatedObjectRef({ relatedObjectRef: sourceObjRef, relatedObjectRefType: RefDirection.SOURCE, type: RelType });
 
   if (relationshipsBySource.isOk()) {
     console.log(relationshipsBySource._unsafeUnwrap().messages.map(m => JSON.stringify(m.data.relationshipAddBody)));
@@ -131,7 +131,7 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
     console.log('ERROR', relationshipsBySource.error);
   }
 
-  const relationshipsByTarget = await client.getRelationshipsByRelatedObjectRef({ relatedObjectRef: targetObjRef, relatedObjectRefType: RelatedObjectTypes.TARGET, type: RelType });
+  const relationshipsByTarget = await client.getRelationshipsByRelatedObjectRef({ relatedObjectRef: targetObjRef, relatedObjectRefType: RefDirection.TARGET, type: RelType });
 
   if (relationshipsByTarget.isOk()) {
     console.log(relationshipsByTarget._unsafeUnwrap().messages.map(m => JSON.stringify(m.data.relationshipAddBody)));

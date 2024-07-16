@@ -10,9 +10,9 @@ import {
   ReactionType,
   reactionTypeFromJSON,
   reactionTypeToJSON,
-  RelatedObjectTypes,
-  relatedObjectTypesFromJSON,
-  relatedObjectTypesToJSON,
+  RefDirection,
+  refDirectionFromJSON,
+  refDirectionToJSON,
   UserDataType,
   userDataTypeFromJSON,
   userDataTypeToJSON,
@@ -297,7 +297,7 @@ export interface RelationshipsByFidRequest {
 
 export interface RelationshipsByRelatedObjectRefRequest {
   relatedObjectRef: ObjectRef | undefined;
-  relatedObjectRefType: RelatedObjectTypes;
+  refDirection: RefDirection;
   type?: string | undefined;
   pageSize?: number | undefined;
   pageToken?: Uint8Array | undefined;
@@ -3264,7 +3264,7 @@ export const RelationshipsByFidRequest = {
 function createBaseRelationshipsByRelatedObjectRefRequest(): RelationshipsByRelatedObjectRefRequest {
   return {
     relatedObjectRef: undefined,
-    relatedObjectRefType: 0,
+    refDirection: 0,
     type: undefined,
     pageSize: undefined,
     pageToken: undefined,
@@ -3277,8 +3277,8 @@ export const RelationshipsByRelatedObjectRefRequest = {
     if (message.relatedObjectRef !== undefined) {
       ObjectRef.encode(message.relatedObjectRef, writer.uint32(10).fork()).ldelim();
     }
-    if (message.relatedObjectRefType !== 0) {
-      writer.uint32(16).int32(message.relatedObjectRefType);
+    if (message.refDirection !== 0) {
+      writer.uint32(16).int32(message.refDirection);
     }
     if (message.type !== undefined) {
       writer.uint32(26).string(message.type);
@@ -3314,7 +3314,7 @@ export const RelationshipsByRelatedObjectRefRequest = {
             break;
           }
 
-          message.relatedObjectRefType = reader.int32() as any;
+          message.refDirection = reader.int32() as any;
           continue;
         case 3:
           if (tag != 26) {
@@ -3356,9 +3356,7 @@ export const RelationshipsByRelatedObjectRefRequest = {
   fromJSON(object: any): RelationshipsByRelatedObjectRefRequest {
     return {
       relatedObjectRef: isSet(object.relatedObjectRef) ? ObjectRef.fromJSON(object.relatedObjectRef) : undefined,
-      relatedObjectRefType: isSet(object.relatedObjectRefType)
-        ? relatedObjectTypesFromJSON(object.relatedObjectRefType)
-        : 0,
+      refDirection: isSet(object.refDirection) ? refDirectionFromJSON(object.refDirection) : 0,
       type: isSet(object.type) ? String(object.type) : undefined,
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : undefined,
       pageToken: isSet(object.pageToken) ? bytesFromBase64(object.pageToken) : undefined,
@@ -3370,8 +3368,7 @@ export const RelationshipsByRelatedObjectRefRequest = {
     const obj: any = {};
     message.relatedObjectRef !== undefined &&
       (obj.relatedObjectRef = message.relatedObjectRef ? ObjectRef.toJSON(message.relatedObjectRef) : undefined);
-    message.relatedObjectRefType !== undefined &&
-      (obj.relatedObjectRefType = relatedObjectTypesToJSON(message.relatedObjectRefType));
+    message.refDirection !== undefined && (obj.refDirection = refDirectionToJSON(message.refDirection));
     message.type !== undefined && (obj.type = message.type);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined &&
@@ -3393,7 +3390,7 @@ export const RelationshipsByRelatedObjectRefRequest = {
     message.relatedObjectRef = (object.relatedObjectRef !== undefined && object.relatedObjectRef !== null)
       ? ObjectRef.fromPartial(object.relatedObjectRef)
       : undefined;
-    message.relatedObjectRefType = object.relatedObjectRefType ?? 0;
+    message.refDirection = object.refDirection ?? 0;
     message.type = object.type ?? undefined;
     message.pageSize = object.pageSize ?? undefined;
     message.pageToken = object.pageToken ?? undefined;

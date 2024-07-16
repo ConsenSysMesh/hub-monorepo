@@ -330,32 +330,32 @@ export function userDataTypeToJSON(object: UserDataType): string {
   }
 }
 
-export enum RelatedObjectTypes {
+export enum RefDirection {
   SOURCE = 0,
   TARGET = 1,
 }
 
-export function relatedObjectTypesFromJSON(object: any): RelatedObjectTypes {
+export function refDirectionFromJSON(object: any): RefDirection {
   switch (object) {
     case 0:
     case "SOURCE":
-      return RelatedObjectTypes.SOURCE;
+      return RefDirection.SOURCE;
     case 1:
     case "TARGET":
-      return RelatedObjectTypes.TARGET;
+      return RefDirection.TARGET;
     default:
-      throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum RelatedObjectTypes");
+      throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum RefDirection");
   }
 }
 
-export function relatedObjectTypesToJSON(object: RelatedObjectTypes): string {
+export function refDirectionToJSON(object: RefDirection): string {
   switch (object) {
-    case RelatedObjectTypes.SOURCE:
+    case RefDirection.SOURCE:
       return "SOURCE";
-    case RelatedObjectTypes.TARGET:
+    case RefDirection.TARGET:
       return "TARGET";
     default:
-      throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum RelatedObjectTypes");
+      throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum RefDirection");
   }
 }
 

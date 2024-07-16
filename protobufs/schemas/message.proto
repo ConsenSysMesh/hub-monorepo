@@ -154,7 +154,7 @@ message ReactionBody {
   }
 }
 
-enum RelatedObjectTypes {
+enum RefDirection {
   SOURCE = 0;
   TARGET = 1;
 }

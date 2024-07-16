@@ -4,7 +4,7 @@ import {
   StoreType,
   getDefaultStoreLimit,
   ObjectRef,
-  RelatedObjectTypes,
+  RefDirection,
 } from "@farcaster/hub-nodejs";
 import {
   rsCreateRelationshipStore,
@@ -101,7 +101,7 @@ class RelationshipStore extends RustStoreBase<RelationshipAddMessage, Relationsh
 
   async getRelationshipsByRelatedObjectRef(
     relatedObjectRef: ObjectRef,
-    relatedObjectRefType: RelatedObjectTypes,
+    refDirection: RefDirection,
     type?: string,
     pageOptions?: PageOptions,
   ): Promise<MessagesPage<RelationshipAddMessage>> {
@@ -109,7 +109,7 @@ class RelationshipStore extends RustStoreBase<RelationshipAddMessage, Relationsh
     const messages_page = await rsGetRelationshipsByRelatedObjectRef(
       this._rustStore,
       relatedObjectRefBuffer,
-      relatedObjectRefType,
+      refDirection,
       type ?? "",
       pageOptions ?? {},
     );

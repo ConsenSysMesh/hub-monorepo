@@ -26,7 +26,7 @@ import {
   bytesToBase58,
   ObjectRef,
   ObjectRefTypes,
-  RelatedObjectTypes,
+  RefDirection,
   FarcasterNetwork,
   ObjectResponseList,
 } from "@farcaster/hub-nodejs";
@@ -576,11 +576,11 @@ export class HttpAPIServer {
       },
     );
 
-    // @doc-tag: /relationshipsByRelatedObjectRef?ref_type=Cast/Object/Fid,object_ref_network=...&object_ref_fid=...&object_ref_hash=...&related_object_ref_type=Source/Target&type=...
+    // @doc-tag: /relationshipsByRelatedObjectRef?ref_type=Cast/Object/Fid,object_ref_network=...&object_ref_fid=...&object_ref_hash=...&ref_direction=Source/Target&type=...
     this.app.get<{ Querystring: {
       ref_type: number,
       object_ref_network: number, object_ref_fid: number, object_ref_hash: string,
-      related_object_ref_type: number,
+      ref_direction: number,
       type: string,
     } & QueryPageParams }>(
       "/v1/relationshipsByRelatedObjectRef",
@@ -588,7 +588,7 @@ export class HttpAPIServer {
         const {
           ref_type,          
           object_ref_network, object_ref_fid, object_ref_hash,
-          related_object_ref_type,
+          ref_direction,
           type,
         } = request.query;
         const pageOptions = getPageOptions(request.query);
@@ -613,7 +613,7 @@ export class HttpAPIServer {
           "getRelationshipsByRelatedObjectRef",
           {
             relatedObjectRef,
-            relatedObjectRefType: related_object_ref_type as RelatedObjectTypes,
+            refDirection: ref_direction as RefDirection,
             type,
             ...pageOptions,
           },

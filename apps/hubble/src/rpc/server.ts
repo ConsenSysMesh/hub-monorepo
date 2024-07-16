@@ -1038,10 +1038,10 @@ export default class Server {
         const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
         log.debug({ method: "getRelationshipsByRelatedObjectRef", req: call.request }, `RPC call from ${peer}`);
 
-        const { relatedObjectRef, relatedObjectRefType, type, pageSize, pageToken, reverse } = call.request;
+        const { relatedObjectRef, refDirection, type, pageSize, pageToken, reverse } = call.request;
 
         const relationshipsResult = await this.engine?.getRelationshipsByRelatedObjectRef(
-          relatedObjectRefType,
+          refDirection,
           relatedObjectRef,
           type, {
             pageSize,
