@@ -5,6 +5,7 @@ import {
   ContactInfoResponse,
   DbStats,
   ObjectResponse,
+  ObjectResponseList,
   FidsResponse,
   getServer,
   HubError,
@@ -981,16 +982,16 @@ export default class Server {
         const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
         log.debug({ method: "getObjectsByFid", req: call.request }, `RPC call from ${peer}`);
 
-        const { fid, type, pageSize, pageToken, reverse } = call.request;
+        const { fid, type, tagOptions, pageSize, pageToken, reverse } = call.request;
 
-        const castsResult = await this.engine?.getObjectsByFid(fid, type, {
+        const castsResult = await this.engine?.getObjectsByFid(fid, type, tagOptions, {
           pageSize,
           pageToken,
           reverse,
         });
         castsResult?.match(
-          (page: MessagesPage<ObjectAddMessage>) => {
-            callback(null, messagesPageToResponse(page));
+          (page: ObjectResponseList) => {
+            callback(null, page);
           },
           (err: HubError) => {
             callback(toServiceError(err));

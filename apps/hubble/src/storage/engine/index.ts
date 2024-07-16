@@ -56,6 +56,7 @@ import {
   VerificationAddAddressMessage,
   VerificationRemoveMessage,
   ObjectRefTypes,
+  ObjectResponseList,
 } from "@farcaster/hub-nodejs";
 import {err, ok, ResultAsync} from "neverthrow";
 import fs from "fs";
@@ -883,7 +884,7 @@ class Engine extends TypedEmitter<EngineEvents> {
     let tags: Message[] = [];
     if (includeTags) {
       const tagRes = await ResultAsync.fromPromise(this._tagStore.getTagsByTarget({
-        type: ObjectRefTypes.CAST,
+        type: ObjectRefTypes.OBJECT,
         network: FarcasterNetwork.DEVNET, // H1 network ID?
         hash,
         fid,
@@ -905,17 +906,52 @@ class Engine extends TypedEmitter<EngineEvents> {
   async getObjectsByFid(
     fid: number,
     type?: string,
+    tagOptions?: ObjectTagRequest,
     pageOptions?: PageOptions,
-  ): HubAsyncResult<MessagesPage<ObjectAddMessage>> {
+  ): HubAsyncResult<ObjectResponseList> {
     const validatedFid = validations.validateFid(fid);
     if (validatedFid.isErr()) {
       return err(validatedFid.error);
     }
 
-    return ResultAsync.fromPromise(
+    const { includeTags = false, creatorTagsOnly = true } = tagOptions || {};
+
+    let objects: MessagesPage<ObjectAddMessage>;
+    const objectRes = await ResultAsync.fromPromise(
       this._objectStore.getObjectAddsByFid(fid, type, pageOptions),
       (e) => e as HubError,
     );
+    if (objectRes.isErr()) {
+      return err(new HubError('bad_request', 'failed to fetch object'));
+    }
+    objects = objectRes._unsafeUnwrap();
+
+    let tags: Message[][] = [];
+    if (includeTags) {
+      const promises = Promise.all(objects.messages.map((m) => this._tagStore.getTagsByTarget({
+        type: ObjectRefTypes.OBJECT,
+        network: FarcasterNetwork.DEVNET, // H1 network ID?
+        hash: m.hash,
+        fid,
+      }, creatorTagsOnly ? fid : 0)));
+      const tagRes = await ResultAsync.fromPromise(promises, (e) => e as HubError);
+      if (tagRes.isErr()) {
+        return err(new HubError('bad_request', 'failed to fetch object tags'));
+      }
+      tags = tagRes._unsafeUnwrap().map((tagsResult) => tagsResult.messages);
+    }
+
+    const result = ObjectResponseList.create({
+      nextPageToken: objects.nextPageToken,
+      objects: objects.messages.map((obj, i) =>
+        ObjectResponse.create({
+          object: obj,
+          tags: includeTags ? (tags[i] || []) : []
+        })
+      ),
+    })
+
+    return ok(result);
   }
 
   // VLAD-TODO: add getAllObjectMessagesByFid ?

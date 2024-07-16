@@ -119,6 +119,11 @@ message ObjectResponse {
   repeated Message tags = 2;
 }
 
+message ObjectResponseList {
+  repeated ObjectResponse objects = 1;
+  optional bytes next_page_token = 2;
+}
+
 message MessagesResponse {
   repeated Message messages = 1;
   optional bytes next_page_token = 2;
@@ -191,9 +196,10 @@ message TagsByTargetRequest {
 message ObjectsByFidRequest {
   uint64 fid = 1;
   optional string type = 2;
-  optional uint32 page_size = 3;
-  optional bytes page_token = 4;
-  optional bool reverse = 5;
+  optional ObjectTagRequest tag_options = 3;
+  optional uint32 page_size = 4;
+  optional bytes page_token = 5;
+  optional bool reverse = 6;
 }
 
 message RelationshipsByFidRequest {
