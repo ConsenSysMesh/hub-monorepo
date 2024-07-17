@@ -624,13 +624,14 @@ export const rsGetRelationshipRemovesByFid = async (
   return await lib.getRelationshipRemovesByFid.call(store, fid, type, pageOptions);
 };
 
-export const rsGetRelationshipsBySource = async (
+export const rsGetRelationshipsByRelatedObjectRef = async (
   store: RustDynStore,
-  source: Buffer,
+  relatedObjectRef: Buffer,
+  refDirection: number,
   type?: string,
   pageOptions: PageOptions = {},
 ): Promise<RustMessagesPage> => {
-  return await lib.getRelationshipsBySource.call(store, source, type, pageOptions);
+  return await lib.getRelationshipsByRelatedObjectRef.call(store, relatedObjectRef, refDirection, type, pageOptions);
 };
 
 /** UserData Store */

@@ -330,6 +330,35 @@ export function userDataTypeToJSON(object: UserDataType): string {
   }
 }
 
+export enum RefDirection {
+  SOURCE = 0,
+  TARGET = 1,
+}
+
+export function refDirectionFromJSON(object: any): RefDirection {
+  switch (object) {
+    case 0:
+    case "SOURCE":
+      return RefDirection.SOURCE;
+    case 1:
+    case "TARGET":
+      return RefDirection.TARGET;
+    default:
+      throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum RefDirection");
+  }
+}
+
+export function refDirectionToJSON(object: RefDirection): string {
+  switch (object) {
+    case RefDirection.SOURCE:
+      return "SOURCE";
+    case RefDirection.TARGET:
+      return "TARGET";
+    default:
+      throw new tsProtoGlobalThis.Error("Unrecognized enum value " + object + " for enum RefDirection");
+  }
+}
+
 export enum ObjectRefTypes {
   FID = 0,
   CAST = 1,

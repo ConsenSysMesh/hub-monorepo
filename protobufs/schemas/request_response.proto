@@ -210,12 +210,13 @@ message RelationshipsByFidRequest {
   optional bool reverse = 5;
 }
 
-message RelationshipsBySourceRequest {
-  ObjectRef source = 1;
-  optional string type = 2;
-  optional uint32 page_size = 3;
-  optional bytes page_token = 4;
-  optional bool reverse = 5;
+message RelationshipsByRelatedObjectRefRequest {
+  ObjectRef related_object_ref = 1;
+  RefDirection ref_direction = 2;
+  optional string type = 3;
+  optional uint32 page_size = 4;
+  optional bytes page_token = 5;
+  optional bool reverse = 6;
 }
 
 message UserDataRequest {

@@ -1034,16 +1034,19 @@ export default class Server {
           },
         );
       },
-      getRelationshipsBySource: async (call, callback) => {
+      getRelationshipsByRelatedObjectRef: async (call, callback) => {
         const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
-        log.debug({ method: "getRelationshipsBySource", req: call.request }, `RPC call from ${peer}`);
+        log.debug({ method: "getRelationshipsByRelatedObjectRef", req: call.request }, `RPC call from ${peer}`);
 
-        const { source, type, pageSize, pageToken, reverse } = call.request;
+        const { relatedObjectRef, refDirection, type, pageSize, pageToken, reverse } = call.request;
 
-        const relationshipsResult = await this.engine?.getRelationshipsBySource(source, type, {
-          pageSize,
-          pageToken,
-          reverse,
+        const relationshipsResult = await this.engine?.getRelationshipsByRelatedObjectRef(
+          refDirection,
+          relatedObjectRef,
+          type, {
+            pageSize,
+            pageToken,
+            reverse,
         });
         relationshipsResult?.match(
           (page: MessagesPage<RelationshipAddMessage>) => {

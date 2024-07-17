@@ -10,6 +10,9 @@ import {
   ReactionType,
   reactionTypeFromJSON,
   reactionTypeToJSON,
+  RefDirection,
+  refDirectionFromJSON,
+  refDirectionToJSON,
   UserDataType,
   userDataTypeFromJSON,
   userDataTypeToJSON,
@@ -292,8 +295,9 @@ export interface RelationshipsByFidRequest {
   reverse?: boolean | undefined;
 }
 
-export interface RelationshipsBySourceRequest {
-  source: ObjectRef | undefined;
+export interface RelationshipsByRelatedObjectRefRequest {
+  relatedObjectRef: ObjectRef | undefined;
+  refDirection: RefDirection;
   type?: string | undefined;
   pageSize?: number | undefined;
   pageToken?: Uint8Array | undefined;
@@ -3257,34 +3261,44 @@ export const RelationshipsByFidRequest = {
   },
 };
 
-function createBaseRelationshipsBySourceRequest(): RelationshipsBySourceRequest {
-  return { source: undefined, type: undefined, pageSize: undefined, pageToken: undefined, reverse: undefined };
+function createBaseRelationshipsByRelatedObjectRefRequest(): RelationshipsByRelatedObjectRefRequest {
+  return {
+    relatedObjectRef: undefined,
+    refDirection: 0,
+    type: undefined,
+    pageSize: undefined,
+    pageToken: undefined,
+    reverse: undefined,
+  };
 }
 
-export const RelationshipsBySourceRequest = {
-  encode(message: RelationshipsBySourceRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.source !== undefined) {
-      ObjectRef.encode(message.source, writer.uint32(10).fork()).ldelim();
+export const RelationshipsByRelatedObjectRefRequest = {
+  encode(message: RelationshipsByRelatedObjectRefRequest, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.relatedObjectRef !== undefined) {
+      ObjectRef.encode(message.relatedObjectRef, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.refDirection !== 0) {
+      writer.uint32(16).int32(message.refDirection);
     }
     if (message.type !== undefined) {
-      writer.uint32(18).string(message.type);
+      writer.uint32(26).string(message.type);
     }
     if (message.pageSize !== undefined) {
-      writer.uint32(24).uint32(message.pageSize);
+      writer.uint32(32).uint32(message.pageSize);
     }
     if (message.pageToken !== undefined) {
-      writer.uint32(34).bytes(message.pageToken);
+      writer.uint32(42).bytes(message.pageToken);
     }
     if (message.reverse !== undefined) {
-      writer.uint32(40).bool(message.reverse);
+      writer.uint32(48).bool(message.reverse);
     }
     return writer;
   },
 
-  decode(input: _m0.Reader | Uint8Array, length?: number): RelationshipsBySourceRequest {
+  decode(input: _m0.Reader | Uint8Array, length?: number): RelationshipsByRelatedObjectRefRequest {
     const reader = input instanceof _m0.Reader ? input : _m0.Reader.create(input);
     let end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseRelationshipsBySourceRequest();
+    const message = createBaseRelationshipsByRelatedObjectRefRequest();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -3293,31 +3307,38 @@ export const RelationshipsBySourceRequest = {
             break;
           }
 
-          message.source = ObjectRef.decode(reader, reader.uint32());
+          message.relatedObjectRef = ObjectRef.decode(reader, reader.uint32());
           continue;
         case 2:
-          if (tag != 18) {
+          if (tag != 16) {
+            break;
+          }
+
+          message.refDirection = reader.int32() as any;
+          continue;
+        case 3:
+          if (tag != 26) {
             break;
           }
 
           message.type = reader.string();
           continue;
-        case 3:
-          if (tag != 24) {
+        case 4:
+          if (tag != 32) {
             break;
           }
 
           message.pageSize = reader.uint32();
           continue;
-        case 4:
-          if (tag != 34) {
+        case 5:
+          if (tag != 42) {
             break;
           }
 
           message.pageToken = reader.bytes();
           continue;
-        case 5:
-          if (tag != 40) {
+        case 6:
+          if (tag != 48) {
             break;
           }
 
@@ -3332,9 +3353,10 @@ export const RelationshipsBySourceRequest = {
     return message;
   },
 
-  fromJSON(object: any): RelationshipsBySourceRequest {
+  fromJSON(object: any): RelationshipsByRelatedObjectRefRequest {
     return {
-      source: isSet(object.source) ? ObjectRef.fromJSON(object.source) : undefined,
+      relatedObjectRef: isSet(object.relatedObjectRef) ? ObjectRef.fromJSON(object.relatedObjectRef) : undefined,
+      refDirection: isSet(object.refDirection) ? refDirectionFromJSON(object.refDirection) : 0,
       type: isSet(object.type) ? String(object.type) : undefined,
       pageSize: isSet(object.pageSize) ? Number(object.pageSize) : undefined,
       pageToken: isSet(object.pageToken) ? bytesFromBase64(object.pageToken) : undefined,
@@ -3342,9 +3364,11 @@ export const RelationshipsBySourceRequest = {
     };
   },
 
-  toJSON(message: RelationshipsBySourceRequest): unknown {
+  toJSON(message: RelationshipsByRelatedObjectRefRequest): unknown {
     const obj: any = {};
-    message.source !== undefined && (obj.source = message.source ? ObjectRef.toJSON(message.source) : undefined);
+    message.relatedObjectRef !== undefined &&
+      (obj.relatedObjectRef = message.relatedObjectRef ? ObjectRef.toJSON(message.relatedObjectRef) : undefined);
+    message.refDirection !== undefined && (obj.refDirection = refDirectionToJSON(message.refDirection));
     message.type !== undefined && (obj.type = message.type);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.pageToken !== undefined &&
@@ -3353,15 +3377,20 @@ export const RelationshipsBySourceRequest = {
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<RelationshipsBySourceRequest>, I>>(base?: I): RelationshipsBySourceRequest {
-    return RelationshipsBySourceRequest.fromPartial(base ?? {});
+  create<I extends Exact<DeepPartial<RelationshipsByRelatedObjectRefRequest>, I>>(
+    base?: I,
+  ): RelationshipsByRelatedObjectRefRequest {
+    return RelationshipsByRelatedObjectRefRequest.fromPartial(base ?? {});
   },
 
-  fromPartial<I extends Exact<DeepPartial<RelationshipsBySourceRequest>, I>>(object: I): RelationshipsBySourceRequest {
-    const message = createBaseRelationshipsBySourceRequest();
-    message.source = (object.source !== undefined && object.source !== null)
-      ? ObjectRef.fromPartial(object.source)
+  fromPartial<I extends Exact<DeepPartial<RelationshipsByRelatedObjectRefRequest>, I>>(
+    object: I,
+  ): RelationshipsByRelatedObjectRefRequest {
+    const message = createBaseRelationshipsByRelatedObjectRefRequest();
+    message.relatedObjectRef = (object.relatedObjectRef !== undefined && object.relatedObjectRef !== null)
+      ? ObjectRef.fromPartial(object.relatedObjectRef)
       : undefined;
+    message.refDirection = object.refDirection ?? 0;
     message.type = object.type ?? undefined;
     message.pageSize = object.pageSize ?? undefined;
     message.pageToken = object.pageToken ?? undefined;

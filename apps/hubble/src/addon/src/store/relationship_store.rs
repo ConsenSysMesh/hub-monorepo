@@ -7,7 +7,7 @@ use super::{
 };
 use crate::{
     db::{RocksDB, RocksDbTransactionBatch},
-    protos::{self, ObjectRef, Message, MessageType, RelationshipAddBody, RelationshipRemoveBody},
+    protos::{self, ObjectRef, RefDirection, Message, MessageType, RelationshipAddBody, RelationshipRemoveBody},
 };
 use crate::{protos::message_data, THREAD_POOL};
 use neon::{
@@ -496,14 +496,19 @@ impl RelationshipStore {
         Ok(promise)
     }
 
-    pub fn get_relationships_by_source(
+    pub fn get_relationships_by_related_object_ref(
         store: &Store,
-        source: &ObjectRef,
+        related_object_ref: &ObjectRef,
+        ref_direction: i32,
         name: String,
         page_options: &PageOptions,
     ) -> Result<MessagesPage, HubError> {
-        let prefix = RelationshipStoreDef::make_relationship_by_source_key(source, 0, None);
-
+        let prefix = if ref_direction == RefDirection::Source as i32 {
+            RelationshipStoreDef::make_relationship_by_source_key(related_object_ref, 0, None)
+        } else {
+            RelationshipStoreDef::make_relationship_by_target_key(related_object_ref, 0, None)
+        };
+        
         let mut message_keys = vec![];
         let mut last_key = vec![];
 
@@ -550,31 +555,33 @@ impl RelationshipStore {
         })
     }
 
-    pub fn js_get_relationships_by_source(mut cx: FunctionContext) -> JsResult<JsPromise> {
+    pub fn js_get_relationships_by_related_object_ref(mut cx: FunctionContext) -> JsResult<JsPromise> {
         let store = get_store(&mut cx)?;
 
-        let source_object_ref_buffer = cx.argument::<JsBuffer>(0)?;
-        let source_object_ref_bytes = source_object_ref_buffer.as_slice(&cx);
-        let source_object_ref = if source_object_ref_bytes.len() > 0 {
-            match protos::ObjectRef::decode(source_object_ref_bytes) {
+        let related_object_ref_buffer = cx.argument::<JsBuffer>(0)?;
+        let related_object_ref_bytes = related_object_ref_buffer.as_slice(&cx);
+        let related_object_ref = if related_object_ref_bytes.len() > 0 {
+            match protos::ObjectRef::decode(related_object_ref_bytes) {
                 Ok(object_ref) => Some(object_ref),
                 Err(e) => return cx.throw_error(e.to_string()),
             }
         } else {
             return cx.throw_error("source_object_ref is required");
         };
+        let ref_direction = cx.argument::<JsNumber>(1).map(|s| s.value(&mut cx) as i32)?;
     
-        let name = cx.argument::<JsString>(1).map(|s| s.value(&mut cx))?;
+        let name = cx.argument::<JsString>(2).map(|s| s.value(&mut cx))?;
 
-        let page_options = get_page_options(&mut cx, 2)?;
+        let page_options = get_page_options(&mut cx, 3)?;
 
         let channel = cx.channel();
         let (deferred, promise) = cx.promise();
 
         THREAD_POOL.lock().unwrap().execute(move || {
-            let messages = RelationshipStore::get_relationships_by_source(
+            let messages = RelationshipStore::get_relationships_by_related_object_ref(
                 &store,
-                &source_object_ref.unwrap(),
+                &related_object_ref.unwrap(),
+                ref_direction,
                 name,
                 &page_options,
             );

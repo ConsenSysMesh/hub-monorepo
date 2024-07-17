@@ -214,8 +214,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
         RelationshipStore::js_get_relationship_removes_by_fid,
     )?;
     cx.export_function(
-        "getRelationshipsBySource",
-        RelationshipStore::js_get_relationships_by_source,
+        "getRelationshipsByRelatedObjectRef",
+        RelationshipStore::js_get_relationships_by_related_object_ref,
     )?;
 
     // CastStore methods

@@ -4,6 +4,7 @@ import {
   StoreType,
   getDefaultStoreLimit,
   ObjectRef,
+  RefDirection,
 } from "@farcaster/hub-nodejs";
 import {
   rsCreateRelationshipStore,
@@ -11,7 +12,7 @@ import {
   rsGetRelationshipAddsByFid,
   rsGetRelationshipRemove,
   rsGetRelationshipRemovesByFid,
-  rsGetRelationshipsBySource,
+  rsGetRelationshipsByRelatedObjectRef,
   rustErrorToHubError,
 } from "../../rustfunctions.js";
 import StoreEventHandler from "./storeEventHandler.js";
@@ -98,15 +99,17 @@ class RelationshipStore extends RustStoreBase<RelationshipAddMessage, Relationsh
     return await this.getAllMessagesByFid(fid, pageOptions);
   }
 
-  async getRelationshipsBySource(
-    source: ObjectRef,
+  async getRelationshipsByRelatedObjectRef(
+    relatedObjectRef: ObjectRef,
+    refDirection: RefDirection,
     type?: string,
     pageOptions?: PageOptions,
   ): Promise<MessagesPage<RelationshipAddMessage>> {
-    const sourceBuffer = Buffer.from(ObjectRef.encode(source).finish());
-    const messages_page = await rsGetRelationshipsBySource(
+    const relatedObjectRefBuffer = Buffer.from(ObjectRef.encode(relatedObjectRef).finish());
+    const messages_page = await rsGetRelationshipsByRelatedObjectRef(
       this._rustStore,
-      sourceBuffer,
+      relatedObjectRefBuffer,
+      refDirection,
       type ?? "",
       pageOptions ?? {},
     );
