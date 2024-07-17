@@ -1,0 +1,53 @@
+version: '3.7'
+
+services:
+  tipster-client:
+    container_name: "tipster-client"
+    build:
+      context: .
+      dockerfile: packages/next/client.Dockerfile
+      args:
+        env: ${APP_ENV}
+        apiUrl: https://tipster.bot
+        publicUrl: https://tipster.bot
+    image: tipster-client:latest
+    working_dir: /usr/local/dist/
+    command: sh -c "yarn run web:prod:serve"
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+  tipster-server:
+    container_name: "tipster-server"
+    build:
+      context: .
+      dockerfile: packages/express/server.Dockerfile
+    image: tipster-server:latest
+    working_dir: /usr/local/dist/
+    environment:
+      - APP_ENV=${APP_ENV}
+    command: sh -c "yarn run server"
+    ports:
+      - "3001:3001"
+    restart: unless-stopped
+
+  nginx:
+    container_name: "nginx"
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile
+      args:
+        env: ${APP_ENV}
+    ports:
+      - "80:80"
+    depends_on:
+      - tipster-client
+      - tipster-server
+    restart: unless-stopped
+#
+#  redis:
+#    container_name: "redis"
+#    image: redis/redis-stack:latest
+#    ports:
+#      - "6379:6379"
+#    restart: unless-stopped

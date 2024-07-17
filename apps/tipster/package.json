@@ -1,0 +1,50 @@
+{
+  "private": true,
+  "workspaces": [
+    "./packages/*"
+  ],
+  "scripts": {
+    "start": "yarn docker-up && pm2 start pm2.config.cjs",
+    "stop": "pm2 delete pm2.config.cjs && yarn docker-down",
+    "vercel:install": "yarn set version 3.5 && yarn install",
+    "web": "cd packages/next && yarn next",
+    "web:extract": "DISABLE_EXTRACTION=false yarn workspace @tipster/next dev",
+    "web:prod": "yarn workspace @tipster/next build",
+    "web:prod:serve": "yarn workspace @tipster/next serve",
+    "fix": "manypkg fix",
+    "postinstall": "yarn check-deps",
+    "upgrade:tamagui": "yarn up '*tamagui*'@latest '@tamagui/*'@latest react-native-web-lite@latest",
+    "upgrade:tamagui:canary": "yarn up '*tamagui*'@canary '@tamagui/*'@canary react-native-web-lite@canary",
+    "check-deps": "check-dependency-version-consistency .",
+    "server": "yarn workspace @tipster/express start",
+    "server:debug": "yarn workspace @tipster/express debug",
+    "docker-up": "docker-compose -f docker-compose.yml up -d",
+    "docker-down": "docker-compose -f docker-compose.yml down",
+    "docker-build-alpha": "APP_ENV=alpha docker-compose -f docker.alpha.yml build",
+    "docker-up-alpha": "APP_ENV=alpha docker-compose -f docker.alpha.yml up -d",
+    "docker-down-alpha": "docker-compose -f docker.alpha.yml down",
+    "docker-build-production": "APP_ENV=production docker-compose -f docker.hosted.yml build",
+    "docker-up-production": "APP_ENV=production docker-compose -f docker.hosted.yml up -d",
+    "docker-down-production": "docker-compose -f docker.hosted.yml down",
+    "connect-alpha": "aws ssm start-session --target 'i-00fa7795f1840fca2'",
+    "connect-production": "aws ssm start-session --target 'i-0715c8a061c11b3fb'"
+  },
+  "resolutions": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-refresh": "^0.14.0",
+    "react-native-web": "~0.19.6"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.18.9",
+    "@manypkg/cli": "^0.19.1",
+    "check-dependency-version-consistency": "^3.0.3",
+    "eslint": "^8.21.0",
+    "node-gyp": "^9.3.1",
+    "pm2": "^5.3.1",
+    "prettier": "^2.7.1",
+    "turbo": "^1.10.3",
+    "typescript": "^5.3.3"
+  },
+  "packageManager": "yarn@4.1.0"
+}

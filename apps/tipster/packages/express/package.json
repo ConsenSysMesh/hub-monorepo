@@ -1,0 +1,46 @@
+{
+  "name": "@tipster/express",
+  "version": "1.0.0",
+  "main": "index.mjs",
+  "scripts": {
+    "start": "NODE_OPTIONS=\"--import ./instrument.mjs\" nodemon index.mjs",
+    "debug": "NODE_OPTIONS=\"--import ./instrument.mjs\" nodemon --inspect index.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.556.0",
+    "@coinbase/onchainkit": "^0.13.0",
+    "@hatsprotocol/sdk-v1-core": "^0.9.0",
+    "@hatsprotocol/sdk-v1-subgraph": "^1.0.0",
+    "@neynar/nodejs-sdk": "1.19.3",
+    "@sentry/node": "^8.7.0",
+    "@sentry/profiling-node": "^8.7.0",
+    "agenda": "^5.0.0",
+    "body-parser": "^1.20.2",
+    "canvas": "^2.11.2",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "csv-stringify": "^6.5.0",
+    "dotenv": "^16.4.5",
+    "emoji-regex": "^10.3.0",
+    "escape-string-regexp": "^5.0.0",
+    "ethers": "^6.0.8",
+    "express": "^4.19.2",
+    "express-async-errors": "^3.1.1",
+    "fontkit": "^2.0.2",
+    "helmet": "^7.1.0",
+    "lodash": "^4.17.21",
+    "moment": "^2.30.1",
+    "mongodb": "6.5.0",
+    "nodemon": "^3.1.0",
+    "pino": "8.20.0",
+    "pino-pretty": "7.0.0",
+    "siwe": "^2.3.2",
+    "uuid": "^9.0.1",
+    "viem": "^2.12.0"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/fontkit": "^2",
+    "@types/lodash": "^4"
+  }
+}

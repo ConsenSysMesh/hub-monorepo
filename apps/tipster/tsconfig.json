@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "strictNullChecks": true,
+    "noUncheckedIndexedAccess": true,
+  },
+  "extends": "tsconfig.base",
+  "exclude": ["**/node_modules", "**/dist", "**/types",
+    "packages/next/out",
+    "packages/next/.next",
+    "packages/next/.tamagui"
+  ]
+}
