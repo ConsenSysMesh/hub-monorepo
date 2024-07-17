@@ -3,3 +3,9 @@ export const eligibilityEnums = {
   AllowList: 'allowList',
   HatsGated: 'hatsGated',
 };
+
+// TODO: delete existing trash above
+export enum RelationshipTypes {
+  Owner = 'owner',
+  Wearer = 'wearer',
+}

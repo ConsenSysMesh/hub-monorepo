@@ -11,13 +11,8 @@ import BotDialog from "@farcaster/rings-next/components/bot/BotDialog";
 import Container from "@farcaster/rings-next/components/container/Container";
 import data from "@farcaster/rings-next/data";
 import {IS_USING_MOCK_DATA} from "@farcaster/rings-next/constants";
+import apiClient from "@farcaster/rings-next/api-client";
 import {
-  FarcasterNetwork,
-  getHubRpcClient,
-  makeCastAdd,
-  makeTagAdd,
-  makeObjectAdd,
-  NobleEd25519Signer,
   ObjectRefTypes,
 } from "@farcaster/hub-web";
 
@@ -31,10 +26,10 @@ export default function HomePage() {
   const isLoading = useSelector(selectBotsIsLoading);
 
   useEffect(() => {
-    const client = getHubRpcClient(HUB_URL);
-
-    client.getObjectsByFid({ fid: FID, type: ObjType, tagOptions: { includeTags: true, creatorTagsOnly: true }})
-      .then((r) => console.log(r));
+    // TODO: invoke store actions instead
+    const client = apiClient();
+    client.getOwnedRings(FID)
+      .then(r => console.log(r));
 
     // TODO: for some reason this fetch is being executed twice on initial page load. Check to see why.
     // fetchBots();

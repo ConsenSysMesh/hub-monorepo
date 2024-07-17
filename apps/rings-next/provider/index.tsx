@@ -38,11 +38,11 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
             minWidth="100vw"
           >
             <ToastProvider>
-              <FarcasterAuthProvider config={farcasterAuthConfig}>
-                <AuthProvider>
+              {/* <FarcasterAuthProvider config={farcasterAuthConfig}> */}
+                {/* <AuthProvider> */}
                   {children}
-                </AuthProvider>
-              </FarcasterAuthProvider>
+                {/* </AuthProvider> */}
+              {/* </FarcasterAuthProvider> */}
 
               <CustomToast />
               <ToastViewport left={0} right={0} top={10} />
