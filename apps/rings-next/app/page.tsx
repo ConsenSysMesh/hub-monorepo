@@ -66,9 +66,9 @@ export default function HomePage() {
                     rings.map((r: Ring) =>
                       <tr>
                         <td>{`${r.ring.data?.objectAddBody?.displayName} ${r.ring.hash}`}</td>
-                        <td>{`${r.stone.data?.tagBody?.name}`}</td>
+                        <td>{`${r.stone?.data?.tagBody?.name}`}</td>
                         <td>{`${r.owner.fid}`}</td>
-                        <td>{`${r.wearer.fid}`}</td>
+                        <td>{`${r.wearer?.fid}`}</td>
                       </tr>
                     )
                   }

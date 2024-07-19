@@ -77,6 +77,13 @@ export interface Ring {
   wearer: User | undefined;
 };
 
+export enum StoneTypes {
+  honesty = 'honesty',
+  integrity = 'integrity',
+  cool = 'cool',
+  // etc
+};
+
 export interface RootState {
   users: Reducer<EntityState<User, number>>,
   rings: Reducer<EntityState<Message, string>>,

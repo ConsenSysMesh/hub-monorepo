@@ -9,6 +9,7 @@ import {
   bytesToHexString,
   RelationshipsByRelatedObjectRefRequest,
   RefDirection,
+  makeTagAdd,
 } from "@farcaster/hub-nodejs";
 import { hexToBytes } from "@noble/hashes/utils";
 
@@ -143,6 +144,31 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
     console.log('Query result for Wearers', wearerRelQueryResult._unsafeUnwrap().messages.map(m => JSON.stringify(m.data.relationshipAddBody)));
   } else if (wearerRelQueryResult.isErr()) {
     console.log('ERROR', wearerRelQueryResult.error);
+  }
+
+  // add ring Stone (Tag)
+  const addStoneTag = await makeTagAdd({
+    name: 'honesty',
+    content: 'For an honest person that can be trusted',
+    target: ringObjectRef,
+  },
+  dataOptions,
+  ed25519Signer);
+  console.log('Tag add message', addStoneTag);
+
+  const tagResult = await client.submitMessage(addStoneTag._unsafeUnwrap());
+  console.log('Stone tag created', tagResult._unsafeUnwrap().data?.TagBody);
+
+  const stoneTagQueryResult = await client.getTagsByTarget({ 
+    target: ringObjectRef,
+  })
+
+  if (stoneTagQueryResult.isOk()) {
+    stoneTagQueryResult._unsafeUnwrap().messages.forEach((m) => {
+      console.log(m.data);
+    })
+  } else if (stoneTagQueryResult.isErr()) {
+    console.log('ERROR', stoneTagQueryResult.error);
   }
 
   client.close();

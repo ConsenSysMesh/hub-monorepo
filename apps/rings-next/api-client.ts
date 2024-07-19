@@ -55,6 +55,8 @@ const getApiClient = () => {
       params: {
         fid: ringRef.fid,
         hash: ringRef.hash,
+        includeTags: true,
+        creatorTagsOnly: false,
       }
     });
     return result.data as ObjectResponse;
@@ -107,8 +109,8 @@ const getApiClient = () => {
         results.relationships.push(...wearerRels);
         for (let wearerRel of wearerRels) {
           console.log('Found a ring wearer relationship!', wearerRel);
-          // if (!wearerRel.data?.relationshipAddBody) continue; // null checks to make TS happy
-          // let wearerFid = wearerRel.data.relationshipAddBody.target?.fid;
+          if (!wearerRel.data?.relationshipAddBody) continue; // null checks to make TS happy
+          fids.push(wearerRel.data.relationshipAddBody.target?.fid as number);
           
           // TODO: figure out whether we're loading in the profiles of all the users involved with the rings
           
