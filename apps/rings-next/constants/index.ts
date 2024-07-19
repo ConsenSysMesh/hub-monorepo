@@ -5,4 +5,6 @@ export enum RelationshipTypes {
   Wearer = 'wearer',
 }
 
-export const fids: SelectItem[] = [{ id: 773349, name: "773349" }, { id: 784578, name: "784578" }];
+export const fids = [process.env.NEXT_PUBLIC_FID_1, process.env.NEXT_PUBLIC_FID_2, process.env.NEXT_PUBLIC_FID_3]
+
+export const fidItems: SelectItem[] = fids.map((fid) => ({ id: Number(fid), name: fid, avatar: ""} as SelectItem));

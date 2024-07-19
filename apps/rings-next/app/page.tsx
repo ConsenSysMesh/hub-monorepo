@@ -17,7 +17,7 @@ import {
 import RingCard from "@farcaster/rings-next/components/ring/RingCard";
 import { Ring } from "@farcaster/rings-next/types";
 import Select, { Item as SelectItem } from '@farcaster/rings-next/components/select/Select';
-import {fids} from '@farcaster/rings-next/constants';
+import { fidItems as fids } from '@farcaster/rings-next/constants';
 
 const HUB_URL = "http://127.0.0.1:2281"; // URL + Port of the Hub
 const FID = 773349;
@@ -65,7 +65,7 @@ export default function HomePage() {
   // const bots = useSelector(selectBots);
   // const isLoading = useSelector(selectBotsIsLoading);
 
-  const [fid, setFid] = useState(773349);
+  const [fid, setFid] = useState(Number(process.env.NEXT_PUBLIC_FID_2));
 
 
   useEffect(() => {
