@@ -58,17 +58,33 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
     network: NETWORK,
   };
 
-  const ObjType = "Ring";
+  const RingObjectType = "Ring";
   enum RelationshipTypes {
     Owner = 'owner',
     Wearer = 'wearer',
   }
 
+// expected `name` field values for the tags representing Stones in a Ring
+enum StoneTagNames {
+  stone1 = 'stone1',
+  stone2 = 'stone2',
+  stone3 = 'stone3',
+  // etc
+};
+
+// expected `content` field values for the tags representing Stones in a Ring 
+enum StoneTypes {
+  Honesty = 'Honesty',
+  Integrity = 'Integrity',
+  Cool = 'Cool',
+  // etc
+};
+
   // If your client does not use SSL.
   const client = getInsecureHubRpcClient(HUB_URL);
 
   const ringObj = await makeObjectAdd({
-    type: ObjType,
+    type: RingObjectType,
     displayName: "A Ring of Trust",
     description: "A symbol of trust from a cool person to another cool person"
   },
@@ -148,8 +164,8 @@ const NETWORK = FarcasterNetwork.DEVNET; // Network of the Hub
 
   // add ring Stone (Tag)
   const addStoneTag = await makeTagAdd({
-    name: 'honesty',
-    content: 'For an honest person that can be trusted',
+    name: StoneTagNames.stone1,
+    content: StoneTypes.Honesty,
     target: ringObjectRef,
   },
   dataOptions,
