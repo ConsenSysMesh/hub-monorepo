@@ -7,6 +7,8 @@ interface TamaguiCustomConfig extends Conf {}
 
 import { ImageSourcePropType } from 'react-native';
 
+// The expected `type` value of Objects representing Rings
+const RingObjectType = "Ring";
 
 // TODO: choosing to collapse FC user data composed of multiple UserDataBody pieces into a single object
 export interface User {
@@ -23,12 +25,23 @@ export interface Ring {
   wearer: User | undefined;
 };
 
-export enum StoneTypes {
-  honesty = 'honesty',
-  integrity = 'integrity',
-  cool = 'cool',
+// expected `name` field values for the tags representing Stones in a Ring
+export enum StoneTagNames {
+  stone1 = 'stone1',
+  stone2 = 'stone2',
+  stone3 = 'stone3',
   // etc
 };
+
+// expected `content` field values for the tags representing Stones in a Ring 
+export enum StoneTypes {
+  Honesty = 'Honesty',
+  Integrity = 'Integrity',
+  Cool = 'Cool',
+  // etc
+};
+
+
 
 export interface RootState {
   users: Reducer<EntityState<User, number>>,
