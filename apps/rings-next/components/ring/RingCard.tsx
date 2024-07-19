@@ -14,6 +14,7 @@ import { useForm, Controller } from 'react-hook-form';
 interface RingCardProps {
   ring: Ring;
   id: number;
+  editable?: boolean;
 }
 
 type Inputs = {
@@ -25,8 +26,7 @@ type Inputs = {
 
 const stones: SelectItem[] = [{ id: "Honest", name: "Honest" }, { id: "Hardworking", name: "Hardworking"}, { id: "Smart", name: "Smart"}];
 
-const RingCard: React.FC<RingCardProps> = ({ ring, id, ...otherProps }) => {
-    console.log(ring);
+const RingCard: React.FC<RingCardProps> = ({ ring, id, editable = true, ...otherProps }) => {
     const {
         control,
         handleSubmit,
@@ -58,7 +58,7 @@ const RingCard: React.FC<RingCardProps> = ({ ring, id, ...otherProps }) => {
           name="stone1"
           render={({ field: { onChange, value } }) => {
             return (
-            <Select value={value || ""} items={stones} onChange={(item) => { onChange(item!.id)}} />
+            <Select value={value || ""} items={stones} onChange={(item) => { onChange(item!.id)}} disabled={!editable} />
           )}}
         />
 
@@ -67,7 +67,7 @@ const RingCard: React.FC<RingCardProps> = ({ ring, id, ...otherProps }) => {
           name="stone2"
           render={({ field: { onChange, value } }) => {
             return (
-            <Select value={value || ""} items={stones} onChange={(item) => { onChange(item!.id)}} />
+            <Select value={value || ""} items={stones} onChange={(item) => { onChange(item!.id)}} disabled={!editable} />
           )}}
         />
 
@@ -76,7 +76,7 @@ const RingCard: React.FC<RingCardProps> = ({ ring, id, ...otherProps }) => {
           name="stone3"
           render={({ field: { onChange, value } }) => {
             return (
-            <Select value={value || ""} items={stones} onChange={(item) => { onChange(item!.id)}} />
+            <Select value={value || ""} items={stones} onChange={(item) => { onChange(item!.id)}} disabled={!editable} />
           )}}
         />
 
@@ -86,7 +86,7 @@ const RingCard: React.FC<RingCardProps> = ({ ring, id, ...otherProps }) => {
           name="wearerFid"
           render={({ field: { onChange, value } }) => {
             return (
-            <Select value={value} items={fids} onChange={(item) => { onChange(item!.id)}} />
+            <Select value={value} items={fids} onChange={(item) => { onChange(item!.id)}} disabled={!editable} />
           )}}
         />
 

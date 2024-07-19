@@ -177,7 +177,7 @@ export default function HomePage() {
               </Card>
             } */}
             <RingTableHeading/>
-            {wornRings.map((ring: Ring, i: number) => <RingCard key={`${fid}-${i}`} id={i} ring={ring} />)}
+            {wornRings.map((ring: Ring, i: number) => <RingCard key={`${fid}-${i}`} id={i} ring={ring} editable={false} />)}
           </YStack>
         </TabsContent>
 
