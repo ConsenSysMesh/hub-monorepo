@@ -76,6 +76,8 @@ const TitleHeading: React.FC<TitleHeadingProps> = (props) => {
 
 export const TitleFrame = styled(XStack, {
   alignItems: 'center',
+  display: 'flex',
+  gap: 8
 });
 
 export const TitleGroup = styled(YStack, {

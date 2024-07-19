@@ -1,6 +1,7 @@
 'use client';
-import React, { useEffect } from "react";
-import { Spinner, XStack, YStack } from 'tamagui';
+import React, { useEffect, useState } from "react";
+import type { TabsContentProps } from 'tamagui';
+import { YStack, Tabs, H5, Separator, SizableText } from 'tamagui';
 import Title from "@farcaster/rings-next/components/title/Title";
 import BotList from "@farcaster/rings-next/components/bot/BotList";
 import Navbar from "@farcaster/rings-next/components/navbar/Navbar";
@@ -12,37 +13,79 @@ import BotDialog from "@farcaster/rings-next/components/bot/BotDialog";
 import Container from "@farcaster/rings-next/components/container/Container";
 import data from "@farcaster/rings-next/data";
 import {IS_USING_MOCK_DATA} from "@farcaster/rings-next/constants";
-import { Ring } from '@farcaster/rings-next/types';
+import apiClient from "@farcaster/rings-next/api-client";
+import {
+  ObjectRefTypes,
+} from "@farcaster/hub-web";
+import RingCard from "@farcaster/rings-next/components/ring/RingCard";
+import { Ring } from "@farcaster/rings-next/types";
+import Select, { Item as SelectItem } from '@farcaster/rings-next/components/select/Select';
+import {fids} from '@farcaster/rings-next/constants';
 
+const HUB_URL = "http://127.0.0.1:2281"; // URL + Port of the Hub
 const FID = 773349;
+
+
+
+const TabsContent = (props: TabsContentProps) => {
+  return (
+    <Tabs.Content
+      backgroundColor="$background"
+      key="tab3"
+      padding="$2"
+      // alignItems="center"
+      // justifyContent="center"
+      flex={1}
+      borderColor="$background"
+      borderRadius="$2"
+      borderTopLeftRadius={0}
+      borderTopRightRadius={0}
+      borderWidth="$2"
+      {...props}
+    >
+      {props.children}
+    </Tabs.Content>
+  )
+}
+
+const RingTableHeading = () => (
+  <Title>
+      <Title.Heading width={200} size="$6" marginBottom="$2">Ring</Title.Heading>
+      <Title.Heading width={150} size="$6" marginBottom="$2">Stone 1</Title.Heading>
+      <Title.Heading width={150} size="$6" marginBottom="$2">Stone 2</Title.Heading>
+      <Title.Heading width={150} size="$6" marginBottom="$2">Stone 3</Title.Heading>
+      <Title.Heading width={150} size="$6" marginBottom="$2">Wearer</Title.Heading>
+      {/* <Title.Heading size="$7">Your Community TipBots</Title.Heading> */}
+  </Title>
+);
 
 export default function HomePage() {
   const { fetchUserRings } = useCommonActions();
   const rings = useSelector(selectRings) as Array<Ring>;
   const isLoading = useSelector(selectRingsIsLoading);
 
-  useEffect(() => {
-    fetchUserRings(FID);
       // .then(r => console.log(r));
+  // const { fetchBots } = useBotActions();
+  // const bots = useSelector(selectBots);
+  // const isLoading = useSelector(selectBotsIsLoading);
 
-    // TODO: for some reason this fetch is being executed twice on initial page load. Check to see why.
-    // fetchBots();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const [fid, setFid] = useState(773349);
+
+
+  useEffect(() => {
+    fetchUserRings(fid);
+  }, [fid]);
+
+  const ownedRings = rings.filter((r: Ring) => r.owner.fid === fid);
+  const wornRings = rings.filter((r: Ring) => r.wearer?.fid === fid);
+
+  console.log(rings);
 
   return (
-    <XStack flexDirection="column">
-      <Navbar />
-
       <Container>
-        <Title marginBottom="$4">
-          <Title.Group>
-            <Title.Heading size="$9" marginBottom="$5">Home</Title.Heading>
-            <Title.Heading size="$7">Your Community TipBots</Title.Heading>
-          </Title.Group>
-        </Title>
-
-        { isLoading && !IS_USING_MOCK_DATA ?
+        <H5>You are: </H5>
+        <Select value={fid} items={fids} onChange={(item) => { setFid(item!.id)}} />
+        {/* { isLoading && !IS_USING_MOCK_DATA ?
           <YStack flex={1} marginBottom="$4" justifyContent="center" alignItems="center">
             <Spinner size="large" color="$violet8" />
           </YStack> :
@@ -76,8 +119,79 @@ export default function HomePage() {
               </table>
             </YStack>
         }
+            <BotList bots={data.bots} marginBottom="$4" /> :
+            <BotList bots={bots} marginBottom="$4" />
+        } */}
+
+      <Tabs
+        defaultValue="tab1"
+        orientation="horizontal"
+        flexDirection="column"
+        height={800}
+        borderRadius="$4"
+        borderWidth="$0.25"
+        overflow="hidden"
+        borderColor="$borderColor"
+      >
+        <Tabs.List
+          separator={<Separator vertical />}
+          disablePassBorderRadius="bottom"
+        >
+          <Tabs.Tab flex={1} value="tab1">
+            <SizableText fontFamily="$body">Table</SizableText>
+          </Tabs.Tab>
+          <Tabs.Tab flex={1} value="tab2">
+            <SizableText fontFamily="$body">Node</SizableText>
+          </Tabs.Tab>
+        </Tabs.List>
+        <Separator />
+        <TabsContent value="tab1">
+          <Title marginBottom="$4">
+            <Title.Group>
+              <Title.Heading size="$9">Rings You Own</Title.Heading>
+              {/* <Title.Heading size="$7">Your Community TipBots</Title.Heading> */}
+            </Title.Group>
+          </Title>
+          <YStack
+            gap="$4"
+            marginBottom="$6"
+          >
+            {/* {(!rings || rings.length === 0) &&
+              <Card padding="$3">
+                <Paragraph fontWeight="bold">Welcome! You don&apos;t have any tipbots yet.</Paragraph>
+                <Paragraph color="$color11">No worries you can go from noob to first bot in just few minutes. LFG! 🚀</Paragraph>
+              </Card>
+            } */}
+            <RingTableHeading/>
+            {ownedRings.map((ring: Ring, i: number) => <RingCard key={`${fid}-${i}`} id={i} ring={ring} />)}
+          </YStack>
+          <Title marginBottom="$4">
+            <Title.Group>
+              <Title.Heading size="$9">Rings You Wear</Title.Heading>
+              {/* <Title.Heading size="$7">Your Community TipBots</Title.Heading> */}
+            </Title.Group>
+          </Title>
+          <YStack
+            gap="$4"
+          >
+            {/* {(!rings || rings.length === 0) &&
+              <Card padding="$3">
+                <Paragraph fontWeight="bold">Welcome! You don&apos;t have any tipbots yet.</Paragraph>
+                <Paragraph color="$color11">No worries you can go from noob to first bot in just few minutes. LFG! 🚀</Paragraph>
+              </Card>
+            } */}
+            <RingTableHeading/>
+            {wornRings.map((ring: Ring, i: number) => <RingCard key={`${fid}-${i}`} id={i} ring={ring} />)}
+          </YStack>
+        </TabsContent>
+
+        <TabsContent value="tab2">
+          <H5>Node Explorer</H5>
+        </TabsContent>
+      </Tabs>
+
+          
         {/* <BotDialog /> */}
       </Container>
-    </XStack>
   )
 }
