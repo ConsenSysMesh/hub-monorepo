@@ -5,8 +5,11 @@ import {
   RefDirection,
   ObjectRef,
   FarcasterNetwork,
-  hexStringToBytes,
+  MessagesResponse,
+  Message,
+  ObjectResponse,
 } from '@farcaster/hub-web';
+import { User } from '@farcaster/rings-next/types';
 
 const API_HOST = process.env.NEXT_PUBLIC_API_URL;
 const API_URL = `${API_HOST}/v1`;
@@ -22,7 +25,7 @@ const getApiClient = () => {
   });
 
   const getRingOwnerRels = async (fid: number) => {
-    const ownerRels = await client.get('/relationshipsByRelatedObjectRef', {
+    const result = await client.get('/relationshipsByRelatedObjectRef', {
       params: {
         ref_type: ObjectRefTypes.FID,
         object_ref_fid: fid,
@@ -30,11 +33,11 @@ const getApiClient = () => {
         type: RelationshipTypes.Owner,
       }
     });
-    return ownerRels;
+    return result.data as MessagesResponse;
   };
 
   const getRingWearerRels = async (ringRef: ObjectRef) => {
-    const ringWearerRels = await client.get('/relationshipsByRelatedObjectRef', {
+    const result = await client.get('/relationshipsByRelatedObjectRef', {
       params: {
         ref_type: ObjectRefTypes.OBJECT,
         object_ref_network: NETWORK,
@@ -44,50 +47,75 @@ const getApiClient = () => {
         type: RelationshipTypes.Wearer,
       }
     });
-    return ringWearerRels;
+    return result.data as MessagesResponse;
   }
   
   const getRingObject = async (ringRef: ObjectRef) => {
-    const obj = await client.get('/objectById', {
+    const result = await client.get('/objectById', {
       params: {
         fid: ringRef.fid,
         hash: ringRef.hash,
       }
     });
-    return obj;
+    return result.data as ObjectResponse;
   }
 
   return {
+    getUserDataByFid: async (fid: number) => {
+      const result = await client.get('/userDataByFid', {
+        params: {
+          fid,
+        }
+      });
+      // TODO: shape the data as a single user object before passing it down
+      return result.data as MessagesResponse;
+    },
     getOwnedRings: async (fid: number) => {
       // first find the owner relationships for the user's fid
+      const results = {
+        rings: [] as Array<Message>,
+        stones: [] as Array<Message>,
+        relationships: [] as Array<Message>,
+        users: [] as Array<User>,
+      }
+      const fids: Array<number> = [];
       const ownerResult = await getRingOwnerRels(fid);
-      const ownerRels = ownerResult.data.messages;
+      const ownerRels = ownerResult.messages;
+      results.relationships.push(...ownerRels);
       for (let ownerRel of ownerRels) {
         console.log('Found a ring owner relationship!', ownerRel);
         if (!ownerRel.data?.relationshipAddBody) continue; // null checks to make TS happy
-        let ringRef = ownerRel.data.relationshipAddBody.source;
-        
+        let ringRef = ownerRel.data.relationshipAddBody.source as ObjectRef;
+        fids.push(ownerRel.data.relationshipAddBody.target?.fid as number);
+      
         // get the ring object
         let ringObjResult = await getRingObject(ringRef);
-        let ringObj = ringObjResult.data.object.data.objectAddBody;
-        let ringTags = ringObjResult.data.tags;
+        if (!ringObjResult.object?.data) {
+          continue;
+        }
+        let ringObj = ringObjResult.object;
+        results.rings.push(ringObj);
+        let ringTags = ringObjResult.tags;
+        results.stones.push(...ringTags);
         console.log('Found a ring!', ringObj, ringTags);
     
         // console.log('Ring hash bytes', hexStringToBytes(ringRef.hash));
         
         // now also get the ring wearers to have complete ring state?
         const wearerResult = await getRingWearerRels(ringRef);
-        const wearerRels = wearerResult.data.messages;
+        const wearerRels = wearerResult.messages;
+        results.relationships.push(...wearerRels);
         for (let wearerRel of wearerRels) {
           console.log('Found a ring wearer relationship!', wearerRel);
-          if (!wearerRel.data?.relationshipAddBody) continue; // null checks to make TS happy
-          let wearerFid = wearerRel.data.relationshipAddBody.target?.fid;
+          // if (!wearerRel.data?.relationshipAddBody) continue; // null checks to make TS happy
+          // let wearerFid = wearerRel.data.relationshipAddBody.target?.fid;
           
-          // TODO: figure out the rest of this data loading recipe
+          // TODO: figure out whether we're loading in the profiles of all the users involved with the rings
           
         }
       }
-      return ownerRels;
+      results.users = _.uniq(fids).map((fid: number) => ({ fid } as User)); // lean User objects without profile info for now
+      return results;
     },
   };
 }
