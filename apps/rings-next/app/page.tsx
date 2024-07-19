@@ -19,11 +19,6 @@ import { Ring } from "@farcaster/rings-next/types";
 import Select, { Item as SelectItem } from '@farcaster/rings-next/components/select/Select';
 import { fidItems as fids } from '@farcaster/rings-next/constants';
 
-const HUB_URL = "http://127.0.0.1:2281"; // URL + Port of the Hub
-const FID = 773349;
-
-
-
 const TabsContent = (props: TabsContentProps) => {
   return (
     <Tabs.Content

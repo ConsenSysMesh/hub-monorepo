@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import { RelationshipTypes } from '@farcaster/rings-next/constants';
+import { NETWORK, RelationshipTypes, SignersByFid } from '@farcaster/rings-next/constants';
 import {
   ObjectRefTypes,
   RefDirection,
@@ -8,12 +8,18 @@ import {
   MessagesResponse,
   Message,
   ObjectResponse,
+  TagBody,
+  NobleEd25519Signer,
+  hexStringToBytes,
+  makeTagAdd,
+  RelationshipAddBody,
+  makeRelationshipAdd,
+  makeRelationshipRemove,
 } from '@farcaster/hub-web';
 import { User } from '@farcaster/rings-next/types';
 
 const API_HOST = process.env.NEXT_PUBLIC_API_URL;
 const API_URL = `${API_HOST}/v1`;
-const NETWORK = FarcasterNetwork.DEVNET;
 
 const getApiClient = () => {
   const client = axios.create({
@@ -23,6 +29,16 @@ const getApiClient = () => {
     //   'Authentication': `${sessionToken}`,
     // }
   });
+
+  const submitMessage = async (msg: Message) => {
+    const messageBytes = Buffer.from(Message.encode(msg).finish());
+    const result = await client.post('/submitMessage', 
+      messageBytes, {
+        headers: { "Content-Type": "application/octet-stream" },
+      },
+    );
+    return result.data as MessagesResponse;
+  };
 
   const getRingOwnerRels = async (fid: number) => {
     const result = await client.get('/relationshipsByRelatedObjectRef', {
@@ -118,6 +134,51 @@ const getApiClient = () => {
       }
       results.users = _.uniq(fids).map((fid: number) => ({ fid } as User)); // lean User objects without profile info for now
       return results;
+    },
+    updateStone: async (fid: number, changes: TagBody) => {
+      const signer = SignersByFid[fid];
+      if (!signer) {
+        throw new Error(`No signer for fid: ${fid}`);
+      }
+      const newStone = await makeTagAdd(changes, {
+          fid,
+          network: NETWORK,
+        },
+        signer,
+      );
+      if (newStone.isErr()){
+        throw newStone.error;
+      }
+      const result = await submitMessage((newStone._unsafeUnwrap()));
+      return result;
+    },
+    updateRingWearer: async (fid: number, newWearer: RelationshipAddBody, existingWearer: Message | undefined) => {
+      // TODO: not hooked up and untested
+      const signer = SignersByFid[fid];
+      if (!signer) {
+        throw new Error(`No signer for fid: ${fid}`);
+      }
+
+      if (existingWearer) {
+        const removedRelationship = await makeRelationshipRemove({ targetHash: existingWearer.hash }, {
+            fid,
+            network: NETWORK,
+          },
+          signer,
+        );
+        const result = await submitMessage((removedRelationship._unsafeUnwrap()));
+      }
+      const newRelationship = await makeRelationshipAdd(newWearer, {
+          fid,
+          network: NETWORK,
+        },
+        signer,
+      );
+      const result = await submitMessage((newRelationship._unsafeUnwrap()));
+      return {
+        added: result,
+        removed: existingWearer,
+      }
     },
   };
 }

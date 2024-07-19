@@ -20,7 +20,9 @@ export interface User {
 
 export interface Ring {
   ring: Message;
-  stone: Message | undefined,
+  stone1: Message | undefined,
+  stone2: Message | undefined,
+  stone3: Message | undefined,
   owner: User;
   wearer: User | undefined;
 };

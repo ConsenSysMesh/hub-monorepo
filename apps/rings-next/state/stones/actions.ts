@@ -1,11 +1,10 @@
 import { createAsyncThunk } from '@reduxjs/toolkit'
 import getClient from '@farcaster/rings-next/api-client';
+import { TagBody } from '@farcaster/hub-web';
 
-// TODO: stone-specific actions here
+const updateStone = createAsyncThunk('stones/update', async (params: { fid: number, changes: TagBody }) => {
+    const response = await getClient().updateStone(params.fid, params.changes);
+    return response;
+});
 
-// const fetchUser = createAsyncThunk('users/fetch', async (id: number) => {
-//     const response = await getClient().getUserDataByFid(id);
-//     return response.data;
-// });
-
-// export { fetchUser };
+export { updateStone };

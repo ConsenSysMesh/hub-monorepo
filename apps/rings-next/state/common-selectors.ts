@@ -7,7 +7,7 @@ import { selectUsersById, selectUserEntities } from "@farcaster/rings-next/state
 import { selectStonesByRingId } from "@farcaster/rings-next/state/stones/selectors";
 import { selectRelationshipsBySource } from "@farcaster/rings-next/state/relationships/selectors";
 import { getObjectRefStoreId } from "@farcaster/rings-next/state/utils";
-import { Ring } from '@farcaster/rings-next/types';
+import { Ring, StoneTagNames } from '@farcaster/rings-next/types.d';
 
 export const selectRings = createSelector(
     [selectRingEntities, selectUserEntities, selectStonesByRingId, selectRelationshipsBySource],
@@ -19,13 +19,21 @@ export const selectRings = createSelector(
             const wearerRel = rels.find(r => r.data?.relationshipAddBody?.type === RelationshipTypes.Wearer);
             const owner = usersById[ownerRel?.data?.relationshipAddBody?.target?.fid];
             const wearer = usersById[wearerRel?.data?.relationshipAddBody?.target?.fid];
-            const stones = stonesByRingId[ringId] || [];
+            const stones = (stonesByRingId[ringId] || []) as Array<Message>;
+
+            // TODO: figure out why the tags are returned from the API with messed up `name` field values
+            //    This issue gets in the way of us matching tags to proper Ring fields.
+            const stone1 = stones.find(s => s.data?.tagBody?.name === StoneTagNames.stone1);
+            const stone2 = stones.find(s => s.data?.tagBody?.name === StoneTagNames.stone2);
+            const stone3 = stones.find(s => s.data?.tagBody?.name === StoneTagNames.stone3);
             rings.push({
                 ring,
                 owner,
                 wearer,
-                stone: stones[0], // assuming only one store for now
-            })
+                stone1,
+                stone2,
+                stone3,
+            });
         }
         return rings;
     },
