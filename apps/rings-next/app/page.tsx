@@ -3,16 +3,13 @@ import React, { useEffect, useState } from "react";
 import type { TabsContentProps } from 'tamagui';
 import { YStack, Tabs, H5, Separator, SizableText } from 'tamagui';
 import Title from "@farcaster/rings-next/components/title/Title";
-import BotList from "@farcaster/rings-next/components/bot/BotList";
-import Navbar from "@farcaster/rings-next/components/navbar/Navbar";
+// import Navbar from "@farcaster/rings-next/components/navbar/Navbar";
 import { useCommonActions } from '@farcaster/rings-next/hooks/useCommonActions';
 import { selectRings } from '@farcaster/rings-next/state/common-selectors';
 import { selectRingsIsLoading } from '@farcaster/rings-next/state/rings/selectors';
 import { useSelector } from 'react-redux';
-import BotDialog from "@farcaster/rings-next/components/bot/BotDialog";
 import Container from "@farcaster/rings-next/components/container/Container";
-import data from "@farcaster/rings-next/data";
-import {IS_USING_MOCK_DATA} from "@farcaster/rings-next/constants";
+// import data from "@farcaster/rings-next/data";
 import apiClient from "@farcaster/rings-next/api-client";
 import {
   ObjectRefTypes,
@@ -65,7 +62,6 @@ export default function HomePage() {
   const isLoading = useSelector(selectRingsIsLoading);
 
       // .then(r => console.log(r));
-  // const { fetchBots } = useBotActions();
   // const bots = useSelector(selectBots);
   // const isLoading = useSelector(selectBotsIsLoading);
 
