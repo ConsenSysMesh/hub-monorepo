@@ -15,6 +15,8 @@ import { ChevronRight } from "@tamagui/lucide-icons";
 import { useForm, Controller } from 'react-hook-form';
 import { useStoneActions } from '@farcaster/rings-next/hooks/useStoneActions';
 import { getObjectRefForMessage } from '@farcaster/rings-next/state/utils';
+import { useFid } from '@farcaster/rings-next/provider/FidProvider';
+
 interface RingCardProps {
   ring: Ring;
   id: number;
@@ -46,6 +48,7 @@ const RingCard: React.FC<RingCardProps> = ({ ring, id, editable = true, ...other
     const { updateStone } = useStoneActions();
 
     const [loading, setLoading] = useState(false);
+    const { fid } = useFid();
 
     const onError = (error: any) => {
         console.error(error);
@@ -57,9 +60,6 @@ const RingCard: React.FC<RingCardProps> = ({ ring, id, editable = true, ...other
         const { stone1: stone1Changed, stone2: stone2Changed, stone3: stone3Changed, wearerFid: wearerFidChanged } = dirtyFields;
     
         try {
-            // TODO: need to we aware of which FID is currently selected
-            const fid = fidItems[1].id as number;
-
             if (stone1Changed) {
                 // Update Stone1 Tag
                 console.log(data.stone1);
