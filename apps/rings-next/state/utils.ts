@@ -20,7 +20,9 @@ export const getObjectRefType = (msg: Message) => {
     }
 };
 
-export const getObjectRefForMessage  = (msg: Message) => {
+export const convertHexHash = hash => hexStringToBytes(hash as string)._unsafeUnwrap()
+
+export const getObjectRefForMessage = (msg: Message) => {
     let type = getObjectRefType(msg);
     return ObjectRef.create({
         type,
@@ -29,6 +31,13 @@ export const getObjectRefForMessage  = (msg: Message) => {
         //  byte array fields, which needs to be undone before the content can be used
         //  in crafting new Messages (eg. in `makeTagAdd`)
         network: farcasterNetworkFromJSON(msg.data?.network),
-        hash: hexStringToBytes(msg.hash as string)._unsafeUnwrap(),
+        hash: convertHexHash(msg.hash),
+    });
+};
+
+export const getObjectRefForFid = (fid: number) => {
+    return ObjectRef.create({
+        type: ObjectRefTypes.FID,
+        fid,
     });
 }

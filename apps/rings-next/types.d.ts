@@ -25,6 +25,7 @@ export interface Ring {
   stone3: Message | undefined,
   owner: User;
   wearer: User | undefined;
+  wearerMsg: Message | undefined,
 };
 
 // expected `name` field values for the tags representing Stones in a Ring

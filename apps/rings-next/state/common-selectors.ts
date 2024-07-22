@@ -30,6 +30,7 @@ export const selectRings = createSelector(
                 ring,
                 owner,
                 wearer,
+                wearerMsg: wearerRel,
                 stone1,
                 stone2,
                 stone3,

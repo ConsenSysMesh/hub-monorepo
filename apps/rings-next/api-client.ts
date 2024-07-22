@@ -4,19 +4,17 @@ import {
   ObjectRefTypes,
   RefDirection,
   ObjectRef,
-  FarcasterNetwork,
   MessagesResponse,
   Message,
   ObjectResponse,
   TagBody,
-  NobleEd25519Signer,
-  hexStringToBytes,
   makeTagAdd,
   RelationshipAddBody,
   makeRelationshipAdd,
   makeRelationshipRemove,
 } from '@farcaster/hub-web';
 import { User } from '@farcaster/rings-next/types';
+import { convertHexHash } from '@farcaster/rings-next/state/utils';
 
 const API_HOST = process.env.NEXT_PUBLIC_API_URL;
 const API_URL = `${API_HOST}/v1`;
@@ -160,12 +158,19 @@ const getApiClient = () => {
       }
 
       if (existingWearer) {
-        const removedRelationship = await makeRelationshipRemove({ targetHash: existingWearer.hash }, {
+        const relRemove = {
+          targetHash: convertHexHash(existingWearer.hash), // API expects binary array hashes, not hex strings
+        };
+        
+        const removedRelationship = await makeRelationshipRemove(relRemove, {
             fid,
             network: NETWORK,
           },
           signer,
         );
+        if (removedRelationship.isErr()) {
+          throw removedRelationship.error;
+        }
         const result = await submitMessage((removedRelationship._unsafeUnwrap()));
       }
       const newRelationship = await makeRelationshipAdd(newWearer, {
@@ -174,6 +179,9 @@ const getApiClient = () => {
         },
         signer,
       );
+      if (newRelationship.isErr()) {
+        throw newRelationship.error;
+      }
       const result = await submitMessage((newRelationship._unsafeUnwrap()));
       return {
         added: result,
