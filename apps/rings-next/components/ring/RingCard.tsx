@@ -37,9 +37,9 @@ const RingCard: React.FC<RingCardProps> = ({ ring, id, editable = true, ...other
         formState: { errors, isDirty, dirtyFields },
     } = useForm({
         defaultValues: {
-            stone1: ring.stone1?.data?.tagBody?.name,
-            stone2: ring.stone2?.data?.tagBody?.name,
-            stone3: ring.stone3?.data?.tagBody?.name,
+            stone1: ring.stone1?.data?.tagBody?.content,
+            stone2: ring.stone2?.data?.tagBody?.content,
+            stone3: ring.stone3?.data?.tagBody?.content,
             wearerFid: ring.wearer?.fid || 0
         },
     });

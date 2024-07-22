@@ -81,14 +81,14 @@ function getCallObject<M extends keyof HubServiceServer>(
 }
 
 // Generic handler for grpc methods's responses
-function handleResponse<M>(reply: fastify.FastifyReply, obj: StaticEncodable<M>): sendUnaryData<M> {
+function handleResponse<M>(reply: fastify.FastifyReply, obj: StaticEncodable<M>, convertToStringKeys = true): sendUnaryData<M> {
   return (err, response) => {
     if (err) {
       reply.code(400).type("application/json").send(JSON.stringify(err));
     } else {
       if (response) {
         // Convert the protobuf object to JSON
-        const json = protoToJSON(response, obj);
+        const json = protoToJSON(response, obj, convertToStringKeys);
         reply.send(json);
       } else {
         reply.send(err);
@@ -142,7 +142,7 @@ const BACKWARDS_COMPATIBILITY_MAP: Record<string, string> = {
  * before returning them.
  */
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-function transformHash(obj: any): any {
+function transformHash(obj: any, convertToStringKeys = true): any {
   if (obj === null || typeof obj !== "object") {
     return obj;
   }
@@ -160,7 +160,7 @@ function transformHash(obj: any): any {
     if (obj.hasOwnProperty(key)) {
       if (toHexKeys.includes(key) && typeof obj[key] === "string") {
         obj[key] = convertB64ToHex(obj[key]);
-      } else if (toStringKeys.includes(key) && typeof obj[key] === "string") {
+      } else if (convertToStringKeys && toStringKeys.includes(key) && typeof obj[key] === "string") {
         obj[key] = Buffer.from(obj[key], "base64").toString("utf-8");
       } else if (toHexOrBase58Keys.includes(key) && typeof obj[key] === "string") {
         // We need to convert solana related bytes to base58
@@ -170,7 +170,7 @@ function transformHash(obj: any): any {
           obj[key] = convertB64ToHex(obj[key]);
         }
       } else if (typeof obj[key] === "object") {
-        transformHash(obj[key]);
+        transformHash(obj[key], convertToStringKeys);
       }
 
       const backwardsCompatibleName = BACKWARDS_COMPATIBILITY_MAP[key];
@@ -184,8 +184,8 @@ function transformHash(obj: any): any {
 }
 
 // Generic function to convert protobuf objects to JSON
-export function protoToJSON<T>(message: T, obj: StaticEncodable<T>): unknown {
-  return transformHash(obj.toJSON(message));
+export function protoToJSON<T>(message: T, obj: StaticEncodable<T>, convertToStringKeys = true): unknown {
+  return transformHash(obj.toJSON(message), convertToStringKeys);
 }
 
 // Get a protobuf enum value from a string or number
@@ -447,7 +447,7 @@ export class HttpAPIServer {
         request,
       );
 
-      this.grpcImpl.getTag(call, handleResponse(reply, Message));
+      this.grpcImpl.getTag(call, handleResponse(reply, Message, false));
     });
 
     // @doc-tag: /tagsByFid?fid=...&value=...
@@ -467,7 +467,7 @@ export class HttpAPIServer {
           request,
         );
 
-        this.grpcImpl.getTagsByFid(call, handleResponse(reply, MessagesResponse));
+        this.grpcImpl.getTagsByFid(call, handleResponse(reply, MessagesResponse, false));
       },
     );
 
@@ -526,7 +526,7 @@ export class HttpAPIServer {
           request,
         );
 
-        this.grpcImpl.getTagsByTarget(call, handleResponse(reply, MessagesResponse));
+        this.grpcImpl.getTagsByTarget(call, handleResponse(reply, MessagesResponse, false));
       },
     );
 
@@ -551,7 +551,7 @@ export class HttpAPIServer {
         request,
       );
 
-      this.grpcImpl.getObject(call, handleResponse(reply, ObjectResponse));
+      this.grpcImpl.getObject(call, handleResponse(reply, ObjectResponse, false));
     });
 
     // @doc-tag: /objectsByFid?fid=...&type=...
@@ -570,7 +570,7 @@ export class HttpAPIServer {
           },
           request,
         );
-        this.grpcImpl.getObjectsByFid(call, handleResponse(reply, ObjectResponseList));
+        this.grpcImpl.getObjectsByFid(call, handleResponse(reply, ObjectResponseList, false));
       },
     );
 
