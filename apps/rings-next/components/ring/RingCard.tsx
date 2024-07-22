@@ -102,8 +102,8 @@ const RingCard: React.FC<RingCardProps> = ({ ring, id, editable = true, ...other
                 
                 await updateWearer(fid, {
                     type: RelationshipTypes.Wearer,
-                    source: getObjectRefForFid(data.wearerFid),
-                    target: ringObjectRef,
+                    source: ringObjectRef,
+                    target: getObjectRefForFid(data.wearerFid),
                   },
                   ring.wearerMsg,
                 );

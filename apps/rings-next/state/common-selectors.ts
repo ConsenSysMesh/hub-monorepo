@@ -14,15 +14,13 @@ export const selectRings = createSelector(
     (ringsById, usersById, stonesByRingId, relationshipsBySource) => {
         const rings: Array<Ring> = [];
         for (let [ringId, ring] of _.entries(ringsById)) {
-            const rels = relationshipsBySource[ringId] as Array<Message>;
+            let rels = relationshipsBySource[ringId] as Array<Message>;
+            rels = _.orderBy(rels, r => r.data?.timestamp, 'desc'); // order latest records first
             const ownerRel = rels.find(r => r.data?.relationshipAddBody?.type === RelationshipTypes.Owner);
             const wearerRel = rels.find(r => r.data?.relationshipAddBody?.type === RelationshipTypes.Wearer);
             const owner = usersById[ownerRel?.data?.relationshipAddBody?.target?.fid];
             const wearer = usersById[wearerRel?.data?.relationshipAddBody?.target?.fid];
             const stones = (stonesByRingId[ringId] || []) as Array<Message>;
-
-            // TODO: figure out why the tags are returned from the API with messed up `name` field values
-            //    This issue gets in the way of us matching tags to proper Ring fields.
             const stone1 = stones.find(s => s.data?.tagBody?.name === StoneTagNames.stone1);
             const stone2 = stones.find(s => s.data?.tagBody?.name === StoneTagNames.stone2);
             const stone3 = stones.find(s => s.data?.tagBody?.name === StoneTagNames.stone3);
