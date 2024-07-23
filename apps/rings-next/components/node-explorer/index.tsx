@@ -301,10 +301,12 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
       mountId,
       data,
       focusedNodeId,
+      switchFocus,
     }: {
         mountId: string,
         data: any,
         focusedNodeId: string,
+        switchFocus: any,
     }) => {
     // Actually private variables
     const expanded = {};
@@ -314,19 +316,20 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
     let nodes;
     let nodesById = {};
     let links;
-    let simulation;
-  
+
+    const { fid, setFid } = useFid();
+
+    const [simulation, setSimulation] = useState(null);
     // // SVG related variables
-    let svg;
-    let transform;
-    let zoomGroup;
-    let nodeGroup;
-    let linkGroup;
-    let labelGroup;
-    let zoom;
         
     const [focusedNode, setFocusedNode] = useState(focusedNodeId);
     const [mountNode, setMountNode] = useState<HTMLElement | null>(null);
+    const [svg, setSvg] = useState(null);
+    const [zoomGroup, setZoomGroup] = useState(null);
+    const [nodeGroup, setNodeGroup] = useState(null);
+    const [linkGroup, setLinkGroup] = useState(null);
+    const [labelGroup, setLabelGroup] = useState(null);
+
     const [isInit, setIsInit] = useState(false);
     useEffect(() => {
         if (typeof window !== 'undefined') {
@@ -338,12 +341,10 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
     const getWidth = () => mountNode.clientWidth;
     const getHeight = () => mountNode.clientHeight;
 
-    const { fetchUserRings } = useCommonActions();
 
-
-    const dragNode = drag => drag
+    const dragNode = (simulation) => (drag) => drag
       .on('start', (event, node) => {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
+        if (!event.active) simulation.alphaTarget(0.3).restart()
         node.fx = node.x;
         node.fy = node.y;
       })
@@ -372,9 +373,10 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
         setFocusedNode(newId)
         this._updateNodes(data, newId);
       },
-      updateData(newData) {
+      updateData(newData, focusedNodeId) {
+        setFocusedNode(focusedNodeId)
         data = newData;
-        this._updateNodes(data, focusedNode);
+        this._updateNodes(data, focusedNodeId);
       },
       _updateNodes(graphNodes, focusedNodeId) {
         links = [];
@@ -383,7 +385,6 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
         // Keep track of which nodes have been linked to prevent duplicate links
         const linkedNodes = {};
         const expandNodes = (nodeId, layersRemaining, parentNode) => {
-          console.log(nodeId, layersRemaining);
           const node = graphNodes[nodeId];
           if (!node) {
             // Happens when we encounter an unloaded node
@@ -446,33 +447,37 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
             ...node.parents.map(parent => expandNodes(parent.key, layersRemaining - 1, nodeObject)),
           ]);
         };
-        console.log(focusedNodeId);
-        nodes = expandNodes(focusedNodeId, 5, null);
+        nodes = expandNodes(focusedNodeId, 2, null);
         nodesById = _.keyBy(nodes, 'id');
         this.render();
       },
       render: () => {
-        // if (!svg) {
+        let currNodeGroup = nodeGroup;
+        let currLinkGroup = linkGroup;
+        let currLabelGroup = labelGroup;
+        let currSimulation = simulation;
+        if (!svg) {
           width = mountNode.clientWidth;
           height = 400;
-          transform = { x: 0, y: 0, k: 1 };
-          svg = d3.select(`#${mountId}`)
+          let transform = { x: 0, y: 0, k: 1 };
+          const newSvg = d3.select(`#${mountId}`)
             .append('svg')
             .attr('width', width)
             .attr('height', height)
             .attr('class', 'node-explorer-svg');
-          zoom = d3.zoom()
+          const newZoomGroup = newSvg
+            .append('g');
+          let zoom = d3.zoom()
             .scaleExtent([1, Infinity])
             .on('zoom', (event) => {
               ({ transform } = event);
-              zoomGroup.attr('transform', transform);
+              newZoomGroup.attr('transform', transform);
             });
-          svg.call(zoom)
+          newSvg.call(zoom)
             .on('dblclick.zoom', null);
-          zoomGroup = svg
-            .append('g');
+          
   
-          const defs = svg
+          const defs = newSvg
             .append('defs');
           defs
             .append('marker')
@@ -484,37 +489,40 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
             .attr('d', 'M0,-5L10,0L0,5');
   
           window.addEventListener('resize', () => {
-            svg
+            newSvg
               .attr('width', getWidth())
               .attr('height', getHeight());
           });
   
-          linkGroup = zoomGroup
+          currLinkGroup = newZoomGroup
             .append('g')
             .attr('name', 'Links');
-          nodeGroup = zoomGroup
+          currNodeGroup = newZoomGroup
             .append('g')
             .attr('name', 'Nodes');
-          labelGroup = zoomGroup
+          currLabelGroup = newZoomGroup
             .append('g')
             .attr('name', 'Labels');
   
-          simulation = d3.forceSimulation(nodes)
+          currSimulation = d3.forceSimulation(nodes)
             .force('charge', d3.forceManyBody().strength(-80))
             .force('link', d3.forceLink(links)
               .id(link => link.id)
               .strength(link => link.strength)
               .distance(link => link.distance))
             .force('collide', d3.forceCollide(nodeRadius).strength(1).iterations(50));
-        // }
-
-        console.log(nodes, links);
+            setSvg(newSvg);
+            setZoomGroup(newZoomGroup);
+            setLinkGroup(currLinkGroup);
+            setNodeGroup(currNodeGroup);
+            setLabelGroup(currLabelGroup);
+        }
   
-        const renderedNodes = nodeGroup
+        const renderedNodes = currNodeGroup
           .selectAll('g')
           .data(nodes, node => node.id)
           .join(
-            nodeEnter(dragNode, getWidth, getHeight, focusedNode),
+            nodeEnter(dragNode(currSimulation), getWidth, getHeight, focusedNode),
             nodeUpdate(focusedNode),
             nodeExit,
           );
@@ -528,10 +536,8 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
             .select('.node-circle')
             .attr('r', nodeRadius);
 
-        console.log(renderedNodes);
-
   
-        const renderedLinks = linkGroup
+        const renderedLinks = currLinkGroup
           .selectAll('g')
           .data(links, link => link.id)
           .join(enter => enter
@@ -545,9 +551,8 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
               .classed('link-label-text', true)
               .text(link => link.name)));
 
-        console.log(renderedLinks);
   
-        const renderedLabels = labelGroup
+        const renderedLabels = currLabelGroup
           .selectAll('g')
           .data(nodes, node => node.id)
           .join(
@@ -556,12 +561,13 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
               .attr('transform', 'translate(0, 0)')
               .each(buildLabel));
         renderedNodes.on('click', (event, clickedNode) => {
-            if (!clickedNode.data?.data?.objectAddBody && clickedNode.data.fid) {
-                setFocusedNode(clickedNode.data.fid.toString());
-                fetchUserRings(clickedNode.data.fid);
+            if (!clickedNode.data?.data?.objectAddBody && clickedNode.data.fid && clickedNode.data.fid !== focusedNode) {
+                expanded[clickedNode.data.fid] = true;
+                setFid(clickedNode.data.fid)
+                switchFocus(clickedNode.data.fid);
             }
         });
-        simulation
+        currSimulation
           .on('tick', () => {
             renderedNodes
               .attr('transform', n => `translate(${n.x}, ${n.y})`)
@@ -593,10 +599,12 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
                   .attr('transform', `rotate(${textAngle} ${labelX} ${labelY})`);
               });
           });
-        simulation.nodes(nodes);
-        simulation.force('link').links(links)
+        currSimulation.nodes(nodes);
+        currSimulation.force('link').links(links)
           .id(link => link.id);
-        simulation.alpha(1).restart();
+        currSimulation.alpha(1).restart();
+        setSimulation(currSimulation);
+
       },
     };
   };
@@ -618,12 +626,21 @@ const NodeExplorerWrapper = ({ children } : { children: any}) => {
     //     }
     // });
 
+    const [focusedNodeId, setFocusedNodeId] = useState(String(fid));
+    const { fetchUserRings } = useCommonActions();
+
+    const switchFocus = (newId: number) => {
+        setFocusedNodeId(newId.toString());
+        // fetchUserRings(newId);
+    }
+
     const graphNodes = useSelector(graphSelector);
 
     const _nodeExplorer = NodeExplorer({
         mountId: 'node-explorer-root',
         data: graphNodes,
-        focusedNodeId: String(fid),
+        focusedNodeId,
+        switchFocus,
         // onReady,
         // degrees,
         // filter,
@@ -644,16 +661,14 @@ const NodeExplorerWrapper = ({ children } : { children: any}) => {
     //   };
 
     useEffect(() => {
-        console.log(_nodeExplorer.checkIfReady(), graphNodes);
         if (_nodeExplorer.checkIfReady()) {
             if (_nodeExplorer.isInit) {
-                console.log('here');
-                _nodeExplorer.updateData(graphNodes);
+                _nodeExplorer.updateData(graphNodes, focusedNodeId);
             } else {
                 _nodeExplorer.init();
             }
         }
-    }, [_nodeExplorer.checkIfReady(), graphNodes])
+    }, [_nodeExplorer.checkIfReady(), graphNodes, focusedNodeId])
 
     // useEffect(() => {
     //     _nodeExplorer.updateData(graphNodes);
