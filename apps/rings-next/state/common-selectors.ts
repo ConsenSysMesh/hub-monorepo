@@ -1,11 +1,11 @@
 import _ from 'lodash';
 import { createSelector } from 'reselect'
-import { Message, ObjectRef } from '@farcaster/hub-web';
+import { Message, ObjectRef, ObjectRefTypes } from '@farcaster/hub-web';
 import { RelationshipTypes } from '@farcaster/rings-next/constants'
 import { selectRingsById, selectRingEntities } from "@farcaster/rings-next/state/rings/selectors";
 import { selectUsersById, selectUserEntities } from "@farcaster/rings-next/state/users/selectors";
 import { selectStonesByRingId } from "@farcaster/rings-next/state/stones/selectors";
-import { selectRelationshipsBySource } from "@farcaster/rings-next/state/relationships/selectors";
+import { selectRelationships, selectRelationshipsBySource } from "@farcaster/rings-next/state/relationships/selectors";
 import { getObjectRefStoreId } from "@farcaster/rings-next/state/utils";
 import { Ring, StoneTagNames } from '@farcaster/rings-next/types.d';
 
@@ -38,4 +38,41 @@ export const selectRings = createSelector(
         }
         return rings;
     },
+);
+
+export const graphSelector = createSelector(
+    [selectRingEntities, selectUserEntities, selectRelationships],
+    (ringsById, usersById, selectRelationships) => {
+        const result = {...ringsById, ...usersById};
+
+        Object.keys(ringsById).forEach((id) => {
+            result[id] = {
+                ...result[id],
+                name: result[id].data.objectAddBody.displayName,
+                children: [],
+                parents: [],
+            }
+        });
+
+        Object.keys(usersById).forEach((id) => {
+            result[id] = {
+                ...result[id],
+                name: result[id].fid.toString(),
+                children: [],
+                parents: [],
+            }
+        });
+
+        selectRelationships.forEach((r) => {
+            const source = r.data?.relationshipAddBody?.source;
+            const target = r.data?.relationshipAddBody?.target;
+            if (!source || !target) return;
+            const sourceKey = source.type === 'FID' ? String(source.fid) : getObjectRefStoreId(source);
+            const targetKey = target.type === 'FID' ? String(target.fid) : getObjectRefStoreId(target);
+            result[sourceKey].children = [...result[sourceKey].children, { key: targetKey, name: r.data?.relationshipAddBody?.type }];
+            result[targetKey].parents = [...result[targetKey].parents, { key: sourceKey, name: r.data?.relationshipAddBody?.type }];
+
+        });
+        return result;
+    }
 );
