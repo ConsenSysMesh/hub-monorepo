@@ -1,13 +1,12 @@
 import _ from 'lodash';
 import { createSelector } from 'reselect'
 import { Message, ObjectRef, ObjectRefTypes } from '@farcaster/hub-web';
-import { RelationshipTypes } from '@farcaster/rings-next/constants'
 import { selectRingsById, selectRingEntities } from "@farcaster/rings-next/state/rings/selectors";
 import { selectUsersById, selectUserEntities } from "@farcaster/rings-next/state/users/selectors";
 import { selectStonesByRingId } from "@farcaster/rings-next/state/stones/selectors";
 import { selectRelationships, selectRelationshipsBySource } from "@farcaster/rings-next/state/relationships/selectors";
 import { getObjectRefStoreId } from "@farcaster/rings-next/state/utils";
-import { Ring, StoneTagNames } from '@farcaster/rings-next/types.d';
+import { Ring, StoneTagNames, RelationshipTypes } from '@farcaster/rings-next/types.d';
 
 export const selectRings = createSelector(
     [selectRingEntities, selectUserEntities, selectStonesByRingId, selectRelationshipsBySource],
