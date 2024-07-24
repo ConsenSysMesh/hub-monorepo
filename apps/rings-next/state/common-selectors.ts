@@ -41,8 +41,9 @@ export const selectRings = createSelector(
 );
 
 export const graphSelector = createSelector(
-    [selectRingEntities, selectUserEntities, selectRelationships],
-    (ringsById, usersById, selectRelationships) => {
+    [selectRingEntities, selectUserEntities, selectStonesByRingId, selectRelationships],
+    (ringsById, usersById, stonesByRingId, selectRelationships) => {
+
         const result = {...ringsById, ...usersById};
 
         Object.keys(ringsById).forEach((id) => {
@@ -51,6 +52,7 @@ export const graphSelector = createSelector(
                 name: result[id].data.objectAddBody.displayName,
                 children: [],
                 parents: [],
+                stones: stonesByRingId[id] || [],
             }
         });
 

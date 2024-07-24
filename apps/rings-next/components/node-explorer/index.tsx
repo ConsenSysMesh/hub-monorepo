@@ -14,7 +14,8 @@ import _ from 'lodash';
 import { string } from 'zod';
 import { graphSelector } from '@farcaster/rings-next/state/common-selectors';
 import { useCommonActions } from '@farcaster/rings-next/hooks/useCommonActions';
-
+import "./test.css";
+import { H5 } from 'tamagui';
 // /**
 //  * Computes the number of truthy filter items.
 //  * @param filter
@@ -98,12 +99,11 @@ const handleFocusRing = focusedId => function (data) { // Needs to be a function
 //     [Types.ObjectTemplate]: Colors.Red,
 //     [Types.Application]: Colors.Geekblue,
 //   };
-  
 
 const addCircle = (parent) => parent
   .append('circle')
   .attr('r', 1)
-  .attr('fill', node => `#00FFFF`)
+  .attr('fill', node => node.data.data ? `#FFD700` : '#008080')
   .attr('fill-opacity', node => (node.data._archivedOn ? 0.35 : 1))
   .attr('class', 'node-circle')
   .attr('node-id', n => n.id)
@@ -121,7 +121,7 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
   .each(handleFocusRing(focusedId))
   .call(group => group
     .select('.node-circle')
-      .attr('fill', node => `#00FFFF`)
+      .attr('fill', node => node.data.data ? `#FFD700` : '#008080')
       .attr('fill-opacity', node => (node.data._archivedOn ? 0.35 : 1)));
 
  const nodeExit = exit => exit
@@ -302,11 +302,13 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
       data,
       focusedNodeId,
       switchFocus,
+      setLabel,
     }: {
         mountId: string,
         data: any,
         focusedNodeId: string,
         switchFocus: any,
+        setLabel: any,
     }) => {
     // Actually private variables
     const expanded = {};
@@ -449,9 +451,9 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
         };
         nodes = expandNodes(focusedNodeId, 2, null);
         nodesById = _.keyBy(nodes, 'id');
-        this.render();
+        this.render(focusedNodeId);
       },
-      render: () => {
+      render: (focusedNodeId) => {
         let currNodeGroup = nodeGroup;
         let currLinkGroup = linkGroup;
         let currLabelGroup = labelGroup;
@@ -522,8 +524,8 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
           .selectAll('g')
           .data(nodes, node => node.id)
           .join(
-            nodeEnter(dragNode(currSimulation), getWidth, getHeight, focusedNode),
-            nodeUpdate(focusedNode),
+            nodeEnter(dragNode(currSimulation), getWidth, getHeight, focusedNodeId),
+            nodeUpdate(focusedNodeId),
             nodeExit,
           );
 
@@ -561,10 +563,15 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
               .attr('transform', 'translate(0, 0)')
               .each(buildLabel));
         renderedNodes.on('click', (event, clickedNode) => {
-            if (!clickedNode.data?.data?.objectAddBody && clickedNode.data.fid && clickedNode.data.fid !== focusedNode) {
+            if (!clickedNode.data?.data?.objectAddBody && clickedNode.data.fid && clickedNode.data.fid !== focusedNodeId) {
                 expanded[clickedNode.data.fid] = true;
                 setFid(clickedNode.data.fid)
                 switchFocus(clickedNode.data.fid);
+                setLabel('');
+            } else if (clickedNode.data?.data?.objectAddBody) {
+                let string = 'Stones: ';
+                clickedNode.data.stones.forEach((stone) => {string = `${string} ${stone.data.tagBody.content}`})
+                setLabel(string);
             }
         });
         currSimulation
@@ -625,7 +632,7 @@ const NodeExplorerWrapper = ({ children } : { children: any}) => {
     //         }
     //     }
     // });
-
+    const [label, setLabel] = useState("");
     const [focusedNodeId, setFocusedNodeId] = useState(String(fid));
     const { fetchUserRings } = useCommonActions();
 
@@ -641,7 +648,7 @@ const NodeExplorerWrapper = ({ children } : { children: any}) => {
         data: graphNodes,
         focusedNodeId,
         switchFocus,
-        // onReady,
+        setLabel,
         // degrees,
         // filter,
         // theme,
@@ -705,9 +712,12 @@ const NodeExplorerWrapper = ({ children } : { children: any}) => {
 
     return (
         // Tab index needs to be set in order to use the key down handler
-        <div id="node-explorer-root">
-            {children}
-        </div>
+        <>
+            <div id="node-explorer-root">
+                {children}
+            </div>
+            <H5>{label}</H5>
+        </>
     );
 };
 

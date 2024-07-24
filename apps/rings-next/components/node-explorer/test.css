@@ -1,0 +1,44 @@
+text {
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .node-circle {
+    pointer-events: none;
+  }
+
+  .interaction-ring {
+    fill: transparent;
+    stroke: transparent;
+    stroke-width: 5px;
+    transition: stroke ease-in-out 300ms, stroke-width ease-in-out 500ms;
+
+    &:hover {
+      stroke: rgba(101, 166, 186, 0.5);
+    }
+  }
+
+  .link-label-text {
+    fill: #999;
+    font-size: 8px;
+    text-anchor: middle;
+  }
+
+  .node-link {
+    stroke: #999;
+  }
+
+  .arrowhead {
+    fill: #999;
+  }
+
+  .focused-ring {
+    stroke: rgba(115, 131, 145, 0.5);
+    stroke-width: 5px;
+  }
+
+  .node-label {
+    fill: #fff;
+    font-size: 10px;
+    text-anchor: middle;
+  }
