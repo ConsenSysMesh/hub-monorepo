@@ -578,9 +578,9 @@ export class HttpAPIServer {
 
     // @doc-tag: /relationshipsByRelatedObjectRef?ref_type=Cast/Object/Fid,object_ref_network=...&object_ref_fid=...&object_ref_hash=...&ref_direction=Source/Target&type=...
     this.app.get<{ Querystring: {
-      ref_type: number,
-      object_ref_network: number, object_ref_fid: number, object_ref_hash: string,
-      ref_direction: number,
+      ref_type: string,
+      object_ref_network: string, object_ref_fid: string, object_ref_hash: string,
+      ref_direction: string,
       type: string,
     } & QueryPageParams }>(
       "/v1/relationshipsByRelatedObjectRef",
@@ -594,12 +594,17 @@ export class HttpAPIServer {
         const pageOptions = getPageOptions(request.query);
 
         let relatedObjectRef;
-        if (ref_type == ObjectRefTypes.FID) {
-          relatedObjectRef = ObjectRef.create({ fid: object_ref_fid });
-        } else if (object_ref_network && object_ref_fid && object_ref_hash) {
+        let refType = Number.parseInt(ref_type);
+        let refDirection = Number.parseInt(ref_direction) as RefDirection;
+        let fid = Number.parseInt(object_ref_fid);
+        let network = Number.parseInt(object_ref_network) as FarcasterNetwork;
+        if (refType == ObjectRefTypes.FID) {
+          relatedObjectRef = ObjectRef.create({ type: ObjectRefTypes.FID, fid });
+        } else if (object_ref_network && fid && object_ref_hash) {
           relatedObjectRef = ObjectRef.create({
-            network: object_ref_network as FarcasterNetwork,
-            fid: object_ref_fid,
+            type: ObjectRefTypes.OBJECT,
+            network: network,
+            fid,
             hash: hexStringToBytes(object_ref_hash).unwrapOr(new Uint8Array()),
           });
         } else {
@@ -613,7 +618,7 @@ export class HttpAPIServer {
           "getRelationshipsByRelatedObjectRef",
           {
             relatedObjectRef,
-            refDirection: ref_direction as RefDirection,
+            refDirection,
             type,
             ...pageOptions,
           },

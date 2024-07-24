@@ -15,6 +15,7 @@ interface SelectProps extends TSelectProps {
   onChange: (item: Item | undefined) => void;
   value: string;
   placeholder?: string;
+  disabled?: boolean;
 }
 
 interface SelectAvatarProps {
@@ -38,11 +39,11 @@ const Select: React.FC<SelectProps> = (props) => {
     items= [],
     value,
     onChange = () => {},
-    placeholder = 'Placeholder',
+    placeholder = 'Select a Stone',
+    disabled = false,
   } = props;
 
   const currentItem = useMemo(() => {
-    console.log(value);
     return items.find(i => i.id === value)
   }, [value])
 
@@ -53,7 +54,7 @@ const Select: React.FC<SelectProps> = (props) => {
 
   return (
     <TSelect value={value} onValueChange={onValueChange} disablePreventBodyScroll {...props}>
-      <TSelect.Trigger iconAfter={ChevronDown} paddingLeft="$3">
+      <TSelect.Trigger disabled={disabled} iconAfter={ChevronDown} width={150} paddingLeft="$3">
         <View
           flexDirection="row"
           alignItems="center"

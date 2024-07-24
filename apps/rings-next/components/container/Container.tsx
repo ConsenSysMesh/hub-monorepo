@@ -2,7 +2,7 @@ import { YStack } from 'tamagui';
 import config from "@farcaster/rings-next/tamagui.config";
 
 const DEFAULT_WIDTH = config.media.lg.maxWidth;
-const DEFAULT_MAX_WIDTH = '600px';
+const DEFAULT_MAX_WIDTH = '1000px';
 
 interface ContainerProps {
   children: React.ReactNode;
