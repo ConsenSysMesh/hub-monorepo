@@ -65,7 +65,9 @@ export default function HomePage() {
   const { fid, setFid } = useFid();
 
   useEffect(() => {
-    fetchUserRings(fid);
+    if (fid > 0) {
+      fetchUserRings(fid);
+    }
   }, [fid]);
 
   const ownedRings = rings.filter((r: Ring) => r.owner.fid === fid);

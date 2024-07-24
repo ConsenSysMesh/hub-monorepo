@@ -7,7 +7,7 @@ import React, {
 
 import { useLocalStorage } from "@farcaster/rings-next/hooks/useLocalStorage";
 import useEffectOnce from "@farcaster/rings-next/hooks/useEffectOnce";
-
+import { Fids } from "@farcaster/rings-next/constants";
 
 interface Props {
     children: ReactNode,
@@ -27,7 +27,7 @@ const FidProvider: React.FC<Props> = ({ children }) => {
     const { getItem, removeItem, setItem } = useLocalStorage();
 
     useEffectOnce(() => {
-        const t = Number(getItem(FID_KEY) || "0");
+        const t = Number(getItem(FID_KEY) || Fids[0]);
         if (t !== 0) {
           setFid(t);
         }
