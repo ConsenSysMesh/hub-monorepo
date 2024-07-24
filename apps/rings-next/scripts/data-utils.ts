@@ -7,7 +7,7 @@ import {
     makeTagAdd,
     Message,
 } from "@farcaster/hub-nodejs";
-import { RingObjectType, RelationshipTypes, StoneTagNames, StoneTypes } from "@farcaster/rings-next/types";
+import { RingObjectType, RelationshipTypes, StoneTagNames, StoneTypes } from "@farcaster/rings-next/types.d";
 
 export const getDataLayer = (client, dataOptions, ed25519Signer) => {
 
