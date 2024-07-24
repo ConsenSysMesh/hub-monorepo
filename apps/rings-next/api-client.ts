@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios';
-import { NETWORK, RelationshipTypes, SignersByFid } from '@farcaster/rings-next/constants';
+import { NETWORK, SignersByFid } from '@farcaster/rings-next/constants';
 import {
   ObjectRefTypes,
   RefDirection,
@@ -13,7 +13,7 @@ import {
   makeRelationshipAdd,
   makeRelationshipRemove,
 } from '@farcaster/hub-web';
-import { User } from '@farcaster/rings-next/types';
+import { User, RelationshipTypes } from '@farcaster/rings-next/types.d';
 import { convertHexHash } from '@farcaster/rings-next/state/utils';
 
 const API_HOST = process.env.NEXT_PUBLIC_API_URL;
