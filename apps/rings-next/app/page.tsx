@@ -18,11 +18,7 @@ import RingCard from "@farcaster/rings-next/components/ring/RingCard";
 import { Ring } from "@farcaster/rings-next/types";
 import Select, { Item as SelectItem } from '@farcaster/rings-next/components/select/Select';
 import { fidItems as fids } from '@farcaster/rings-next/constants';
-
-const HUB_URL = "http://127.0.0.1:2281"; // URL + Port of the Hub
-const FID = 773349;
-
-
+import { useFid } from "@farcaster/rings-next/provider/FidProvider";
 
 const TabsContent = (props: TabsContentProps) => {
   return (
@@ -65,8 +61,7 @@ export default function HomePage() {
   // const bots = useSelector(selectBots);
   // const isLoading = useSelector(selectBotsIsLoading);
 
-  const [fid, setFid] = useState(Number(process.env.NEXT_PUBLIC_FID_2));
-
+  const { fid, setFid } = useFid();
 
   useEffect(() => {
     fetchUserRings(fid);
@@ -75,7 +70,6 @@ export default function HomePage() {
   const ownedRings = rings.filter((r: Ring) => r.owner.fid === fid);
   const wornRings = rings.filter((r: Ring) => r.wearer?.fid === fid);
 
-  console.log(rings);
 
   return (
       <Container>

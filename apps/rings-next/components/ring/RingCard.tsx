@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
 import type { Ring } from "@farcaster/rings-next/types";
-import { StoneTypes } from "@farcaster/rings-next/types.d";
+import { StoneTagNames, StoneTypes } from "@farcaster/rings-next/types.d";
 import Select, { Item as SelectItem } from '@farcaster/rings-next/components/select/Select';
 import Title from "@farcaster/rings-next/components/title/Title";
 import { useRouter } from "next/navigation";
-import { fidItems } from '@farcaster/rings-next/constants';
+import { RelationshipTypes, fidItems } from '@farcaster/rings-next/constants';
 import {
     Button,
     ListItem,
-    XStack
+    XStack,
+    Spinner,
 } from 'tamagui';
 import { ChevronRight } from "@tamagui/lucide-icons";
 import { useForm, Controller } from 'react-hook-form';
-
+import { useStoneActions } from '@farcaster/rings-next/hooks/useStoneActions';
+import { useRelationshipActions } from '@farcaster/rings-next/hooks/useRelationshipActions';
+import { getObjectRefForMessage, getObjectRefForFid } from '@farcaster/rings-next/state/utils';
+import { useFid } from '@farcaster/rings-next/provider/FidProvider';
 interface RingCardProps {
   ring: Ring;
   id: number;
@@ -35,14 +39,17 @@ const RingCard: React.FC<RingCardProps> = ({ ring, id, editable = true, ...other
         formState: { errors, isDirty, dirtyFields },
     } = useForm({
         defaultValues: {
-            stone1: ring.stone?.data?.tagBody?.name,
-            stone2: '', //ring.stone?.data?.tagBody?.name,
-            stone3: '', //ring.stone?.data?.tagBody?.name,
+            stone1: ring.stone1?.data?.tagBody?.content,
+            stone2: ring.stone2?.data?.tagBody?.content,
+            stone3: ring.stone3?.data?.tagBody?.content,
             wearerFid: ring.wearer?.fid || 0
         },
     });
+    const { updateStone } = useStoneActions();
+    const { updateWearer } = useRelationshipActions();
 
     const [loading, setLoading] = useState(false);
+    const { fid } = useFid();
 
     const onError = (error: any) => {
         console.error(error);
@@ -54,23 +61,53 @@ const RingCard: React.FC<RingCardProps> = ({ ring, id, editable = true, ...other
         const { stone1: stone1Changed, stone2: stone2Changed, stone3: stone3Changed, wearerFid: wearerFidChanged } = dirtyFields;
     
         try {
+            // TODO: need to we aware of which FID is currently selected
+            const fid = fidItems[1].id as number;
+            const ringObjectRef = getObjectRefForMessage(ring.ring);
             if (stone1Changed) {
                 // Update Stone1 Tag
                 console.log(data.stone1);
+                
+                await updateStone(fid, {
+                  name: StoneTagNames.stone1,
+                  target: ringObjectRef,
+                  content: data.stone1
+                });
             }
             
             if (stone2Changed) {
                 // Update Stone2 Tag
                 console.log(data.stone2);
+                
+                await updateStone(fid, {
+                  name: StoneTagNames.stone2,
+                  target: ringObjectRef,
+                  content: data.stone2
+                });
             } 
             
             if (stone3Changed) {
                 // Update Stone3 Tag
                 console.log(data.stone3);
+
+                await updateStone(fid, {
+                  name: StoneTagNames.stone3,
+                  target: ringObjectRef,
+                  content: data.stone3
+                });
             }
             
             if (wearerFidChanged) {
                 // Update Wearer Relationship
+                
+                await updateWearer(fid, {
+                    type: RelationshipTypes.Wearer,
+                    source: ringObjectRef,
+                    target: getObjectRefForFid(data.wearerFid),
+                  },
+                  ring.wearerMsg,
+                );
+
                 console.log(data.wearerFid);
             }
         } finally {

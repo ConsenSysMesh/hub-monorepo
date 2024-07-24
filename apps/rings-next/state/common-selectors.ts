@@ -7,25 +7,32 @@ import { selectUsersById, selectUserEntities } from "@farcaster/rings-next/state
 import { selectStonesByRingId } from "@farcaster/rings-next/state/stones/selectors";
 import { selectRelationshipsBySource } from "@farcaster/rings-next/state/relationships/selectors";
 import { getObjectRefStoreId } from "@farcaster/rings-next/state/utils";
-import { Ring } from '@farcaster/rings-next/types';
+import { Ring, StoneTagNames } from '@farcaster/rings-next/types.d';
 
 export const selectRings = createSelector(
     [selectRingEntities, selectUserEntities, selectStonesByRingId, selectRelationshipsBySource],
     (ringsById, usersById, stonesByRingId, relationshipsBySource) => {
         const rings: Array<Ring> = [];
         for (let [ringId, ring] of _.entries(ringsById)) {
-            const rels = relationshipsBySource[ringId] as Array<Message>;
+            let rels = relationshipsBySource[ringId] as Array<Message>;
+            rels = _.orderBy(rels, r => r.data?.timestamp, 'desc'); // order latest records first
             const ownerRel = rels.find(r => r.data?.relationshipAddBody?.type === RelationshipTypes.Owner);
             const wearerRel = rels.find(r => r.data?.relationshipAddBody?.type === RelationshipTypes.Wearer);
             const owner = usersById[ownerRel?.data?.relationshipAddBody?.target?.fid];
             const wearer = usersById[wearerRel?.data?.relationshipAddBody?.target?.fid];
-            const stones = stonesByRingId[ringId] || [];
+            const stones = (stonesByRingId[ringId] || []) as Array<Message>;
+            const stone1 = stones.find(s => s.data?.tagBody?.name === StoneTagNames.stone1);
+            const stone2 = stones.find(s => s.data?.tagBody?.name === StoneTagNames.stone2);
+            const stone3 = stones.find(s => s.data?.tagBody?.name === StoneTagNames.stone3);
             rings.push({
                 ring,
                 owner,
                 wearer,
-                stone: stones[0], // assuming only one store for now
-            })
+                wearerMsg: wearerRel,
+                stone1,
+                stone2,
+                stone3,
+            });
         }
         return rings;
     },

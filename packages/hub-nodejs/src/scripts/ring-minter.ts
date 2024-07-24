@@ -163,17 +163,29 @@ enum StoneTypes {
   }
 
   // add ring Stone (Tag)
-  const addStoneTag = await makeTagAdd({
+  const addStone1Tag = await makeTagAdd({
     name: StoneTagNames.stone1,
     content: StoneTypes.Honesty,
     target: ringObjectRef,
   },
   dataOptions,
   ed25519Signer);
-  console.log('Tag add message', addStoneTag);
+  console.log('Tag add message', addStone1Tag);
 
-  const tagResult = await client.submitMessage(addStoneTag._unsafeUnwrap());
-  console.log('Stone tag created', tagResult._unsafeUnwrap().data?.TagBody);
+  const stone1TagResult = await client.submitMessage(addStone1Tag._unsafeUnwrap());
+  console.log('Stone1 tag created', stone1TagResult._unsafeUnwrap().data?.TagBody);
+
+  const addStone2Tag = await makeTagAdd({
+    name: StoneTagNames.stone2,
+    content: StoneTypes.Integrity,
+    target: ringObjectRef,
+  },
+  dataOptions,
+  ed25519Signer);
+  console.log('Tag add message', addStone2Tag);
+
+  const stone2TagResult = await client.submitMessage(addStone2Tag._unsafeUnwrap());
+  console.log('Stone2 tag created', stone2TagResult._unsafeUnwrap().data?.TagBody);
 
   const stoneTagQueryResult = await client.getTagsByTarget({ 
     target: ringObjectRef,

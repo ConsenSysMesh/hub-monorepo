@@ -81,14 +81,14 @@ function getCallObject<M extends keyof HubServiceServer>(
 }
 
 // Generic handler for grpc methods's responses
-function handleResponse<M>(reply: fastify.FastifyReply, obj: StaticEncodable<M>): sendUnaryData<M> {
+function handleResponse<M>(reply: fastify.FastifyReply, obj: StaticEncodable<M>, convertToStringKeys = true): sendUnaryData<M> {
   return (err, response) => {
     if (err) {
       reply.code(400).type("application/json").send(JSON.stringify(err));
     } else {
       if (response) {
         // Convert the protobuf object to JSON
-        const json = protoToJSON(response, obj);
+        const json = protoToJSON(response, obj, convertToStringKeys);
         reply.send(json);
       } else {
         reply.send(err);
@@ -142,7 +142,7 @@ const BACKWARDS_COMPATIBILITY_MAP: Record<string, string> = {
  * before returning them.
  */
 // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-function transformHash(obj: any): any {
+function transformHash(obj: any, convertToStringKeys = true): any {
   if (obj === null || typeof obj !== "object") {
     return obj;
   }
@@ -160,7 +160,7 @@ function transformHash(obj: any): any {
     if (obj.hasOwnProperty(key)) {
       if (toHexKeys.includes(key) && typeof obj[key] === "string") {
         obj[key] = convertB64ToHex(obj[key]);
-      } else if (toStringKeys.includes(key) && typeof obj[key] === "string") {
+      } else if (convertToStringKeys && toStringKeys.includes(key) && typeof obj[key] === "string") {
         obj[key] = Buffer.from(obj[key], "base64").toString("utf-8");
       } else if (toHexOrBase58Keys.includes(key) && typeof obj[key] === "string") {
         // We need to convert solana related bytes to base58
@@ -170,7 +170,7 @@ function transformHash(obj: any): any {
           obj[key] = convertB64ToHex(obj[key]);
         }
       } else if (typeof obj[key] === "object") {
-        transformHash(obj[key]);
+        transformHash(obj[key], convertToStringKeys);
       }
 
       const backwardsCompatibleName = BACKWARDS_COMPATIBILITY_MAP[key];
@@ -184,8 +184,8 @@ function transformHash(obj: any): any {
 }
 
 // Generic function to convert protobuf objects to JSON
-export function protoToJSON<T>(message: T, obj: StaticEncodable<T>): unknown {
-  return transformHash(obj.toJSON(message));
+export function protoToJSON<T>(message: T, obj: StaticEncodable<T>, convertToStringKeys = true): unknown {
+  return transformHash(obj.toJSON(message), convertToStringKeys);
 }
 
 // Get a protobuf enum value from a string or number
@@ -220,6 +220,30 @@ function getPageOptions(query: QueryPageParams): PageOptions {
     reverse: query.reverse ? true : undefined,
   };
 }
+
+const createObjectRef = (query: {
+  ref_type: string,
+  object_ref_network: string, object_ref_fid: string, object_ref_hash: string,
+}) => {
+  const { ref_type, object_ref_network, object_ref_fid, object_ref_hash } = query; 
+  let target;
+  let refType = Number.parseInt(ref_type);
+  let fid = Number.parseInt(object_ref_fid);
+  let network = Number.parseInt(object_ref_network) as FarcasterNetwork;
+  if (refType == ObjectRefTypes.FID) {
+    target = ObjectRef.create({ type: ObjectRefTypes.FID, fid });
+  } else if (object_ref_network && fid && object_ref_hash) {
+    target = ObjectRef.create({
+      type: ObjectRefTypes.OBJECT,
+      network: network,
+      fid,
+      hash: hexStringToBytes(object_ref_hash).unwrapOr(new Uint8Array()),
+    });
+  } else {
+    return;
+  }
+  return target;
+};
 
 export class HttpAPIServer {
   grpcImpl: HubServiceServer;
@@ -423,7 +447,7 @@ export class HttpAPIServer {
         request,
       );
 
-      this.grpcImpl.getTag(call, handleResponse(reply, Message));
+      this.grpcImpl.getTag(call, handleResponse(reply, Message, false));
     });
 
     // @doc-tag: /tagsByFid?fid=...&value=...
@@ -443,7 +467,7 @@ export class HttpAPIServer {
           request,
         );
 
-        this.grpcImpl.getTagsByFid(call, handleResponse(reply, MessagesResponse));
+        this.grpcImpl.getTagsByFid(call, handleResponse(reply, MessagesResponse, false));
       },
     );
 
@@ -469,26 +493,40 @@ export class HttpAPIServer {
     //   this.grpcImpl.getTagsByCast(call, handleResponse(reply, MessagesResponse));
     // });
 
-    // @doc-tag: /tagsByTarget?type=...&target=...&name=...
-    this.app.get<{ Querystring: { targetType: string; targetValue: string; name: string } & QueryPageParams }>(
+    // @doc-tag: /tagsByTarget?ref_type=Cast/Object/Fid,object_ref_network=...&object_ref_fid=...&object_ref_hash=...&name=...
+    this.app.get<{ Querystring: {
+      ref_type: string,
+      object_ref_network: string, object_ref_fid: string, object_ref_hash: string,
+      name: string
+    } & QueryPageParams }>(
       "/v1/tagsByTarget",
       (request, reply) => {
+        const {
+          ref_type,          
+          name,
+        } = request.query;
         const pageOptions = getPageOptions(request.query);
 
-        // TODO: Fix this
+        let target = createObjectRef(request.query);
+        if (!target) {
+          reply.code(400).send({
+            error: "Invalid URL params",
+            errorDetail: `For ${ref_type} object reference type, object_ref_network, object_ref_hash and object_ref_hash are required`,
+          });
+          return;
+        }
+
         const call = getCallObject(
           "getTagsByTarget",
           {
-            target: {
-              fid: 301932,
-            },
-            name: request.query.name,
+            target,
+            name,
             ...pageOptions,
           },
           request,
         );
 
-        this.grpcImpl.getTagsByTarget(call, handleResponse(reply, MessagesResponse));
+        this.grpcImpl.getTagsByTarget(call, handleResponse(reply, MessagesResponse, false));
       },
     );
 
@@ -513,7 +551,7 @@ export class HttpAPIServer {
         request,
       );
 
-      this.grpcImpl.getObject(call, handleResponse(reply, ObjectResponse));
+      this.grpcImpl.getObject(call, handleResponse(reply, ObjectResponse, false));
     });
 
     // @doc-tag: /objectsByFid?fid=...&type=...
@@ -532,7 +570,7 @@ export class HttpAPIServer {
           },
           request,
         );
-        this.grpcImpl.getObjectsByFid(call, handleResponse(reply, ObjectResponseList));
+        this.grpcImpl.getObjectsByFid(call, handleResponse(reply, ObjectResponseList, false));
       },
     );
 
@@ -587,27 +625,15 @@ export class HttpAPIServer {
       (request, reply) => {
         const {
           ref_type,          
-          object_ref_network, object_ref_fid, object_ref_hash,
           ref_direction,
           type,
         } = request.query;
         const pageOptions = getPageOptions(request.query);
 
-        let relatedObjectRef;
-        let refType = Number.parseInt(ref_type);
+        let relatedObjectRef = createObjectRef(request.query);
+        
         let refDirection = Number.parseInt(ref_direction) as RefDirection;
-        let fid = Number.parseInt(object_ref_fid);
-        let network = Number.parseInt(object_ref_network) as FarcasterNetwork;
-        if (refType == ObjectRefTypes.FID) {
-          relatedObjectRef = ObjectRef.create({ type: ObjectRefTypes.FID, fid });
-        } else if (object_ref_network && fid && object_ref_hash) {
-          relatedObjectRef = ObjectRef.create({
-            type: ObjectRefTypes.OBJECT,
-            network: network,
-            fid,
-            hash: hexStringToBytes(object_ref_hash).unwrapOr(new Uint8Array()),
-          });
-        } else {
+        if (!relatedObjectRef) {
           reply.code(400).send({
             error: "Invalid URL params",
             errorDetail: `For ${ref_type} object reference type, object_ref_network, object_ref_hash and object_ref_hash are required`,

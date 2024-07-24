@@ -4,7 +4,7 @@ import { fetchUserRings } from '@farcaster/rings-next/state/common-actions';
 import { User } from "@farcaster/rings-next/types";
 
 export const usersAdapter = createEntityAdapter({
-    selectId: (users: User) => users.fid,
+    selectId: (user: User) => user.fid,
 });
 const initialState = usersAdapter.getInitialState({
     isLoading: false,
