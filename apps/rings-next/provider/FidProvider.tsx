@@ -5,6 +5,10 @@ import React, {
     ReactNode,
 } from "react";
 
+import { useLocalStorage } from "@farcaster/rings-next/hooks/useLocalStorage";
+import useEffectOnce from "@farcaster/rings-next/hooks/useEffectOnce";
+
+
 interface Props {
     children: ReactNode,
 }
@@ -16,11 +20,26 @@ type FidContextProps = {
 
 const FidContext = createContext({});
 
+const FID_KEY = 'FID';
+
 const FidProvider: React.FC<Props> = ({ children }) => {
-    const [fid, setFid] = useState(Number(process.env.NEXT_PUBLIC_FID_2));
+    const [fid, setFid] = useState(0);
+    const { getItem, removeItem, setItem } = useLocalStorage();
+
+    useEffectOnce(() => {
+        const t = Number(getItem(FID_KEY) || "0");
+        if (t !== 0) {
+          setFid(t);
+        }
+    });
+
+    const setFidAndLocalStore = (fid: number) => {
+        setFid(fid);
+        setItem(FID_KEY, fid.toString());
+    }
 
     return (
-      <FidContext.Provider value={{ fid, setFid }}>
+      <FidContext.Provider value={{ fid, setFid: setFidAndLocalStore }}>
         {children}
       </FidContext.Provider>
     );
