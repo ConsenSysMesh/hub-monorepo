@@ -341,7 +341,7 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
     }, [window]);
   
     const getWidth = () => mountNode.clientWidth;
-    const getHeight = () => mountNode.clientHeight;
+    const getHeight = () => 800;
 
 
     const dragNode = (simulation) => (drag) => drag
@@ -460,7 +460,7 @@ const nodeEnter = (dragNode, width, height, focusedId) => enter => enter
         let currSimulation = simulation;
         if (!svg) {
           width = mountNode.clientWidth;
-          height = 400;
+          height = 800;
           let transform = { x: 0, y: 0, k: 1 };
           const newSvg = d3.select(`#${mountId}`)
             .append('svg')
@@ -715,8 +715,9 @@ const NodeExplorerWrapper = ({ children } : { children: any}) => {
         <>
             <div id="node-explorer-root">
                 {children}
+                <H5>{label}</H5>
+
             </div>
-            <H5>{label}</H5>
         </>
     );
 };
