@@ -654,6 +654,10 @@ const NodeExplorerWrapper = ({ children } : { children: any}) => {
         // theme,
     });
 
+    useEffect(() => {
+        setFocusedNodeId(String(fid));
+    }, [fid]);
+
     // const loadAdjacencies = (props) => {
     //     const { currentUser, focusedId, degrees, loadAdjacencies, filter } = props;
     //     const id = focusedId || currentUser?._id;
