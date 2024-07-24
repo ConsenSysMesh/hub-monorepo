@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import type { Ring } from "@farcaster/rings-next/types";
-import { StoneTagNames, StoneTypes } from "@farcaster/rings-next/types.d";
+import { StoneTagNames, StoneTypes, RelationshipTypes } from "@farcaster/rings-next/types.d";
 import Select, { Item as SelectItem } from '@farcaster/rings-next/components/select/Select';
 import Title from "@farcaster/rings-next/components/title/Title";
 import { useRouter } from "next/navigation";
-import { RelationshipTypes, fidItems } from '@farcaster/rings-next/constants';
+import { fidItems } from '@farcaster/rings-next/constants';
 import {
     Button,
     ListItem,
