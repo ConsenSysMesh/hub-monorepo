@@ -8,11 +8,6 @@ import { Item as SelectItem } from '@farcaster/rings-next/components/select/Sele
 
 export const NETWORK = FarcasterNetwork.DEVNET;
 
-export enum RelationshipTypes {
-  Owner = 'owner',
-  Wearer = 'wearer',
-}
-
 export const Fids = [process.env.NEXT_PUBLIC_FID_1 as string, process.env.NEXT_PUBLIC_FID_2 as string, process.env.NEXT_PUBLIC_FID_3 as string];
 export const Pks = [process.env.NEXT_PUBLIC_PRIVATE_KEY_1 as string, process.env.NEXT_PUBLIC_PRIVATE_KEY_2 as string, process.env.NEXT_PUBLIC_PRIVATE_KEY_3 as string];
 

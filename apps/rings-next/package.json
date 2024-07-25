@@ -9,12 +9,16 @@
     "serve": "NODE_ENV=production next start --port 3000",
     "lint": "next lint",
     "tamagui-build": "tamagui-build --skip-types",
-    "tamagui-watch": "tamagui-build --skip-types --watch"
+    "tamagui-watch": "tamagui-build --skip-types --watch",
+    "mint-ring": "tsx scripts/ring-minter.ts"
   },
   "dependencies": {
     "@coinbase/onchainkit": "^0.13.0",
     "@farcaster/auth-kit": "^0.2.1",
+    "@farcaster/hub-web": "^0.9.0",
+    "@farcaster/hub-nodejs": "^0.11.11",
     "@hookform/resolvers": "^3.3.4",
+    "@noble/hashes": "^1.3.0",
     "@react-native-clipboard/clipboard": "^1.14.0",
     "@reduxjs/toolkit": "^2.2.3",
     "@rehookify/datepicker": "^6.6.1",
@@ -27,10 +31,10 @@
     "@tamagui/shorthands": "^1.94.3",
     "@tamagui/themes": "^1.94.3",
     "@tamagui/toast": "^1.94.3",
-    "@farcaster/hub-web": "^0.9.0",
     "axios": "^1.6.8",
     "bufferutil": "^4.0.8",
     "burnt": "^0.12.1",
+    "d3": "^7.9.0",
     "expo-linking": "~5.0.2",
     "lodash": "^4.17.21",
     "next": "^13.5.2",
@@ -54,6 +58,8 @@
   "devDependencies": {
     "@tamagui/build": "^1.94.3",
     "@tamagui/next-plugin": "^1.94.3",
+    "@types/d3": "^7.4.3",
+    "@types/lodash": "^4.17.7",
     "@types/node": "^18.6.4",
     "@types/react": "^18.0.27",
     "@types/react-native": "^0.71.3",

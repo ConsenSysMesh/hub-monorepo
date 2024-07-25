@@ -19,6 +19,7 @@ import { Ring } from "@farcaster/rings-next/types";
 import Select, { Item as SelectItem } from '@farcaster/rings-next/components/select/Select';
 import { fidItems as fids } from '@farcaster/rings-next/constants';
 import { useFid } from "@farcaster/rings-next/provider/FidProvider";
+import NodeExplorer from "@farcaster/rings-next/components/node-explorer";
 
 const TabsContent = (props: TabsContentProps) => {
   return (
@@ -64,7 +65,9 @@ export default function HomePage() {
   const { fid, setFid } = useFid();
 
   useEffect(() => {
-    fetchUserRings(fid);
+    if (fid > 0) {
+      fetchUserRings(fid);
+    }
   }, [fid]);
 
   const ownedRings = rings.filter((r: Ring) => r.owner.fid === fid);
@@ -177,6 +180,7 @@ export default function HomePage() {
 
         <TabsContent value="tab2">
           <H5>Node Explorer</H5>
+          <NodeExplorer/>
         </TabsContent>
       </Tabs>
 
