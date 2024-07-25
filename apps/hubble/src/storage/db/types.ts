@@ -78,6 +78,9 @@ export enum RootPrefix {
 
   /* Used to index fname username proofs by fid */
   FNameUserNameProofByFid = 27,
+
+  /* Used to index reactions by target */
+  TagsByTarget = 28,
 }
 
 /**
@@ -101,6 +104,16 @@ export enum UserPostfix {
   UsernameProofMessage = 7,
 
   // Add new message types here
+
+  /* Tag */
+  TagMessage = 8,
+
+  /* Generic Object */
+  ObjectMessage = 9,
+
+  /* Generic Relationship */
+  RelationshipMessage = 10,
+
   // NOTE: If you add a new message type, make sure that it is only used to store Message protobufs.
   // If you need to store an index, use one of the UserPostfix values below (>86).
 
@@ -136,6 +149,18 @@ export enum UserPostfix {
 
   /* Link Compact State set */
   LinkCompactStateMessage = 100,
+
+  /** TagStore add and remove sets */
+  TagAdds = 101,
+  TagRemoves = 102,
+
+  /** ObjectStore add and remove sets */
+  ObjectAdds = 103,
+  ObjectRemoves = 104,
+
+  /** RelationshipStore add and remove sets */
+  RelationshipAdds = 105,
+  RelationshipRemoves = 106,
 }
 
 export enum OnChainEventPostfix {
@@ -160,4 +185,7 @@ export type UserMessagePostfix =
   | UserPostfix.ReactionMessage
   | UserPostfix.UserDataMessage
   | UserPostfix.UsernameProofMessage
+  | UserPostfix.TagMessage
+  | UserPostfix.ObjectMessage
+  | UserPostfix.RelationshipMessage
   | UserPostfix.LinkCompactStateMessage;

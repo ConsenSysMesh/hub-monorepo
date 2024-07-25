@@ -8,7 +8,7 @@
     "indentSize": 2,
     "indentStyle": "space",
     "lineWidth": 120,
-    "ignore": ["src/generated/*.ts"]
+    "ignore": ["src/generated/*.ts","src/scripts/*.ts"]
   },
   "linter": {
     "enabled": true,

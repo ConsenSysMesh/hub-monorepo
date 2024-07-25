@@ -113,6 +113,18 @@ export const typeToSetPostfix = (type: MessageType): UserMessagePostfix => {
     return UserPostfix.LinkCompactStateMessage;
   }
 
+  if (type === MessageType.TAG_ADD || type === MessageType.TAG_REMOVE) {
+    return UserPostfix.TagMessage;
+  }
+
+  if (type === MessageType.OBJECT_ADD || type === MessageType.OBJECT_REMOVE) {
+    return UserPostfix.ObjectMessage;
+  }
+
+  if (type === MessageType.RELATIONSHIP_ADD || type === MessageType.RELATIONSHIP_REMOVE) {
+    return UserPostfix.RelationshipMessage;
+  }
+
   throw new Error(`invalid type: ${type}`);
 };
 

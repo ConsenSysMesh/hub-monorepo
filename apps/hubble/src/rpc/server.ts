@@ -4,6 +4,8 @@ import {
   CastRemoveMessage,
   ContactInfoResponse,
   DbStats,
+  ObjectResponse,
+  ObjectResponseList,
   FidsResponse,
   getServer,
   HubError,
@@ -19,6 +21,10 @@ import {
   Metadata,
   ReactionAddMessage,
   ReactionRemoveMessage,
+  TagAddMessage,
+  TagRemoveMessage,
+  ObjectAddMessage,
+  RelationshipAddMessage,
   Server as GrpcServer,
   ServerCredentials,
   ServiceError,
@@ -858,6 +864,83 @@ export default class Server {
           },
         );
       },
+      getTag: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getTag", req: call.request }, `RPC call from ${peer}`);
+
+        const request = call.request;
+
+        const reactionResult = await this.engine?.getTag(
+          request.fid,
+          request.value,
+          request.targetCastId ?? request.targetUrl ?? "",
+        );
+        reactionResult?.match(
+          (tag: TagAddMessage) => {
+            callback(null, tag);
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getTagsByFid: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getTagsByFid", req: call.request }, `RPC call from ${peer}`);
+
+        const { fid, value, pageSize, pageToken, reverse } = call.request;
+        const tagsResult = await this.engine?.getTagsByFid(fid, value, {
+          pageSize,
+          pageToken,
+          reverse,
+        });
+        tagsResult?.match(
+          (page: MessagesPage<TagAddMessage>) => {
+            callback(null, messagesPageToResponse(page));
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getTagsByCast: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getTagsByCast", req: call.request }, `RPC call from ${peer}`);
+
+        const { target, fid, name, pageSize, pageToken, reverse } = call.request;
+        const reactionsResult = await this.engine?.getTagsByTarget(target, fid, name, {
+          pageSize,
+          pageToken,
+          reverse,
+        });
+        reactionsResult?.match(
+          (page: MessagesPage<TagAddMessage>) => {
+            callback(null, messagesPageToResponse(page));
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getTagsByTarget: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getTagsByTarget", req: call.request }, `RPC call from ${peer}`);
+
+        const { target, fid, name, pageSize, pageToken, reverse } = call.request;
+        const reactionsResult = await this.engine?.getTagsByTarget(target, fid, name, {
+          pageSize,
+          pageToken,
+          reverse,
+        });
+        reactionsResult?.match(
+          (page: MessagesPage<TagAddMessage>) => {
+            callback(null, messagesPageToResponse(page));
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
       getUserData: async (call, callback) => {
         const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
         log.debug({ method: "getUserData", req: call.request }, `RPC call from ${peer}`);
@@ -868,6 +951,106 @@ export default class Server {
         userDataResult?.match(
           (userData: UserDataAddMessage) => {
             callback(null, userData);
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getObject: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getObject", req: call.request }, `RPC call from ${peer}`);
+
+        const request = call.request;
+
+        let tagOptions = request.tagOptions || {
+          includeTags: false,
+          creatorTagsOnly: true,
+        };
+
+        const objectAddResult = await this.engine?.getObject(request.fid, request.hash, tagOptions);
+        objectAddResult?.match(
+          (objectResponse: ObjectResponse) => {
+            callback(null, objectResponse);
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getObjectsByFid: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getObjectsByFid", req: call.request }, `RPC call from ${peer}`);
+
+        const { fid, type, tagOptions, pageSize, pageToken, reverse } = call.request;
+
+        const castsResult = await this.engine?.getObjectsByFid(fid, type, tagOptions, {
+          pageSize,
+          pageToken,
+          reverse,
+        });
+        castsResult?.match(
+          (page: ObjectResponseList) => {
+            callback(null, page);
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getRelationship: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getRelationship", req: call.request }, `RPC call from ${peer}`);
+
+        const request = call.request;
+
+        const relationshipAddResult = await this.engine?.getRelationship(request.fid, request.hash);
+        relationshipAddResult?.match(
+          (objectAdd: RelationshipAddMessage) => {
+            callback(null, objectAdd);
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getRelationshipsByFid: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getRelationshipsByFid", req: call.request }, `RPC call from ${peer}`);
+
+        const { fid, type, pageSize, pageToken, reverse } = call.request;
+
+        const relationshipsResult = await this.engine?.getRelationshipsByFid(fid, type, {
+          pageSize,
+          pageToken,
+          reverse,
+        });
+        relationshipsResult?.match(
+          (page: MessagesPage<RelationshipAddMessage>) => {
+            callback(null, messagesPageToResponse(page));
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getRelationshipsByRelatedObjectRef: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getRelationshipsByRelatedObjectRef", req: call.request }, `RPC call from ${peer}`);
+
+        const { relatedObjectRef, refDirection, type, pageSize, pageToken, reverse } = call.request;
+
+        const relationshipsResult = await this.engine?.getRelationshipsByRelatedObjectRef(
+          refDirection,
+          relatedObjectRef,
+          type, {
+            pageSize,
+            pageToken,
+            reverse,
+        });
+        relationshipsResult?.match(
+          (page: MessagesPage<RelationshipAddMessage>) => {
+            callback(null, messagesPageToResponse(page));
           },
           (err: HubError) => {
             callback(toServiceError(err));
@@ -1156,6 +1339,25 @@ export default class Server {
         });
         result?.match(
           (page: MessagesPage<ReactionAddMessage | ReactionRemoveMessage>) => {
+            callback(null, messagesPageToResponse(page));
+          },
+          (err: HubError) => {
+            callback(toServiceError(err));
+          },
+        );
+      },
+      getAllTagMessagesByFid: async (call, callback) => {
+        const peer = Result.fromThrowable(() => call.getPeer())().unwrapOr("unknown");
+        log.debug({ method: "getAllTagMessagesByFid", req: call.request }, `RPC call from ${peer}`);
+
+        const { fid, pageSize, pageToken, reverse } = call.request;
+        const result = await this.engine?.getAllTagMessagesByFid(fid, {
+          pageSize,
+          pageToken,
+          reverse,
+        });
+        result?.match(
+          (page: MessagesPage<TagAddMessage | TagRemoveMessage>) => {
             callback(null, messagesPageToResponse(page));
           },
           (err: HubError) => {

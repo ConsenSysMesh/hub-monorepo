@@ -14,7 +14,7 @@ import {
   UntypedServiceImplementation,
 } from "@grpc/grpc-js";
 import { HubEvent } from "./hub_event";
-import { CastId, Message } from "./message";
+import { CastId, Message, ObjectId } from "./message";
 import { OnChainEvent } from "./onchain_event";
 import {
   CastsByParentRequest,
@@ -31,17 +31,26 @@ import {
   LinksByFidRequest,
   LinksByTargetRequest,
   MessagesResponse,
+  ObjectRequest,
+  ObjectResponse,
+  ObjectResponseList,
+  ObjectsByFidRequest,
   OnChainEventRequest,
   OnChainEventResponse,
   ReactionRequest,
   ReactionsByFidRequest,
   ReactionsByTargetRequest,
+  RelationshipsByFidRequest,
+  RelationshipsByRelatedObjectRefRequest,
   SignerRequest,
   StorageLimitsResponse,
   SubscribeRequest,
   SyncIds,
   SyncStatusRequest,
   SyncStatusResponse,
+  TagRequest,
+  TagsByFidRequest,
+  TagsByTargetRequest,
   TrieNodeMetadataResponse,
   TrieNodePrefix,
   TrieNodeSnapshotResponse,
@@ -176,6 +185,102 @@ export const HubServiceService = {
     responseStream: false,
     requestSerialize: (value: ReactionsByTargetRequest) => Buffer.from(ReactionsByTargetRequest.encode(value).finish()),
     requestDeserialize: (value: Buffer) => ReactionsByTargetRequest.decode(value),
+    responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
+  },
+  /**
+   * Tags
+   * @http-api: tagById
+   */
+  getTag: {
+    path: "/HubService/GetTag",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: TagRequest) => Buffer.from(TagRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => TagRequest.decode(value),
+    responseSerialize: (value: Message) => Buffer.from(Message.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => Message.decode(value),
+  },
+  getTagsByFid: {
+    path: "/HubService/GetTagsByFid",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: TagsByFidRequest) => Buffer.from(TagsByFidRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => TagsByFidRequest.decode(value),
+    responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
+  },
+  /** To be deprecated */
+  getTagsByCast: {
+    path: "/HubService/GetTagsByCast",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: TagsByTargetRequest) => Buffer.from(TagsByTargetRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => TagsByTargetRequest.decode(value),
+    responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
+  },
+  getTagsByTarget: {
+    path: "/HubService/GetTagsByTarget",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: TagsByTargetRequest) => Buffer.from(TagsByTargetRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => TagsByTargetRequest.decode(value),
+    responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
+  },
+  /**
+   * Objects
+   * @http-api: objectById
+   */
+  getObject: {
+    path: "/HubService/GetObject",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: ObjectRequest) => Buffer.from(ObjectRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => ObjectRequest.decode(value),
+    responseSerialize: (value: ObjectResponse) => Buffer.from(ObjectResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => ObjectResponse.decode(value),
+  },
+  getObjectsByFid: {
+    path: "/HubService/GetObjectsByFid",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: ObjectsByFidRequest) => Buffer.from(ObjectsByFidRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => ObjectsByFidRequest.decode(value),
+    responseSerialize: (value: ObjectResponseList) => Buffer.from(ObjectResponseList.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => ObjectResponseList.decode(value),
+  },
+  /**
+   * Relationships
+   * @http-api: relationshipById
+   */
+  getRelationship: {
+    path: "/HubService/GetRelationship",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: ObjectId) => Buffer.from(ObjectId.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => ObjectId.decode(value),
+    responseSerialize: (value: Message) => Buffer.from(Message.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => Message.decode(value),
+  },
+  getRelationshipsByFid: {
+    path: "/HubService/GetRelationshipsByFid",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: RelationshipsByFidRequest) =>
+      Buffer.from(RelationshipsByFidRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => RelationshipsByFidRequest.decode(value),
+    responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
+  },
+  getRelationshipsByRelatedObjectRef: {
+    path: "/HubService/GetRelationshipsByRelatedObjectRef",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: RelationshipsByRelatedObjectRefRequest) =>
+      Buffer.from(RelationshipsByRelatedObjectRefRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => RelationshipsByRelatedObjectRefRequest.decode(value),
     responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
     responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
   },
@@ -375,6 +480,16 @@ export const HubServiceService = {
     responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
   },
   /** @http-api: none */
+  getAllTagMessagesByFid: {
+    path: "/HubService/GetAllTagMessagesByFid",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: FidRequest) => Buffer.from(FidRequest.encode(value).finish()),
+    requestDeserialize: (value: Buffer) => FidRequest.decode(value),
+    responseSerialize: (value: MessagesResponse) => Buffer.from(MessagesResponse.encode(value).finish()),
+    responseDeserialize: (value: Buffer) => MessagesResponse.decode(value),
+  },
+  /** @http-api: none */
   getAllVerificationMessagesByFid: {
     path: "/HubService/GetAllVerificationMessagesByFid",
     requestStream: false,
@@ -507,6 +622,28 @@ export interface HubServiceServer extends UntypedServiceImplementation {
   getReactionsByCast: handleUnaryCall<ReactionsByTargetRequest, MessagesResponse>;
   getReactionsByTarget: handleUnaryCall<ReactionsByTargetRequest, MessagesResponse>;
   /**
+   * Tags
+   * @http-api: tagById
+   */
+  getTag: handleUnaryCall<TagRequest, Message>;
+  getTagsByFid: handleUnaryCall<TagsByFidRequest, MessagesResponse>;
+  /** To be deprecated */
+  getTagsByCast: handleUnaryCall<TagsByTargetRequest, MessagesResponse>;
+  getTagsByTarget: handleUnaryCall<TagsByTargetRequest, MessagesResponse>;
+  /**
+   * Objects
+   * @http-api: objectById
+   */
+  getObject: handleUnaryCall<ObjectRequest, ObjectResponse>;
+  getObjectsByFid: handleUnaryCall<ObjectsByFidRequest, ObjectResponseList>;
+  /**
+   * Relationships
+   * @http-api: relationshipById
+   */
+  getRelationship: handleUnaryCall<ObjectId, Message>;
+  getRelationshipsByFid: handleUnaryCall<RelationshipsByFidRequest, MessagesResponse>;
+  getRelationshipsByRelatedObjectRef: handleUnaryCall<RelationshipsByRelatedObjectRefRequest, MessagesResponse>;
+  /**
    * User Data
    * @http-api: none
    */
@@ -556,6 +693,8 @@ export interface HubServiceServer extends UntypedServiceImplementation {
   getAllCastMessagesByFid: handleUnaryCall<FidRequest, MessagesResponse>;
   /** @http-api: none */
   getAllReactionMessagesByFid: handleUnaryCall<FidRequest, MessagesResponse>;
+  /** @http-api: none */
+  getAllTagMessagesByFid: handleUnaryCall<FidRequest, MessagesResponse>;
   /** @http-api: none */
   getAllVerificationMessagesByFid: handleUnaryCall<FidRequest, MessagesResponse>;
   /** @http-api: none */
@@ -752,6 +891,151 @@ export interface HubServiceClient extends Client {
   ): ClientUnaryCall;
   getReactionsByTarget(
     request: ReactionsByTargetRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  /**
+   * Tags
+   * @http-api: tagById
+   */
+  getTag(request: TagRequest, callback: (error: ServiceError | null, response: Message) => void): ClientUnaryCall;
+  getTag(
+    request: TagRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: Message) => void,
+  ): ClientUnaryCall;
+  getTag(
+    request: TagRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: Message) => void,
+  ): ClientUnaryCall;
+  getTagsByFid(
+    request: TagsByFidRequest,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getTagsByFid(
+    request: TagsByFidRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getTagsByFid(
+    request: TagsByFidRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  /** To be deprecated */
+  getTagsByCast(
+    request: TagsByTargetRequest,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getTagsByCast(
+    request: TagsByTargetRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getTagsByCast(
+    request: TagsByTargetRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getTagsByTarget(
+    request: TagsByTargetRequest,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getTagsByTarget(
+    request: TagsByTargetRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getTagsByTarget(
+    request: TagsByTargetRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  /**
+   * Objects
+   * @http-api: objectById
+   */
+  getObject(
+    request: ObjectRequest,
+    callback: (error: ServiceError | null, response: ObjectResponse) => void,
+  ): ClientUnaryCall;
+  getObject(
+    request: ObjectRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ObjectResponse) => void,
+  ): ClientUnaryCall;
+  getObject(
+    request: ObjectRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: ObjectResponse) => void,
+  ): ClientUnaryCall;
+  getObjectsByFid(
+    request: ObjectsByFidRequest,
+    callback: (error: ServiceError | null, response: ObjectResponseList) => void,
+  ): ClientUnaryCall;
+  getObjectsByFid(
+    request: ObjectsByFidRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: ObjectResponseList) => void,
+  ): ClientUnaryCall;
+  getObjectsByFid(
+    request: ObjectsByFidRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: ObjectResponseList) => void,
+  ): ClientUnaryCall;
+  /**
+   * Relationships
+   * @http-api: relationshipById
+   */
+  getRelationship(
+    request: ObjectId,
+    callback: (error: ServiceError | null, response: Message) => void,
+  ): ClientUnaryCall;
+  getRelationship(
+    request: ObjectId,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: Message) => void,
+  ): ClientUnaryCall;
+  getRelationship(
+    request: ObjectId,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: Message) => void,
+  ): ClientUnaryCall;
+  getRelationshipsByFid(
+    request: RelationshipsByFidRequest,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getRelationshipsByFid(
+    request: RelationshipsByFidRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getRelationshipsByFid(
+    request: RelationshipsByFidRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getRelationshipsByRelatedObjectRef(
+    request: RelationshipsByRelatedObjectRefRequest,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getRelationshipsByRelatedObjectRef(
+    request: RelationshipsByRelatedObjectRefRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getRelationshipsByRelatedObjectRef(
+    request: RelationshipsByRelatedObjectRefRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: MessagesResponse) => void,
@@ -1050,6 +1334,22 @@ export interface HubServiceClient extends Client {
     callback: (error: ServiceError | null, response: MessagesResponse) => void,
   ): ClientUnaryCall;
   getAllReactionMessagesByFid(
+    request: FidRequest,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  /** @http-api: none */
+  getAllTagMessagesByFid(
+    request: FidRequest,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getAllTagMessagesByFid(
+    request: FidRequest,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: MessagesResponse) => void,
+  ): ClientUnaryCall;
+  getAllTagMessagesByFid(
     request: FidRequest,
     metadata: Metadata,
     options: Partial<CallOptions>,

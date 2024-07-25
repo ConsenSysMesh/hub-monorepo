@@ -1,5 +1,5 @@
 import * as protobufs from "./protobufs";
-import { Protocol, UserNameType } from "./protobufs";
+import { Protocol, UserNameType, ObjectRefTypes } from "./protobufs";
 import { blake3 } from "@noble/hashes/blake3";
 import { err, ok, Result } from "neverthrow";
 import { bytesCompare, bytesToUtf8String, utf8StringToBytes } from "./bytes";
@@ -354,6 +354,20 @@ export const validateMessageData = async <T extends protobufs.MessageData>(
     bodyResult = validateUsernameProofBody(data.usernameProofBody, data);
   } else if (validType.value === protobufs.MessageType.FRAME_ACTION && !!data.frameActionBody) {
     bodyResult = validateFrameActionBody(data.frameActionBody);
+  } else if (
+    (validType.value === protobufs.MessageType.TAG_ADD ||
+      validType.value === protobufs.MessageType.TAG_REMOVE) &&
+    !!data.tagBody
+  ) {
+    bodyResult = validateTagBody(data.tagBody);
+  } else if (validType.value === protobufs.MessageType.OBJECT_ADD && !!data.objectAddBody) {
+    bodyResult = validateObjectAddBody(data.objectAddBody);
+  } else if (validType.value === protobufs.MessageType.OBJECT_REMOVE && !!data.objectRemoveBody) {
+    bodyResult = validateObjectRemoveBody(data.objectRemoveBody);
+  } else if (validType.value === protobufs.MessageType.RELATIONSHIP_ADD && !!data.relationshipAddBody) {
+    bodyResult = validateRelationshipAddBody(data.relationshipAddBody);
+  } else if (validType.value === protobufs.MessageType.RELATIONSHIP_REMOVE && !!data.relationshipRemoveBody) {
+    bodyResult = validateRelationshipRemoveBody(data.relationshipRemoveBody);
   } else {
     return err(new HubError("bad_request.invalid_param", "bodyType is invalid"));
   }
@@ -623,6 +637,39 @@ export const validateReactionType = (type: number): HubResult<protobufs.Reaction
   return ok(type);
 };
 
+// JERRY-TODO: determine reasonable max tag name/content size
+export const validateTagNameAndContent = (name: string, content?: string): HubResult<Boolean> => {
+  const nameBuffer = Buffer.from(name);
+  const contentBuffer = Buffer.from(name);
+  if (nameBuffer.length === 0 || nameBuffer.length > 8) {
+    return err(new HubError("bad_request.validation_failure", "tag name must be between 1-8 bytes"));
+  }
+  
+  if (contentBuffer.length > 100) {
+    return err(new HubError("bad_request.validation_failure", "tag content must be less than 100 bytes"));
+  }
+
+  return ok(true);
+};
+
+// VLAD-TODO: determine reasonable max object type size (1-64 chars for now)
+export const validateObjectType = (type: string): HubResult<string> => {
+  if (type.length === 0 || type.length > 64) {
+    return err(new HubError("bad_request.validation_failure", "invalid object type (must be 1-64 characters)"));
+  }
+
+  return ok(type);
+};
+
+// VLAD-TODO: determine reasonable max relationship type size (1-64 chars for now)
+export const validateRelationshipType = (type: string): HubResult<string> => {
+  if (type.length === 0 || type.length > 64) {
+    return err(new HubError("bad_request.validation_failure", "invalid relationship type (must be 1-64 characters)"));
+  }
+
+  return ok(type);
+};
+
 export const validateTarget = (
   target: protobufs.CastId | string | number,
 ): HubResult<protobufs.CastId | string | number> => {
@@ -635,9 +682,50 @@ export const validateTarget = (
   }
 };
 
+export const validateObjectKey = (objectRef: protobufs.ObjectRef): HubResult<protobufs.ObjectRef> => {
+  const validateTypeResult = validateType(objectRef.type as number);
+  if (validateTypeResult.isErr()) {
+    return err(new HubError("bad_request.validation_failure", "invalid network"));
+  }
+  const validatedNetwork = validateNetwork(objectRef.network as number);
+  if (validatedNetwork.isErr()) {
+    return err(new HubError("bad_request.validation_failure", "invalid network"));
+  }
+  const hashResult = validateMessageHash(objectRef.hash);
+  if (hashResult.isErr()) {
+    return err(new HubError("bad_request.validation_failure", "invalid object key message hash"));
+  }
+
+  const fidResult = validateFid(objectRef.fid);
+  if (fidResult.isErr()) {
+    return err(new HubError("bad_request.validation_failure", "invalid object key fid"));
+  }
+
+  return ok(objectRef);
+}
+
+export const validateObjectRef = (
+  target: protobufs.ObjectRef
+): HubResult<protobufs.ObjectRef | number> => {
+  if (target.type === ObjectRefTypes.FID) {
+    // JERRY-TODO: What to do about CIDs
+    return validateFid(target.fid);
+  } else {
+    return validateObjectKey(target);
+  }
+};
+
 export const validateMessageType = (type: number): HubResult<protobufs.MessageType> => {
   if (!Object.values(protobufs.MessageType).includes(type)) {
     return err(new HubError("bad_request.validation_failure", "invalid message type"));
+  }
+
+  return ok(type);
+};
+
+export const validateType = (type: number): HubResult<protobufs.ObjectRefTypes> => {
+  if (!Object.values(protobufs.ObjectRefTypes).includes(type)) {
+    return err(new HubError("bad_request.validation_failure", "invalid object ref type"));
   }
 
   return ok(type);
@@ -704,6 +792,50 @@ export const validateReactionBody = (body: protobufs.ReactionBody): HubResult<pr
   }
 
   return validateTarget(target).map(() => body);
+};
+
+export const validateTagBody = (body: protobufs.TagBody): HubResult<protobufs.TagBody> => {
+  const validatedType = validateTagNameAndContent(body.name, body.content);
+  if (validatedType.isErr()) {
+    return err(validatedType.error);
+  }
+
+  const target = body.target;
+  if (target === undefined) {
+    return err(new HubError("bad_request.validation_failure", "target is missing"));
+  }
+
+  return validateObjectRef(target).map(() => body);
+};
+
+export const validateObjectAddBody = (body: protobufs.ObjectAddBody): HubResult<protobufs.ObjectAddBody> => {
+  const validatedType = validateObjectType(body.type);
+  if (validatedType.isErr()) {
+    return err(validatedType.error);
+  }
+
+  // VLAD-TODO: validate length of displayName, avatar and description fields?
+
+  return ok(body);
+};
+
+export const validateObjectRemoveBody = (body: protobufs.ObjectRemoveBody): HubResult<protobufs.ObjectRemoveBody> => {
+  return validateMessageHash(body.targetHash).map(() => body);
+};
+
+export const validateRelationshipAddBody = (body: protobufs.RelationshipAddBody): HubResult<protobufs.RelationshipAddBody> => {
+  const validatedType = validateRelationshipType(body.type);
+  if (validatedType.isErr()) {
+    return err(validatedType.error);
+  }
+
+  // VLAD-TODO: validate relationship source and target fields?
+
+  return ok(body);
+};
+
+export const validateRelationshipRemoveBody = (body: protobufs.RelationshipRemoveBody): HubResult<protobufs.RelationshipRemoveBody> => {
+  return validateMessageHash(body.targetHash).map(() => body);
 };
 
 export const validateVerificationAddAddressBody = async (

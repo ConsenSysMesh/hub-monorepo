@@ -4,6 +4,8 @@ import {
   bytesToUtf8String,
   CastAddMessage,
   CastId,
+  ObjectResponse,
+  ObjectTagRequest,
   CastRemoveMessage,
   FarcasterNetwork,
   getDefaultStoreLimit,
@@ -25,6 +27,7 @@ import {
   MergeUsernameProofHubEvent,
   Message,
   MessageType,
+  ObjectRef,
   OnChainEvent,
   OnChainEventResponse,
   OnChainEventType,
@@ -38,6 +41,12 @@ import {
   StorageLimit,
   StorageLimitsResponse,
   StoreType,
+  TagAddMessage,
+  TagRemoveMessage,
+  ObjectAddMessage,
+  ObjectRemoveMessage,
+  RelationshipAddMessage,
+  RelationshipRemoveMessage,
   UserDataAddMessage,
   UserDataType,
   UserNameProof,
@@ -46,31 +55,37 @@ import {
   validations,
   VerificationAddAddressMessage,
   VerificationRemoveMessage,
+  ObjectRefTypes,
+  RefDirection,
+  ObjectResponseList,
 } from "@farcaster/hub-nodejs";
-import { err, ok, ResultAsync } from "neverthrow";
+import {err, ok, ResultAsync} from "neverthrow";
 import fs from "fs";
-import { Worker } from "worker_threads";
-import { getMessage, getMessagesBySignerPrefix, typeToSetPostfix } from "../db/message.js";
+import {Worker} from "worker_threads";
+import {getMessage, getMessagesBySignerPrefix, typeToSetPostfix} from "../db/message.js";
 import RocksDB from "../db/rocksdb.js";
-import { TSHASH_LENGTH, UserPostfix } from "../db/types.js";
+import {TSHASH_LENGTH, UserPostfix} from "../db/types.js";
 import CastStore from "../stores/castStore.js";
 import LinkStore from "../stores/linkStore.js";
 import ReactionStore from "../stores/reactionStore.js";
+import TagStore from "../stores/tagStore.js";
+import ObjectStore from "../stores/objectStore.js";
+import RelationshipStore from "../stores/relationshipStore.js";
 import StoreEventHandler from "../stores/storeEventHandler.js";
-import { DEFAULT_PAGE_SIZE, MessagesPage, PageOptions } from "../stores/types.js";
+import {DEFAULT_PAGE_SIZE, MessagesPage, PageOptions} from "../stores/types.js";
 import UserDataStore from "../stores/userDataStore.js";
 import VerificationStore from "../stores/verificationStore.js";
-import { logger } from "../../utils/logger.js";
-import { RevokeMessagesBySignerJobQueue, RevokeMessagesBySignerJobWorker } from "../jobs/revokeMessagesBySignerJob.js";
-import { ensureAboveTargetFarcasterVersion } from "../../utils/versions.js";
-import { PublicClient } from "viem";
-import { normalize } from "viem/ens";
+import {logger} from "../../utils/logger.js";
+import {RevokeMessagesBySignerJobQueue, RevokeMessagesBySignerJobWorker} from "../jobs/revokeMessagesBySignerJob.js";
+import {ensureAboveTargetFarcasterVersion} from "../../utils/versions.js";
+import {PublicClient} from "viem";
+import {normalize} from "viem/ens";
 import UsernameProofStore from "../stores/usernameProofStore.js";
 import OnChainEventStore from "../stores/onChainEventStore.js";
-import { consumeRateLimitByKey, getRateLimiterForTotalMessages, isRateLimitedByKey } from "../../utils/rateLimits.js";
-import { rsValidationMethods } from "../../rustfunctions.js";
-import { RateLimiterAbstract } from "rate-limiter-flexible";
-import { TypedEmitter } from "tiny-typed-emitter";
+import {consumeRateLimitByKey, getRateLimiterForTotalMessages, isRateLimitedByKey} from "../../utils/rateLimits.js";
+import {rsValidationMethods} from "../../rustfunctions.js";
+import {RateLimiterAbstract} from "rate-limiter-flexible";
+import {TypedEmitter} from "tiny-typed-emitter";
 
 export const NUM_VALIDATION_WORKERS = 2;
 
@@ -122,6 +137,9 @@ class Engine extends TypedEmitter<EngineEvents> {
 
   private _linkStore: LinkStore;
   private _reactionStore: ReactionStore;
+  private _tagStore: TagStore;
+  private _objectStore: ObjectStore;
+  private _relationshipStore: RelationshipStore;
   private _castStore: CastStore;
   private _userDataStore: UserDataStore;
   private _verificationStore: VerificationStore;
@@ -158,6 +176,9 @@ class Engine extends TypedEmitter<EngineEvents> {
 
     this._linkStore = new LinkStore(db, this.eventHandler);
     this._reactionStore = new ReactionStore(db, this.eventHandler);
+    this._tagStore = new TagStore(db, this.eventHandler);
+    this._objectStore = new ObjectStore(db, this.eventHandler);
+    this._relationshipStore = new RelationshipStore(db, this.eventHandler);
     this._castStore = new CastStore(db, this.eventHandler);
     this._userDataStore = new UserDataStore(db, this.eventHandler);
     this._verificationStore = new VerificationStore(db, this.eventHandler);
@@ -169,6 +190,9 @@ class Engine extends TypedEmitter<EngineEvents> {
     this._totalPruneSize =
       this._linkStore.pruneSizeLimit +
       this._reactionStore.pruneSizeLimit +
+      this._tagStore.pruneSizeLimit +
+      this._objectStore.pruneSizeLimit +
+      this._relationshipStore.pruneSizeLimit +
       this._castStore.pruneSizeLimit +
       this._userDataStore.pruneSizeLimit +
       this._verificationStore.pruneSizeLimit +
@@ -273,6 +297,8 @@ class Engine extends TypedEmitter<EngineEvents> {
     const mergeResults: Map<number, HubResult<number>> = new Map();
     const validatedMessages: IndexedMessage[] = [];
 
+    messages.forEach(m => console.log('VIC -- About to merge', m, JSON.stringify(m.data, null, 2)));
+
     // Validate all messages first
     await Promise.all(
       messages.map(async (message, i) => {
@@ -334,6 +360,9 @@ class Engine extends TypedEmitter<EngineEvents> {
   async mergeMessagesToStore(messages: Message[]): Promise<Map<number, HubResult<number>>> {
     const linkMessages: IndexedMessage[] = [];
     const reactionMessages: IndexedMessage[] = [];
+    const tagMessages: IndexedMessage[] = [];
+    const objectMessages: IndexedMessage[] = [];
+    const relationshipMessages: IndexedMessage[] = [];
     const castMessages: IndexedMessage[] = [];
     const userDataMessages: IndexedMessage[] = [];
     const verificationMessages: IndexedMessage[] = [];
@@ -361,6 +390,18 @@ class Engine extends TypedEmitter<EngineEvents> {
           reactionMessages.push({ i, message });
           break;
         }
+        case UserPostfix.TagMessage: {
+          tagMessages.push({ i, message });
+          break;
+        }
+        case UserPostfix.ObjectMessage: {
+          objectMessages.push({ i, message });
+          break;
+        }
+        case UserPostfix.RelationshipMessage: {
+          relationshipMessages.push({ i, message });
+          break;
+        }
         case UserPostfix.CastMessage: {
           castMessages.push({ i, message });
           break;
@@ -386,6 +427,9 @@ class Engine extends TypedEmitter<EngineEvents> {
     const stores = [
       this._linkStore,
       this._reactionStore,
+      this._tagStore,
+      this._objectStore,
+      this._relationshipStore,
       this._castStore,
       this._userDataStore,
       this._verificationStore,
@@ -394,6 +438,9 @@ class Engine extends TypedEmitter<EngineEvents> {
     const messagesByStore = [
       linkMessages,
       reactionMessages,
+      tagMessages,
+      objectMessages,
+      relationshipMessages,
       castMessages,
       userDataMessages,
       verificationMessages,
@@ -475,6 +522,15 @@ class Engine extends TypedEmitter<EngineEvents> {
         case UserPostfix.ReactionMessage: {
           return this._reactionStore.revoke(message.value);
         }
+        case UserPostfix.TagMessage: {
+          return this._tagStore.revoke(message.value);
+        }
+        case UserPostfix.ObjectMessage: {
+          return this._objectStore.revoke(message.value);
+        }
+        case UserPostfix.RelationshipMessage: {
+          return this._relationshipStore.revoke(message.value);
+        }
         case UserPostfix.CastMessage: {
           return this._castStore.revoke(message.value);
         }
@@ -538,6 +594,15 @@ class Engine extends TypedEmitter<EngineEvents> {
     const reactionResult = await this._reactionStore.pruneMessages(fid);
     totalPruned += logPruneResult(reactionResult, "reaction");
 
+    const tagResult = await this._tagStore.pruneMessages(fid);
+    totalPruned += logPruneResult(tagResult, "tag");
+
+    const objectResult = await this._objectStore.pruneMessages(fid);
+    totalPruned += logPruneResult(objectResult, "object");
+
+    const relationshipResult = await this._relationshipStore.pruneMessages(fid);
+    totalPruned += logPruneResult(relationshipResult, "relationship");
+
     const verificationResult = await this._verificationStore.pruneMessages(fid);
     totalPruned += logPruneResult(verificationResult, "verification");
 
@@ -568,6 +633,15 @@ class Engine extends TypedEmitter<EngineEvents> {
         }
         case UserPostfix.ReactionMessage: {
           return this._reactionStore.revoke(message);
+        }
+        case UserPostfix.TagMessage: {
+          return this._tagStore.revoke(message);
+        }
+        case UserPostfix.ObjectMessage: {
+          return this._objectStore.revoke(message);
+        }
+        case UserPostfix.RelationshipMessage: {
+          return this._relationshipStore.revoke(message);
         }
         case UserPostfix.CastMessage: {
           return this._castStore.revoke(message);
@@ -721,6 +795,219 @@ class Engine extends TypedEmitter<EngineEvents> {
       (e) => e as HubError,
     );
   }
+
+  /* -------------------------------------------------------------------------- */
+  /*                              Tag Store Methods                             */
+  /* -------------------------------------------------------------------------- */
+
+  async getTag(fid: number, value: string, target: CastId | string): HubAsyncResult<TagAddMessage> {
+    const validatedFid = validations.validateFid(fid);
+    if (validatedFid.isErr()) {
+      return err(validatedFid.error);
+    }
+
+    const validatedTarget = validations.validateTarget(target);
+    if (validatedTarget.isErr()) {
+      return err(validatedTarget.error);
+    }
+
+    return ResultAsync.fromPromise(this._tagStore.getTagAdd(fid, value, target), (e) => e as HubError);
+  }
+
+  async getTagsByFid(
+    fid: number,
+    value?: string,
+    pageOptions: PageOptions = {},
+  ): HubAsyncResult<MessagesPage<TagAddMessage>> {
+    const validatedFid = validations.validateFid(fid);
+    if (validatedFid.isErr()) {
+      return err(validatedFid.error);
+    }
+
+    return ResultAsync.fromPromise(
+      this._tagStore.getTagAddsByFid(fid, value, pageOptions),
+      (e) => e as HubError,
+    );
+  }
+
+  async getTagsByTarget(
+    target?: ObjectRef,
+    fid?: number,
+    value?: string,
+    pageOptions: PageOptions = {},
+  ): HubAsyncResult<MessagesPage<TagAddMessage>> {
+
+    // TODO: further validation
+    if (!target) {
+      return err(new HubError('bad_request', 'Target is undefined'))
+    }
+
+    return ResultAsync.fromPromise(
+      this._tagStore.getTagsByTarget(target, fid, value, pageOptions),
+      (e) => e as HubError,
+    );
+  }
+
+  async getAllTagMessagesByFid(
+    fid: number,
+    pageOptions: PageOptions = {},
+  ): HubAsyncResult<MessagesPage<TagAddMessage | TagRemoveMessage>> {
+    const validatedFid = validations.validateFid(fid);
+    if (validatedFid.isErr()) {
+      return err(validatedFid.error);
+    }
+
+    return ResultAsync.fromPromise(
+      this._tagStore.getAllTagMessagesByFid(fid, pageOptions),
+      (e) => e as HubError,
+    );
+  }
+
+  /* -------------------------------------------------------------------------- */
+  /*                              Object Store Methods                          */
+  /* -------------------------------------------------------------------------- */
+
+  async getObject(fid: number, hash: Uint8Array, tagOptions: ObjectTagRequest): HubAsyncResult<ObjectResponse> {
+    const validatedFid = validations.validateFid(fid);
+    if (validatedFid.isErr()) {
+      return err(validatedFid.error);
+    }
+
+    const { includeTags = false, creatorTagsOnly = true } = tagOptions;
+
+    let object: Message;
+    const objectRes = await ResultAsync.fromPromise(this._objectStore.getObjectAdd(fid, hash), (e) => e as HubError);
+    if (objectRes.isErr()) {
+      return err(new HubError('bad_request', 'failed to fetch object'));
+    }
+    object = objectRes._unsafeUnwrap();
+
+    let tags: Message[] = [];
+    if (includeTags) {
+      const tagRes = await ResultAsync.fromPromise(this._tagStore.getTagsByTarget({
+        type: ObjectRefTypes.OBJECT,
+        network: FarcasterNetwork.DEVNET, // H1 network ID?
+        hash,
+        fid,
+      }, creatorTagsOnly ? fid : 0), (e) => e as HubError);
+      if (objectRes.isErr()) {
+        return err(new HubError('bad_request', 'failed to fetch object tags'));
+      }
+      tags = tagRes._unsafeUnwrap().messages;
+    }
+
+    const res: ObjectResponse = {
+      object,
+      tags,
+    }
+
+    return ok(res);
+  }
+
+  async getObjectsByFid(
+    fid: number,
+    type?: string,
+    tagOptions?: ObjectTagRequest,
+    pageOptions?: PageOptions,
+  ): HubAsyncResult<ObjectResponseList> {
+    const validatedFid = validations.validateFid(fid);
+    if (validatedFid.isErr()) {
+      return err(validatedFid.error);
+    }
+
+    const { includeTags = false, creatorTagsOnly = true } = tagOptions || {};
+
+    let objects: MessagesPage<ObjectAddMessage>;
+    const objectRes = await ResultAsync.fromPromise(
+      this._objectStore.getObjectAddsByFid(fid, type, pageOptions),
+      (e) => e as HubError,
+    );
+    if (objectRes.isErr()) {
+      return err(new HubError('bad_request', 'failed to fetch object'));
+    }
+    objects = objectRes._unsafeUnwrap();
+
+    let tags: Message[][] = [];
+    if (includeTags) {
+      const promises = Promise.all(objects.messages.map((m) => this._tagStore.getTagsByTarget({
+        type: ObjectRefTypes.OBJECT,
+        network: FarcasterNetwork.DEVNET, // H1 network ID?
+        hash: m.hash,
+        fid,
+      }, creatorTagsOnly ? fid : 0)));
+      const tagRes = await ResultAsync.fromPromise(promises, (e) => e as HubError);
+      if (tagRes.isErr()) {
+        return err(new HubError('bad_request', 'failed to fetch object tags'));
+      }
+      tags = tagRes._unsafeUnwrap().map((tagsResult) => tagsResult.messages);
+    }
+
+    const result = ObjectResponseList.create({
+      nextPageToken: objects.nextPageToken,
+      objects: objects.messages.map((obj, i) =>
+        ObjectResponse.create({
+          object: obj,
+          tags: includeTags ? (tags[i] || []) : []
+        })
+      ),
+    })
+
+    return ok(result);
+  }
+
+  // VLAD-TODO: add getAllObjectMessagesByFid ?
+
+  /* ---------------------------------------------------------------------------- */
+  /*                           Relationship Store Methods                         */
+  /* ---------------------------------------------------------------------------- */
+
+  async getRelationship(fid: number, hash: Uint8Array): HubAsyncResult<RelationshipAddMessage> {
+    const validatedFid = validations.validateFid(fid);
+    if (validatedFid.isErr()) {
+      return err(validatedFid.error);
+    }
+
+    return ResultAsync.fromPromise(this._relationshipStore.getRelationshipAdd(fid, hash), (e) => e as HubError);
+  }
+
+  async getRelationshipsByFid(
+    fid: number,
+    type?: string,
+    pageOptions?: PageOptions,
+  ): HubAsyncResult<MessagesPage<RelationshipAddMessage>> {
+    const validatedFid = validations.validateFid(fid);
+    if (validatedFid.isErr()) {
+      return err(validatedFid.error);
+    }
+
+    return ResultAsync.fromPromise(
+      this._relationshipStore.getRelationshipAddsByFid(fid, type, pageOptions),
+      (e) => e as HubError,
+    );
+  }
+
+  async getRelationshipsByRelatedObjectRef(
+    refDirection: RefDirection,
+    relatedObjectRef?: ObjectRef,
+    type?: string,
+    pageOptions?: PageOptions,
+  ): HubAsyncResult<MessagesPage<RelationshipAddMessage>> {
+    if (!relatedObjectRef) {
+      return err(new HubError('bad_request', 'relatedObjectRef is undefined'))
+    }
+  
+    const validatedObjectRef = validations.validateObjectRef(relatedObjectRef);
+    if (validatedObjectRef.isErr()) {
+      return err(validatedObjectRef.error);
+    }
+
+    return ResultAsync.fromPromise(
+      this._relationshipStore.getRelationshipsByRelatedObjectRef(relatedObjectRef, refDirection, type, pageOptions),
+      (e) => e as HubError,
+    );
+  }
+
+  // VLAD-TODO: add getAllRelationshipMessagesByFid ?
 
   /* -------------------------------------------------------------------------- */
   /*                          Verification Store Methods                        */

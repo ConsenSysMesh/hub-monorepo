@@ -73,6 +73,13 @@ pub enum RootPrefix {
 
     /* Used to index fname username proofs by fid */
     FNameUserNameProofByFid = 27,
+
+    /* Used to index tags by target  */
+    TagsByTarget = 28,
+
+    /* Used to index relationships by source and target object refs  */
+    RelationshipsBySource = 29,
+    RelationshipsByTarget = 30,
 }
 
 /** Copied from the JS code */
@@ -89,6 +96,16 @@ pub enum UserPostfix {
     UsernameProofMessage = 7,
 
     // Add new message types here
+
+    /* Tag message */
+    TagMessage = 8,
+
+    /* Object message */
+    ObjectMessage = 9,
+
+    /* Relationship message */
+    RelationshipMessage = 10,
+
     // NOTE: If you add a new message type, make sure that it is only used to store Message protobufs.
     // If you need to store an index, use one of the UserPostfix values below (>86).
     /** Index records (must be 86-255) */
@@ -122,6 +139,18 @@ pub enum UserPostfix {
 
     /* Link Compact State set */
     LinkCompactStateMessage = 100,
+
+    /** TagStore add and remove sets */
+    TagAdds = 101,
+    TagRemoves = 102,
+
+    /** ObjectStore add and remove sets */
+    ObjectAdds = 103,
+    ObjectRemoves = 104,
+
+    /** RelationshipStore add and remove sets */
+    RelationshipAdds = 105,
+    RelationshipRemoves = 106,
 }
 
 impl UserPostfix {
@@ -181,6 +210,18 @@ pub fn type_to_set_postfix(message_type: MessageType) -> UserPostfix {
 
     if message_type == MessageType::UsernameProof {
         return UserPostfix::UsernameProofMessage;
+    }
+
+    if message_type == MessageType::TagAdd || message_type == MessageType::TagRemove {
+        return UserPostfix::TagMessage;
+    }
+
+    if message_type == MessageType::ObjectAdd || message_type == MessageType::ObjectRemove {
+        return UserPostfix::ObjectMessage;
+    }
+
+    if message_type == MessageType::RelationshipAdd || message_type == MessageType::RelationshipRemove {
+        return UserPostfix::RelationshipMessage;
     }
 
     panic!("invalid type");

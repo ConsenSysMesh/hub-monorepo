@@ -9,7 +9,7 @@ import "onchain_event.proto";
 // Note about http-api annotations:
 // The `httpServer.ts` class implements a HTTP API wrapper on top of this gRPC API.
 // The annotations below are used to verify that all the HTTP API endpoints are implemented.
-// If you are adding a new RPC method, if there needs to be a corresponding HTTP API endpoint, 
+// If you are adding a new RPC method, if there needs to be a corresponding HTTP API endpoint,
 // add the annotation to the method. @http-api: none means that there is no corresponding HTTP API
 // If there is no annotation, we assume there is a corresponding HTTP API endpoint with the same name as the RPC method
 // Please see `httpServer.ts` for more details
@@ -40,6 +40,24 @@ service HubService {
   rpc GetReactionsByFid(ReactionsByFidRequest) returns (MessagesResponse);
   rpc GetReactionsByCast(ReactionsByTargetRequest) returns (MessagesResponse); // To be deprecated
   rpc GetReactionsByTarget(ReactionsByTargetRequest) returns (MessagesResponse);
+
+  // Tags
+  // @http-api: tagById
+  rpc GetTag(TagRequest) returns (Message);
+  rpc GetTagsByFid(TagsByFidRequest) returns (MessagesResponse);
+  rpc GetTagsByCast(TagsByTargetRequest) returns (MessagesResponse); // To be deprecated
+  rpc GetTagsByTarget(TagsByTargetRequest) returns (MessagesResponse);
+
+ // Objects
+  // @http-api: objectById
+  rpc GetObject(ObjectRequest) returns (ObjectResponse);
+  rpc GetObjectsByFid(ObjectsByFidRequest) returns (ObjectResponseList);
+
+   // Relationships
+  // @http-api: relationshipById
+  rpc GetRelationship(ObjectId) returns (Message);
+  rpc GetRelationshipsByFid(RelationshipsByFidRequest) returns (MessagesResponse);
+  rpc GetRelationshipsByRelatedObjectRef(RelationshipsByRelatedObjectRefRequest) returns (MessagesResponse);
 
   // User Data
   // @http-api: none
@@ -79,12 +97,14 @@ service HubService {
   rpc GetLinksByTarget(LinksByTargetRequest) returns (MessagesResponse);
 
   // Bulk Methods
-  // The Bulk methods don't have corresponding HTTP API endpoints because the 
+  // The Bulk methods don't have corresponding HTTP API endpoints because the
   // regular endpoints can be used to get all the messages
   // @http-api: none
   rpc GetAllCastMessagesByFid(FidRequest) returns (MessagesResponse);
   // @http-api: none
   rpc GetAllReactionMessagesByFid(FidRequest) returns (MessagesResponse);
+  // @http-api: none
+  rpc GetAllTagMessagesByFid(FidRequest) returns (MessagesResponse);
   // @http-api: none
   rpc GetAllVerificationMessagesByFid(FidRequest) returns (MessagesResponse);
   // @http-api: none
@@ -92,7 +112,7 @@ service HubService {
   // @http-api: none
   rpc GetAllLinkMessagesByFid(FidRequest) returns (MessagesResponse);
 
-  // Sync Methods    
+  // Sync Methods
   rpc GetInfo(HubInfoRequest) returns (HubInfoResponse);
   rpc GetCurrentPeers(Empty) returns (ContactInfoResponse);
   // @http-api: none
@@ -104,12 +124,12 @@ service HubService {
   // @http-api: none
   rpc GetSyncMetadataByPrefix(TrieNodePrefix) returns (TrieNodeMetadataResponse);
   // @http-api: none
-  rpc GetSyncSnapshotByPrefix(TrieNodePrefix) returns (TrieNodeSnapshotResponse);  
+  rpc GetSyncSnapshotByPrefix(TrieNodePrefix) returns (TrieNodeSnapshotResponse);
 }
 
 service AdminService {
   rpc RebuildSyncTrie(Empty) returns (Empty);
   rpc DeleteAllMessagesFromDb(Empty) returns (Empty);
-  
+
   rpc SubmitOnChainEvent(OnChainEvent) returns (OnChainEvent);
 }
